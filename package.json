@@ -1,0 +1,7 @@
+{
+  "name": "potluck",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "workspaces": ["packages/contracts", "packages/farcaster-mini-app"]
+}
