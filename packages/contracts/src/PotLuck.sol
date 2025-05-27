@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title PotLuck
- * @notice A recurring pool of USDC contributions where one random participant wins the pot each period.
+ * @notice A recurring pool of token contributions where one random participant wins the pot each period.
  *         Creator configures entry amount, period, optional max participants, and public access.
  *         Platform collects a fee percentage on each payout.
  */
