@@ -141,7 +141,7 @@ contract PotLuck is Ownable {
     //––––––––––––––––––––
     // PAYOUT
     //––––––––––––––––––––
-    function triggerPayout(uint256 potId) external {
+    function triggerPotPayout(uint256 potId) external {
         Pot storage p = pots[potId];
         if (p.balance == 0)                revert PotDoesNotExist(potId);
         if (block.timestamp < p.deadline)  revert RoundNotReady(p.deadline, block.timestamp);
