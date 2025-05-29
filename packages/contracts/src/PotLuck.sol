@@ -7,193 +7,220 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title PotLuck
- * @notice A recurring pool of token contributions where one random participant wins the pot each period.
+ * @notice A recurring pool of token contributions where one random participant wins each period.
  *         Creator configures entry amount, period, optional max participants, and public access.
- *         Platform collects a fee percentage on each payout.
+ *         Platform collects a fixed fee on creation, sent to `treasury`.
  */
 contract PotLuck is Ownable {
     using SafeERC20 for IERC20;
 
-    uint8 constant MAX_PARTICIPANTS = 100; // Max participants per pot
+    //––––––––––––––––––––
+    // CUSTOM ERRORS
+    //––––––––––––––––––––
 
+    error EntryAmountZero();
+    error PeriodTooShort();
+    error PotDoesNotExist(uint256 potId);
+    error RoundEnded(uint256 deadline, uint256 nowTimestamp);
+    error PotFull(uint8 maxParticipants);
+    error AlreadyJoined(uint256 potId, uint32 round, address user);
+    error RoundNotReady(uint256 deadline, uint256 nowTimestamp);
+    error InsufficientFundsToRollover(uint256 total, uint256 rollover);
+    error NoEligibleParticipants();
+    error InvalidParticipant(address participant, uint256 potId);
+
+    //––––––––––––––––––––
+    // STATE
+    //––––––––––––––––––––
+
+    uint8  public constant MAX_PARTICIPANTS = 100;
     uint256 public potCount;
-    uint256 public platformFeePct; // e.g., 10 for 10%
+
+    /// @notice Fixed fee (in token-units) to create a pot
+    uint256 public platformFee;
+    /// @notice Where all creation fees go
+    address public treasury;
 
     struct Pot {
         uint256    id;
-        uint32     round;         // current round number
-        uint256     deadline;      // timestamp when round ends
-        uint256    balance;      // total balance in pot
+        uint32     round;
+        uint256    deadline;
+        uint256    balance;
         address    token;
         uint256    entryAmount;
-        uint256    period;          // in seconds
+        uint256    period;
         bool       isPublic;
         uint32     totalParticipants;
-        address[]  participants;   // list of participants in current round
+        address[]  participants;
     }
 
-    mapping(uint256 => Pot) public pots;
-    mapping(bytes32 => bool) public hasJoinedRound; // keccak256(potId,roundId,user) -> bool;
-    mapping(bytes32 => bool) public hasWon; // keccak256(potId,user) -> bool;
+    mapping(uint256 => Pot)           public pots;
+    mapping(bytes32 => bool)          public hasJoinedRound; // keccak(pot,round,user)
+    mapping(bytes32 => bool)          public hasWon;        // keccak(pot,user)
 
     event PotCreated(uint256 indexed potId, address indexed creator);
-    event Joined(uint256 indexed potId, uint32 roundId,address indexed user);
-    event Payout(uint256 indexed potId, address indexed winner, uint256 amount, uint32 round);
+    event PotJoined(uint256 indexed potId, uint32 roundId, address indexed user);
+    event PotPayout(uint256 indexed potId, address indexed winner, uint256 amount, uint32 round);
 
-    constructor(uint256 _platformFeePct) Ownable(msg.sender) {
-        require(_platformFeePct <= 100, "Fee pct <= 100");
-        platformFeePct = _platformFeePct;
+    //––––––––––––––––––––
+    // CONSTRUCTOR
+    //––––––––––––––––––––
+
+    constructor(uint256 _platformFee, address _treasury) Ownable(msg.sender) {
+        platformFee = _platformFee;
+        treasury    = _treasury;
     }
 
-    /**
-     * @notice Create a new public pot with specified parameters.
-     * @param token Address of the ERC20 token contract.
-     * @param entryAmount USDC amount each participant must contribute.
-     * @param periodSeconds Duration of each round in seconds.
-     */
-    function createPotLuck(
+    //––––––––––––––––––––
+    // CREATE
+    //––––––––––––––––––––
+
+    function createPot(
         address token,
         uint256 entryAmount,
-        uint256 periodSeconds
+        uint256 periodSeconds,
+        bool    isPublic
     ) external {
-        require(entryAmount > 0, "Entry > 0");
-        require(periodSeconds >= 1 hours, "Period must be >=1h");
+        if (entryAmount == 0)            revert EntryAmountZero();
+        if (periodSeconds < 1 hours)     revert PeriodTooShort();
 
-        uint256 currentPotCount = potCount++;
-        Pot storage p = pots[currentPotCount];
-        p.id = currentPotCount;
-        p.token = token;
-        p.entryAmount = entryAmount;
-        p.period = periodSeconds;
-        p.isPublic = true;
+        // 1) Collect the fixed fee to treasury
+        IERC20(token).safeTransferFrom(msg.sender, treasury, platformFee);
+
+        // 2) Collect the stake for the pot
+        IERC20(token).safeTransferFrom(msg.sender, address(this), entryAmount);
+
+        // 3) Initialize the pot
+        uint256 potId = potCount++;
+        Pot storage p = pots[potId];
+        p.id                = potId;
+        p.token             = token;
+        p.entryAmount       = entryAmount;
+        p.period            = periodSeconds;
+        p.isPublic          = isPublic;
         p.totalParticipants = 1;
-        p.deadline = block.timestamp + periodSeconds;
+        p.deadline          = block.timestamp + periodSeconds;
+        p.balance           = entryAmount;
         p.participants.push(msg.sender);
 
-        IERC20(token).safeTransferFrom(msg.sender, address(this), entryAmount);
-        p.balance = entryAmount;
+        // mark joined in round 0
+        hasJoinedRound[keccak256(abi.encodePacked(potId, uint32(0), msg.sender))] = true;
 
-        bytes32 joinKey = keccak256(abi.encodePacked(currentPotCount, uint32(0), msg.sender));
-        hasJoinedRound[joinKey] = true;
-
-        emit PotCreated(currentPotCount, msg.sender);
-        emit Joined(currentPotCount, 0,msg.sender);
+        emit PotCreated(potId, msg.sender);
+        emit PotJoined(potId, 0, msg.sender);
     }
 
-    /**
-     * @notice Join an existing pot by depositing entry amount.
-     * @param potId Identifier of the pot.
-     */
+    //––––––––––––––––––––
+    // JOIN
+    //––––––––––––––––––––
     function joinPot(uint256 potId) external {
         Pot storage p = pots[potId];
-        require(p.balance > 0, "Pot not exist");
-        require(block.timestamp < p.deadline, "Round ended");
-        require(p.totalParticipants < MAX_PARTICIPANTS, "Full");
-        bytes32 joinKey = keccak256(abi.encodePacked(potId, p.round, msg.sender));
-        require(!hasJoinedRound[joinKey], "Already joined this round");
+        if (p.balance == 0)                revert PotDoesNotExist(potId);
+        if (block.timestamp >= p.deadline) revert RoundEnded(p.deadline, block.timestamp);
+        if (p.participants.length >= MAX_PARTICIPANTS)
+            revert PotFull(MAX_PARTICIPANTS);
+        if(!hasJoinedRound[keccak256(abi.encodePacked(potId, uint32(0), msg.sender))] && p.round > 0)
+            revert InvalidParticipant(msg.sender, potId);
 
-        if(p.round ==0){
-            p.totalParticipants++; 
+        bytes32 key = keccak256(abi.encodePacked(potId, p.round, msg.sender));
+        if (hasJoinedRound[key]) revert AlreadyJoined(potId, p.round, msg.sender);
+
+        // only bump totalParticipants in the first round
+        if (p.round == 0) {
+            p.totalParticipants++;
         }
-
 
         IERC20(p.token).safeTransferFrom(msg.sender, address(this), p.entryAmount);
         p.balance += p.entryAmount;
         p.participants.push(msg.sender);
-        
-        hasJoinedRound[joinKey] = true;
 
-        emit Joined(potId,p.round, msg.sender);
+        hasJoinedRound[key] = true;
+        emit PotJoined(potId, p.round, msg.sender);
     }
 
-    /**
-     * @notice Trigger payout for pot after deadline; picks a random winner, sends pot minus fee.
-     *         Resets round for next period.
-     * @param potId Identifier of the pot.
-     */
+    //––––––––––––––––––––
+    // PAYOUT
+    //––––––––––––––––––––
     function triggerPayout(uint256 potId) external {
         Pot storage p = pots[potId];
-    require(p.balance > 0,                "Pot not exist");
-    require(block.timestamp >= p.deadline, "Round in progress");
+        if (p.balance == 0)                revert PotDoesNotExist(potId);
+        if (block.timestamp < p.deadline)  revert RoundNotReady(p.deadline, block.timestamp);
+        bool    isLast   = (p.round == p.totalParticipants - 1);
+        uint256 rollover = isLast ? 0 : p.entryAmount;
+        uint256 total    = p.balance;
+        if (total < rollover) revert InsufficientFundsToRollover(total, rollover);
 
-    // Detect “last round”: we’ve already done totalParticipants−1 rounds (0-indexed)
-   bool isLast = (p.round == p.totalParticipants - 1);
+        uint256 prize = total - rollover;
 
-   // If NOT last round, we keep one entryAmount as rollover
-    uint256 rollover = isLast ? 0 : p.entryAmount;
-    uint256 total    = p.balance;
-    uint256 fee      = (total * platformFeePct) / 100;
-    require(total >= fee + rollover, "Insufficient funds to rollover");
+        // pseudo-random seed
+        bytes32 seed = keccak256(
+            abi.encodePacked(
+                block.timestamp,
+                blockhash(block.number - 1),
+                potId,
+                p.round,
+                total
+            )
+        );
 
-    uint256 prize = total - fee - rollover;
+        uint256 len = p.participants.length;
+        uint256 idx = uint256(seed) % len;
 
-    bytes32 seed = keccak256(
-        abi.encodePacked(
-            blockhash(block.number - 1),
-            potId,
-            p.round,
-            total
-        )
-    );
-
-    // 2) pick a start index in [0..len)
-    uint256 len = p.participants.length;
-    uint256 idx = uint256(seed) % len;
-
-    // 3) scan forward until we find someone !hasWon
-    address winner;
-    for (uint256 i = 0; i < len; i++) {
-        address candidate = p.participants[(idx + i) % len];
-        bytes32 candidateKey = keccak256(abi.encodePacked(potId, candidate));
-
-        if (!hasWon[candidateKey]) {
-            winner = candidate;
-            break;
+        // find a non-winner
+        address winner;
+        for (uint256 i = 0; i < len; i++) {
+            address cand = p.participants[(idx + i) % len];
+            if (!hasWon[keccak256(abi.encodePacked(potId, cand))]) {
+                winner = cand;
+                break;
+            }
         }
+        if (winner == address(0)) revert NoEligibleParticipants();
+
+        hasWon[keccak256(abi.encodePacked(potId, winner))] = true;
+        IERC20(p.token).safeTransfer(winner, prize);
+
+        uint32 nextRound = ++p.round;
+        emit PotPayout(potId, winner, prize, nextRound - 1);
+
+        if (isLast) {
+            // pot complete
+            p.balance  = 0;
+            p.isPublic = false;
+            delete p.participants;
+            return;
+        }
+
+        // roll over one entry
+        p.balance = rollover;
+        delete p.participants;
+
+        // auto-reenter the winner
+        p.participants.push(winner);
+        hasJoinedRound[keccak256(abi.encodePacked(potId, nextRound, winner))] = true;
+        emit PotJoined(potId, nextRound, winner);
+
+        p.deadline = block.timestamp + p.period;
     }
 
-    require(winner != address(0), "No eligible participants");
+    //––––––––––––––––––––
+    // OWNER ACTIONS
+    //––––––––––––––––––––
 
-    bytes32 winnerKey = keccak256(abi.encodePacked(potId, winner));
-    hasWon[winnerKey] = true;
-
-
-    IERC20(p.token).safeTransfer(winner, prize);
-    if (fee > 0) {
-        IERC20(p.token).safeTransfer(owner(), fee);
+    function setPlatformFee(uint256 fee) external onlyOwner {
+        platformFee = fee;
     }
 
-    uint32 nextRound = ++p.round;
-
-    emit Payout(potId, winner, prize, nextRound - 1);
-    if (isLast) {
-       // --- FINAL ROUND: no more rollover, end the pot ---
-       p.balance = 0;
-       delete p.participants;
-       p.isPublic = false;
-       return;
-   }
-
-    p.balance = rollover;
-    delete p.participants;
-
-    // auto-re-enter winner into new round
-    p.participants.push(winner);
-    bytes32 nextKey = keccak256(abi.encodePacked(potId, nextRound, winner));
-    hasJoinedRound[nextKey] = true;
-    emit Joined(potId, nextRound, winner);
-
-    p.deadline = block.timestamp + p.period;
+    function setTreasury(address newTreasury) external onlyOwner {
+        treasury = newTreasury;
     }
 
-    /** @notice Allows owner to update platform fee percentage (<=100). */
-    function setPlatformFeePct(uint256 pct) external onlyOwner {
-        require(pct <= 100, "Fee pct <= 100");
-        platformFeePct = pct;
-    }
+    //––––––––––––––––––––
+    // VIEWS
+    //––––––––––––––––––––
 
-    /** @notice View current participants of a pot. */
     function getParticipants(uint256 potId) external view returns (address[] memory) {
         return pots[potId].participants;
     }
+
 }
