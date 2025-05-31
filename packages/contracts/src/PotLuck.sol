@@ -33,7 +33,7 @@ contract PotLuck is Ownable {
     // STATE
     //––––––––––––––––––––
 
-    uint8  public constant MAX_PARTICIPANTS = 100;
+    uint8 public constant MAX_PARTICIPANTS = 100;
     uint256 public potCount;
 
     /// @notice Fixed fee (in token-units) to create a pot
@@ -42,21 +42,21 @@ contract PotLuck is Ownable {
     address public treasury;
 
     struct Pot {
-        uint256    id;
-        uint32     round;
-        uint256    deadline;
-        uint256    balance;
-        address    token;
-        uint256    entryAmount;
-        uint256    period;
-        bool       isPublic;
-        uint32     totalParticipants;
-        address[]  participants;
+        uint256 id;
+        uint32 round;
+        uint256 deadline;
+        uint256 balance;
+        address token;
+        uint256 entryAmount;
+        uint256 period;
+        bool isPublic;
+        uint32 totalParticipants;
+        address[] participants;
     }
 
-    mapping(uint256 => Pot)           public pots;
-    mapping(bytes32 => bool)          public hasJoinedRound; // keccak(pot,round,user)
-    mapping(bytes32 => bool)          public hasWon;        // keccak(pot,user)
+    mapping(uint256 => Pot) public pots;
+    mapping(bytes32 => bool) public hasJoinedRound; // keccak(pot,round,user)
+    mapping(bytes32 => bool) public hasWon; // keccak(pot,user)
 
     event PotCreated(uint256 indexed potId, address indexed creator);
     event PotJoined(uint256 indexed potId, uint32 roundId, address indexed user);
@@ -68,21 +68,16 @@ contract PotLuck is Ownable {
 
     constructor(uint256 _platformFee, address _treasury) Ownable(msg.sender) {
         platformFee = _platformFee;
-        treasury    = _treasury;
+        treasury = _treasury;
     }
 
     //––––––––––––––––––––
     // CREATE
     //––––––––––––––––––––
 
-    function createPot(
-        address token,
-        uint256 entryAmount,
-        uint256 periodSeconds,
-        bool    isPublic
-    ) external {
-        if (entryAmount == 0)            revert EntryAmountZero();
-        if (periodSeconds < 1 hours)     revert PeriodTooShort();
+    function createPot(address token, uint256 entryAmount, uint256 periodSeconds, bool isPublic) external {
+        if (entryAmount == 0) revert EntryAmountZero();
+        if (periodSeconds < 1 hours) revert PeriodTooShort();
 
         // 1) Collect the fixed fee to treasury
         IERC20(token).safeTransferFrom(msg.sender, treasury, platformFee);
@@ -93,14 +88,14 @@ contract PotLuck is Ownable {
         // 3) Initialize the pot
         uint256 potId = potCount++;
         Pot storage p = pots[potId];
-        p.id                = potId;
-        p.token             = token;
-        p.entryAmount       = entryAmount;
-        p.period            = periodSeconds;
-        p.isPublic          = isPublic;
+        p.id = potId;
+        p.token = token;
+        p.entryAmount = entryAmount;
+        p.period = periodSeconds;
+        p.isPublic = isPublic;
         p.totalParticipants = 1;
-        p.deadline          = block.timestamp + periodSeconds;
-        p.balance           = entryAmount;
+        p.deadline = block.timestamp + periodSeconds;
+        p.balance = entryAmount;
         p.participants.push(msg.sender);
 
         // mark joined in round 0
@@ -115,12 +110,14 @@ contract PotLuck is Ownable {
     //––––––––––––––––––––
     function joinPot(uint256 potId) external {
         Pot storage p = pots[potId];
-        if (p.balance == 0)                revert PotDoesNotExist(potId);
+        if (p.balance == 0) revert PotDoesNotExist(potId);
         if (block.timestamp >= p.deadline) revert RoundEnded(p.deadline, block.timestamp);
-        if (p.participants.length >= MAX_PARTICIPANTS)
+        if (p.participants.length >= MAX_PARTICIPANTS) {
             revert PotFull(MAX_PARTICIPANTS);
-        if(!hasJoinedRound[keccak256(abi.encodePacked(potId, uint32(0), msg.sender))] && p.round > 0)
+        }
+        if (!hasJoinedRound[keccak256(abi.encodePacked(potId, uint32(0), msg.sender))] && p.round > 0) {
             revert InvalidParticipant(msg.sender, potId);
+        }
 
         bytes32 key = keccak256(abi.encodePacked(potId, p.round, msg.sender));
         if (hasJoinedRound[key]) revert AlreadyJoined(potId, p.round, msg.sender);
@@ -143,25 +140,17 @@ contract PotLuck is Ownable {
     //––––––––––––––––––––
     function triggerPotPayout(uint256 potId) external {
         Pot storage p = pots[potId];
-        if (p.balance == 0)                revert PotDoesNotExist(potId);
-        if (block.timestamp < p.deadline)  revert RoundNotReady(p.deadline, block.timestamp);
-        bool    isLast   = (p.round == p.totalParticipants - 1);
+        if (p.balance == 0) revert PotDoesNotExist(potId);
+        if (block.timestamp < p.deadline) revert RoundNotReady(p.deadline, block.timestamp);
+        bool isLast = (p.round == p.totalParticipants - 1);
         uint256 rollover = isLast ? 0 : p.entryAmount;
-        uint256 total    = p.balance;
+        uint256 total = p.balance;
         if (total < rollover) revert InsufficientFundsToRollover(total, rollover);
 
         uint256 prize = total - rollover;
 
         // pseudo-random seed
-        bytes32 seed = keccak256(
-            abi.encodePacked(
-                block.timestamp,
-                blockhash(block.number - 1),
-                potId,
-                p.round,
-                total
-            )
-        );
+        bytes32 seed = keccak256(abi.encodePacked(block.timestamp, blockhash(block.number - 1), potId, p.round, total));
 
         uint256 len = p.participants.length;
         uint256 idx = uint256(seed) % len;
@@ -185,7 +174,7 @@ contract PotLuck is Ownable {
 
         if (isLast) {
             // pot complete
-            p.balance  = 0;
+            p.balance = 0;
             p.isPublic = false;
             delete p.participants;
             return;
@@ -222,5 +211,4 @@ contract PotLuck is Ownable {
     function getParticipants(uint256 potId) external view returns (address[] memory) {
         return pots[potId].participants;
     }
-
 }
