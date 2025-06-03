@@ -6,12 +6,12 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
- * @title PotLuck
+ * @title Potluck
  * @notice A recurring pool of token contributions where one random participant wins each period.
  *         Creator configures entry amount, period, optional max participants, and public access.
  *         Platform collects a fixed fee on creation, sent to `treasury`.
  */
-contract PotLuck is Ownable {
+contract Potluck is Ownable {
     using SafeERC20 for IERC20;
 
     //––––––––––––––––––––
@@ -43,6 +43,7 @@ contract PotLuck is Ownable {
 
     struct Pot {
         uint256 id;
+        bytes name;
         uint32 round;
         uint256 deadline;
         uint256 balance;
@@ -75,7 +76,7 @@ contract PotLuck is Ownable {
     // CREATE
     //––––––––––––––––––––
 
-    function createPot(address token, uint256 entryAmount, uint256 periodSeconds, bool isPublic) external {
+    function createPot(bytes memory name,address token, uint256 entryAmount, uint256 periodSeconds, bool isPublic) external {
         if (entryAmount == 0) revert EntryAmountZero();
         if (periodSeconds < 1 hours) revert PeriodTooShort();
 
@@ -89,6 +90,7 @@ contract PotLuck is Ownable {
         uint256 potId = potCount++;
         Pot storage p = pots[potId];
         p.id = potId;
+        p.name = name;
         p.token = token;
         p.entryAmount = entryAmount;
         p.period = periodSeconds;
