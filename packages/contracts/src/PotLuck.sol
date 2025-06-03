@@ -4,6 +4,7 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 /**
  * @title Potluck
@@ -12,6 +13,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  *         Platform collects a fixed fee on creation, sent to `treasury`.
  */
 contract Potluck is Ownable {
+    using MerkleProof for bytes32[];
     using SafeERC20 for IERC20;
 
     //––––––––––––––––––––
@@ -50,9 +52,9 @@ contract Potluck is Ownable {
         address token;
         uint256 entryAmount;
         uint256 period;
-        bool isPublic;
         uint32 totalParticipants;
         address[] participants;
+        bytes32 participantsRoot;
     }
 
     mapping(uint256 => Pot) public pots;
@@ -76,7 +78,7 @@ contract Potluck is Ownable {
     // CREATE
     //––––––––––––––––––––
 
-    function createPot(bytes memory name,address token, uint256 entryAmount, uint256 periodSeconds, bool isPublic) external {
+    function createPot(bytes memory name,address token, uint256 entryAmount, uint256 periodSeconds, bytes32 participantsRoot) external {
         if (entryAmount == 0) revert EntryAmountZero();
         if (periodSeconds < 1 hours) revert PeriodTooShort();
 
@@ -94,7 +96,7 @@ contract Potluck is Ownable {
         p.token = token;
         p.entryAmount = entryAmount;
         p.period = periodSeconds;
-        p.isPublic = isPublic;
+        p.participantsRoot = participantsRoot;
         p.totalParticipants = 1;
         p.deadline = block.timestamp + periodSeconds;
         p.balance = entryAmount;
@@ -110,7 +112,7 @@ contract Potluck is Ownable {
     //––––––––––––––––––––
     // JOIN
     //––––––––––––––––––––
-    function joinPot(uint256 potId) external {
+    function joinPot(uint256 potId, bytes32[] calldata proof) external {
         Pot storage p = pots[potId];
         if (p.balance == 0) revert PotDoesNotExist(potId);
         if (block.timestamp >= p.deadline) revert RoundEnded(p.deadline, block.timestamp);
@@ -118,6 +120,11 @@ contract Potluck is Ownable {
             revert PotFull(MAX_PARTICIPANTS);
         }
         if (!hasJoinedRound[keccak256(abi.encodePacked(potId, uint32(0), msg.sender))] && p.round > 0) {
+            revert InvalidParticipant(msg.sender, potId);
+        }
+        bytes32 root = p.participantsRoot;
+        bytes32 leaf = keccak256(abi.encodePacked(msg.sender));
+        if( root != bytes32(0) && !proof.verify(root, leaf) ) {
             revert InvalidParticipant(msg.sender, potId);
         }
 
@@ -177,7 +184,7 @@ contract Potluck is Ownable {
         if (isLast) {
             // pot complete
             p.balance = 0;
-            p.isPublic = false;
+
             delete p.participants;
             return;
         }
