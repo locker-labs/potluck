@@ -78,7 +78,13 @@ contract Potluck is Ownable {
     // CREATE
     //––––––––––––––––––––
 
-    function createPot(bytes memory name,address token, uint256 entryAmount, uint256 periodSeconds, bytes32 participantsRoot) external {
+    function createPot(
+        bytes memory name,
+        address token,
+        uint256 entryAmount,
+        uint256 periodSeconds,
+        bytes32 participantsRoot
+    ) external {
         if (entryAmount == 0) revert EntryAmountZero();
         if (periodSeconds < 1 hours) revert PeriodTooShort();
 
@@ -124,7 +130,7 @@ contract Potluck is Ownable {
         }
         bytes32 root = p.participantsRoot;
         bytes32 leaf = keccak256(abi.encodePacked(msg.sender));
-        if( root != bytes32(0) && !proof.verify(root, leaf) ) {
+        if (root != bytes32(0) && !proof.verify(root, leaf)) {
             revert InvalidParticipant(msg.sender, potId);
         }
 

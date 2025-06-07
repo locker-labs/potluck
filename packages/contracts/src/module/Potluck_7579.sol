@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import { ERC7579ExecutorBase } from "modulekit/Modules.sol";
-import { IERC7579Account  } from "modulekit/Accounts.sol";
-import { ModeLib } from "modulekit/accounts/common/lib/ModeLib.sol";
+import {ERC7579ExecutorBase} from "modulekit/Modules.sol";
+import {IERC7579Account} from "modulekit/Accounts.sol";
+import {ModeLib} from "modulekit/accounts/common/lib/ModeLib.sol";
 
-import { IERC20 } from "forge-std/interfaces/IERC20.sol";
-import { ExecutionLib, Execution} from "modulekit/accounts/erc7579/lib/ExecutionLib.sol";
-import { UniswapV3Integration } from "modulekit/Integrations.sol";
-import { Potluck} from "../PotLuck.sol";
+import {IERC20} from "forge-std/interfaces/IERC20.sol";
+import {ExecutionLib, Execution} from "modulekit/accounts/erc7579/lib/ExecutionLib.sol";
+import {UniswapV3Integration} from "modulekit/Integrations.sol";
+import {Potluck} from "../PotLuck.sol";
 
 contract PotluckExecution is ERC7579ExecutorBase {
     /*//////////////////////////////////////////////////////////////////////////
@@ -43,8 +43,7 @@ contract PotluckExecution is ERC7579ExecutorBase {
      * @param jobId The job ID
      * @return The execution config
      */
-    mapping(address smartAccount => mapping(uint256 jobId => ExecutionConfig)) internal
-        _executionLog;
+    mapping(address smartAccount => mapping(uint256 jobId => ExecutionConfig)) internal _executionLog;
 
     /*
      * Log to keep track of the number of jobs for a given smart account
@@ -57,10 +56,10 @@ contract PotluckExecution is ERC7579ExecutorBase {
                                      CONFIG
     //////////////////////////////////////////////////////////////////////////*/
 
-     /* Initialize the module with the given data
+    /* Initialize the module with the given data
      * @param data The data to initialize the module with
      */
-    function onInstall(bytes calldata ) external override {
+    function onInstall(bytes calldata) external override {
         // No initialization data needed for this module yet
         // This function is required by the ERC7579ExecutorBase interface
     }
@@ -89,12 +88,7 @@ contract PotluckExecution is ERC7579ExecutorBase {
      * @param startDate The start date of the order
      * @param executionData The data to execute
      */
-    function addOrder(
-        uint48 executeInterval,
-        uint16 numberOfExecutions,
-        uint48 startDate,
-        bytes memory executionData
-    )
+    function addOrder(uint48 executeInterval, uint16 numberOfExecutions, uint48 startDate, bytes memory executionData)
         external
     {
         _createExecution(executeInterval, numberOfExecutions, startDate, executionData);
@@ -107,7 +101,6 @@ contract PotluckExecution is ERC7579ExecutorBase {
     function removeOrder(uint256 orderId) external {
         delete _executionLog[msg.sender][orderId];
     }
-
 
     /*//////////////////////////////////////////////////////////////////////////
                                      MODULE LOGIC
@@ -127,46 +120,36 @@ contract PotluckExecution is ERC7579ExecutorBase {
     function executeOrder(uint256 jobId) external canExecute(jobId) {
         ExecutionConfig storage executionConfig = _executionLog[msg.sender][jobId];
 
-    // Decode Potluck address and potId from execution data
-    (address potluckAddress, uint256 potId) =
-        abi.decode(executionConfig.executionData, (address, uint256));
+        // Decode Potluck address and potId from execution data
+        (address potluckAddress, uint256 potId) = abi.decode(executionConfig.executionData, (address, uint256));
 
-    // Build the calldata to call joinPot(potId)
-    bytes memory callData = abi.encodeWithSelector(Potluck.joinPot.selector, potId);
+        // Build the calldata to call joinPot(potId)
+        bytes memory callData = abi.encodeWithSelector(Potluck.joinPot.selector, potId);
 
-     // Step 1: Fetch pot.round using a staticcall
-    (, bytes memory result) = potluckAddress.staticcall(
-        abi.encodeWithSignature("pots(uint256)", potId)
-    );
+        // Step 1: Fetch pot.round using a staticcall
+        (, bytes memory result) = potluckAddress.staticcall(abi.encodeWithSignature("pots(uint256)", potId));
 
-    // Decode only the 'round' field (2nd field in struct: id, round, deadline, ...)
-    (, uint32 round,,,,,,,,) = abi.decode(
-        result,
-        (uint256, uint32, uint256, uint256, address, uint256, uint256, bool, uint32, address[])
-    );
+        // Decode only the 'round' field (2nd field in struct: id, round, deadline, ...)
+        (, uint32 round,,,,,,,,) =
+            abi.decode(result, (uint256, uint32, uint256, uint256, address, uint256, uint256, bool, uint32, address[]));
 
-    // Step 2: Only proceed if round != 0
-    if (round == 0) revert InvalidExecution();
+        // Step 2: Only proceed if round != 0
+        if (round == 0) revert InvalidExecution();
 
-    // Create the execution array
-    Execution[] memory executions = new Execution[](1);
-    executions[0] = Execution({
-        target: potluckAddress,
-        value: 0,
-        callData: callData
-    });
+        // Create the execution array
+        Execution[] memory executions = new Execution[](1);
+        executions[0] = Execution({target: potluckAddress, value: 0, callData: callData});
 
-    // Mark execution
-    executionConfig.lastExecutionTime = uint48(block.timestamp);
-    executionConfig.numberOfExecutionsCompleted += 1;
+        // Mark execution
+        executionConfig.lastExecutionTime = uint48(block.timestamp);
+        executionConfig.numberOfExecutionsCompleted += 1;
 
-    // Execute via the installed smart account
-    IERC7579Account(msg.sender).executeFromExecutor(
-        ModeLib.encodeSimpleBatch(),
-        ExecutionLib.encodeBatch(executions)
-    );
+        // Execute via the installed smart account
+        IERC7579Account(msg.sender).executeFromExecutor(
+            ModeLib.encodeSimpleBatch(), ExecutionLib.encodeBatch(executions)
+        );
 
-    emit ExecutionTriggered(msg.sender, jobId);
+        emit ExecutionTriggered(msg.sender, jobId);
     }
 
     /*//////////////////////////////////////////////////////////////////////////
@@ -185,9 +168,7 @@ contract PotluckExecution is ERC7579ExecutorBase {
         uint16 numberOfExecutions,
         uint48 startDate,
         bytes memory executionData
-    )
-        internal
-    {
+    ) internal {
         uint256 jobId = _accountJobCount[msg.sender]++;
 
         _executionLog[msg.sender][jobId] = ExecutionConfig({

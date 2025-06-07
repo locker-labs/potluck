@@ -14,31 +14,31 @@ contract MockERC20 is ERC20 {
 }
 
 contract PotluckMerkleMultiAllowlistTest is Test {
-    Potluck    potluck;
-    MockERC20  token;
-    address    treasury      = address(0xBEEF);
-    uint256    platformFee   = 1 ether;
-    uint256    entryAmount   = 10 ether;
-    uint256    periodSeconds = 3600; // 1 hour
+    Potluck potluck;
+    MockERC20 token;
+    address treasury = address(0xBEEF);
+    uint256 platformFee = 1 ether;
+    uint256 entryAmount = 10 ether;
+    uint256 periodSeconds = 3600; // 1 hour
 
     // Sample addresses for allowlist
     address alice = address(0xA1);
-    address bob   = address(0xB2);
+    address bob = address(0xB2);
     address carol = address(0xC3);
-    address dave  = address(0xD4);
+    address dave = address(0xD4);
 
     bytes32[] public emptyProof;
 
     function setUp() public {
         // Deploy token and Potluck
-        token   = new MockERC20();
+        token = new MockERC20();
         potluck = new Potluck(platformFee, treasury);
 
         // Mint and approve tokens for each
         token.mint(alice, 1000 ether);
-        token.mint(bob,   1000 ether);
+        token.mint(bob, 1000 ether);
         token.mint(carol, 1000 ether);
-        token.mint(dave,  1000 ether);
+        token.mint(dave, 1000 ether);
 
         vm.prank(alice);
         token.approve(address(potluck), type(uint256).max);
@@ -103,14 +103,10 @@ contract PotluckMerkleMultiAllowlistTest is Test {
 
         uint256 currentIndex = idx;
         for (uint256 level = 0; level < depth; level++) {
-            uint256 siblingIndex = (currentIndex % 2 == 0)
-                ? currentIndex + 1
-                : currentIndex - 1;
+            uint256 siblingIndex = (currentIndex % 2 == 0) ? currentIndex + 1 : currentIndex - 1;
 
             // If sibling index is out of range, sibling = own hash
-            bytes32 siblingHash = (siblingIndex < layer.length)
-                ? layer[siblingIndex]
-                : layer[currentIndex];
+            bytes32 siblingHash = (siblingIndex < layer.length) ? layer[siblingIndex] : layer[currentIndex];
 
             proof[level] = siblingHash;
 
@@ -146,13 +142,7 @@ contract PotluckMerkleMultiAllowlistTest is Test {
 
         // (3) Alice creates the pot with that root (potId == 0)
         vm.startPrank(alice);
-        potluck.createPot(
-            "MultiMerklePot",
-            address(token),
-            entryAmount,
-            periodSeconds,
-            root
-        );
+        potluck.createPot("MultiMerklePot", address(token), entryAmount, periodSeconds, root);
         vm.stopPrank();
 
         // (4) Warp forward a bit but still before deadline
@@ -200,13 +190,7 @@ contract PotluckMerkleMultiAllowlistTest is Test {
         // (5) Eve (not in allowlist) tries to join
         address eve = address(0xE5);
         vm.prank(eve);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Potluck.InvalidParticipant.selector,
-                eve,
-                uint256(0)
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(Potluck.InvalidParticipant.selector, eve, uint256(0)));
         potluck.joinPot(0, emptyProof);
     }
 }

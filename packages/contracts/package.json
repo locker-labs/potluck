@@ -8,6 +8,9 @@
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "scripts": {
+    "build": "forge fmt && forge build"
   }
 }
 
