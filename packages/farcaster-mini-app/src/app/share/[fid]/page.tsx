@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { APP_URL, APP_NAME, APP_DESCRIPTION } from "~/lib/constants";
-import { getFrameEmbedMetadata } from "~/lib/utils";
+import { APP_URL, APP_NAME, APP_DESCRIPTION } from "@/lib/constants";
+import { getFrameEmbedMetadata } from "@/lib/utils";
 export const revalidate = 300;
 
 // This is an example of how to generate a dynamically generated share page based on fid:

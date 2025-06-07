@@ -21,16 +21,15 @@ import {
   useConnection as useSolanaConnection,
   useWallet as useSolanaWallet,
 } from '@solana/wallet-adapter-react';
-import { useHasSolanaProvider } from "./providers/SafeFarcasterSolanaProvider";
 
-import { config } from "~/components/providers/WagmiProvider";
-import { Button } from "~/components/ui/Button";
-import { truncateAddress } from "~/lib/truncateAddress";
+import { config } from "@/components/providers/WagmiProvider";
+import { Button } from "@/components/ui/Button";
+import { truncateAddress } from "@/lib/truncateAddress";
 import { base, degen, mainnet, optimism, unichain } from "wagmi/chains";
 import { BaseError, UserRejectedRequestError } from "viem";
 import { useSession } from "next-auth/react";
-import { Label } from "~/components/ui/label";
-import { useFrame } from "~/components/providers/FrameProvider";
+import { Label } from "@/components/ui/label";
+import { useFrame } from "@/components/providers/FrameProvider";
 import { PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
 
 export default function Demo(
@@ -804,10 +803,10 @@ const renderError = (error: Error | null) => {
     );
 
     if (isUserRejection) {
-      return <div className="text-red-500 text-xs mt-1">Rejected by user.</div>;
+      return <div className="text-xs mt-1">Rejected by user.</div>;
     }
   }
 
-  return <div className="text-red-500 text-xs mt-1">{error.message}</div>;
+  return <div className="text-xs mt-1">{error.message}</div>;
 };
 

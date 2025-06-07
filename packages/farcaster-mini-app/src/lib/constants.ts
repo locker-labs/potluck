@@ -1,4 +1,8 @@
-export const APP_URL = process.env.NEXT_PUBLIC_URL!;
+if (!process.env.NEXT_PUBLIC_URL) {
+    throw new Error("NEXT_PUBLIC_URL environment variable is not set.");
+}
+
+export const APP_URL = process.env.NEXT_PUBLIC_URL;
 export const APP_NAME = process.env.NEXT_PUBLIC_FRAME_NAME;
 export const APP_DESCRIPTION = process.env.NEXT_PUBLIC_FRAME_DESCRIPTION;
 export const APP_PRIMARY_CATEGORY = process.env.NEXT_PUBLIC_FRAME_PRIMARY_CATEGORY;
@@ -14,7 +18,8 @@ export const APP_WEBHOOK_URL = process.env.NEYNAR_API_KEY && process.env.NEYNAR_
 
 // Mini App Screen State
 export enum EScreen {
-    LANDING_PAGE = "LANDING_PAGE",
+    LANDING = "LANDING",
     CREATE_POT = "CREATE_POT",
+    VIEW_POT = "VIEW_POT",
     JOIN_POT = "JOIN_POT",
 }

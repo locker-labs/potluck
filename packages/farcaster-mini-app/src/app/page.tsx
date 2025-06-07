@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import MainScreen from "~/components/screens/MainScreen";
-import { APP_NAME, APP_DESCRIPTION, APP_OG_IMAGE_URL } from "~/lib/constants";
-import { getFrameEmbedMetadata } from "~/lib/utils";
+import HomePage from "@/components/pages/HomePage";
+import { APP_NAME, APP_DESCRIPTION, APP_OG_IMAGE_URL } from "@/lib/constants";
+import { getFrameEmbedMetadata } from "@/lib/utils";
 
 export const revalidate = 300;
 
@@ -20,5 +20,5 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function Home() {
-  return (<MainScreen />);
+  return (<HomePage />);
 }

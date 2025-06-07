@@ -1,9 +1,9 @@
 import { notificationDetailsSchema } from "@farcaster/frame-sdk";
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { setUserNotificationDetails } from "~/lib/kv";
-import { sendFrameNotification } from "~/lib/notifs";
-import { sendNeynarFrameNotification } from "~/lib/neynar";
+import { setUserNotificationDetails } from "@/lib/kv";
+import { sendFrameNotification } from "@/lib/notifs";
+import { sendNeynarFrameNotification } from "@/lib/neynar";
 
 const requestSchema = z.object({
   fid: z.number(),

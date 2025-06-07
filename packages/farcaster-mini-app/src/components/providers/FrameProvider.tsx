@@ -74,16 +74,16 @@ export function useFrame() {
       setIsSDKLoaded(true);
 
       const amplitudeBaseEvent = {
-        fid: context.user.fid,
-        username: context.user.username,
-        clientFid: context.client.clientFid,
+        fid: context?.user.fid,
+        username: context?.user.username,
+        clientFid: context?.client.clientFid,
       };
-      const amplitudeUserId = `${context.user.fid}-${context.client.clientFid}`;
+      const amplitudeUserId = `${context?.user.fid}-${context?.client.clientFid}`;
 
       logEvent("Frame Opened", {
         ...amplitudeBaseEvent,
-        location: context.location,
-        added: context.client.added,
+        location: context?.location,
+        added: context?.client.added,
       }, amplitudeUserId);
 
       // Set up event listeners
