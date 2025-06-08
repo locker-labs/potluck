@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
 import inquirer from 'inquirer';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-import { execSync } from 'child_process';
-import fs from 'fs';
-import path from 'path';
+import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
+import { execSync } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
 import crypto from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -68,7 +68,7 @@ export async function init() {
   let neynarApiKey = null;
   let neynarClientId = null;
   let neynarAppName = null;
-  let neynarAppLogoUrl = null;
+  // let neynarAppLogoUrl = null;
 
   while (useNeynar) {
     const neynarAnswers = await inquirer.prompt([
@@ -149,7 +149,7 @@ export async function init() {
     if (appInfo) {
       neynarClientId = appInfo.app_uuid;
       neynarAppName = appInfo.app_name;
-      neynarAppLogoUrl = appInfo.logo_url;
+      // neynarAppLogoUrl = appInfo.logo_url;
     }
 
     if (!neynarClientId) {
@@ -298,7 +298,7 @@ export async function init() {
       stdio: 'inherit',
       shell: process.platform === 'win32',
     });
-  } catch (error) {
+  } catch {
     console.error('\n❌ Error: Failed to create project directory.');
     console.error('Please make sure you have write permissions and try again.');
     process.exit(1);
@@ -318,18 +318,18 @@ export async function init() {
   // Update package.json
   console.log('\nUpdating package.json...');
   const packageJsonPath = path.join(projectPath, 'package.json');
-  let packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
 
   packageJson.name = projectName;
   packageJson.version = '0.1.0';
-  delete packageJson.author;
-  delete packageJson.keywords;
-  delete packageJson.repository;
-  delete packageJson.license;
-  delete packageJson.bin;
-  delete packageJson.files;
-  delete packageJson.dependencies;
-  delete packageJson.devDependencies;
+  packageJson.author = undefined;
+  packageJson.keywords = undefined;
+  packageJson.repository = undefined;
+  packageJson.license = undefined;
+  packageJson.bin = undefined;
+  packageJson.files = undefined;
+  packageJson.dependencies = undefined;
+  packageJson.devDependencies = undefined;
 
   // Add dependencies
   packageJson.dependencies = {

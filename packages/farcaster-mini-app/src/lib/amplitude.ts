@@ -3,6 +3,7 @@ import { APP_URL } from './constants';
 // Amplitude tracking -- only runs if configured via the CLI or in the .env file
 export function logEvent(
   eventType: string,
+  // biome-ignore lint/suspicious/noExplicitAny: eventProperties can be any
   eventProperties: Record<string, any> = {},
   deviceId: string | null = null,
 ) {

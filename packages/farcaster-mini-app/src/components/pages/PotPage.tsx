@@ -302,6 +302,7 @@ export default function PotPage({ id }: { id: string }) {
               const formattedAddress = formatAddress(participant);
 
               return (
+                //   biome-ignore lint/suspicious/noArrayIndexKey: using index as key for simplicity
                 <div key={index} className='px-4 flex items-start justify-between'>
                   <div className='flex items-start gap-2'>
                     {isWinner ? (

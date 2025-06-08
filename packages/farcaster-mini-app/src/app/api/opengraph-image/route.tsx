@@ -1,5 +1,5 @@
 import { ImageResponse } from 'next/og';
-import { NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { getNeynarUser } from '@/lib/neynar';
 
 export const dynamic = 'force-dynamic';

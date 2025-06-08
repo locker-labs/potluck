@@ -115,7 +115,7 @@ export async function getFarcasterMetadata(): Promise<FrameManifest> {
     const custodyAddress = account.address;
 
     const header = {
-      fid: parseInt(secretEnvVars.fid),
+      fid: Number.parseInt(secretEnvVars.fid),
       type: 'custody',
       key: custodyAddress,
     };

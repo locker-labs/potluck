@@ -49,6 +49,7 @@ async function killProcessOnPort(port) {
       // Unix-like systems: Use lsof
       const lsof = spawn('lsof', ['-ti', `:${port}`]);
       lsof.stdout.on('data', (data) => {
+        //   biome-ignore  lint/complexity/noForEach: allow forEach here
         data
           .toString()
           .split('\n')

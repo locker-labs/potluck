@@ -1,8 +1,8 @@
-import { execSync } from 'child_process';
-import fs from 'fs';
-import path from 'path';
+import { execSync } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
 import { mnemonicToAccount } from 'viem/accounts';
-import { fileURLToPath } from 'url';
+import { fileURLToPath } from 'node:url';
 import inquirer from 'inquirer';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
@@ -92,7 +92,7 @@ async function loadEnvLocal() {
         process.env.SEED_PHRASE = localEnv.SEED_PHRASE;
       }
     }
-  } catch (error) {
+  } catch {
     // Error reading .env.local, which is fine
     console.log('Note: No .env.local file found');
   }
@@ -138,7 +138,7 @@ async function validateSeedPhrase(seedPhrase) {
     // Try to create an account from the seed phrase
     const account = mnemonicToAccount(seedPhrase);
     return account.address;
-  } catch (error) {
+  } catch {
     throw new Error('Invalid seed phrase');
   }
 }
@@ -392,6 +392,7 @@ async function main() {
     });
 
     // Update or append each environment variable
+    // biome-ignore lint/complexity/noForEach: This is a simple loop for updating env vars
     validEnvVars.forEach((varLine) => {
       const [key] = varLine.split('=');
       if (envContent.includes(`${key}=`)) {

@@ -1,7 +1,7 @@
-import { execSync, spawn } from 'child_process';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { execSync, spawn } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import inquirer from 'inquirer';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
@@ -19,7 +19,7 @@ async function validateSeedPhrase(seedPhrase) {
     // Try to create an account from the seed phrase
     const account = mnemonicToAccount(seedPhrase);
     return account.address;
-  } catch (error) {
+  } catch {
     throw new Error('Invalid seed phrase');
   }
 }
@@ -150,7 +150,7 @@ async function loadEnvLocal() {
         console.log('✅ Values from .env.local have been written to .env');
       }
     }
-  } catch (error) {
+  } catch {
     // Error reading .env.local, which is fine
     console.log('Note: No .env.local file found');
   }
@@ -251,7 +251,7 @@ async function getGitRemote() {
       encoding: 'utf8',
     }).trim();
     return remoteUrl;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -263,7 +263,7 @@ async function checkVercelCLI() {
       shell: process.platform === 'win32',
     });
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 }
@@ -296,7 +296,7 @@ async function loginToVercel() {
   });
 
   // Wait for the login process to complete
-  await new Promise((resolve, reject) => {
+  await new Promise((resolve) => {
     child.on('close', (code) => {
       if (code === 0) {
         resolve();
@@ -345,7 +345,7 @@ async function setVercelEnvVar(key, value, projectRoot) {
         stdio: 'ignore',
         env: process.env,
       });
-    } catch (error) {
+    } catch {
       // Ignore errors from removal (var might not exist)
     }
 

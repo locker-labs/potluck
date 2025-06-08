@@ -1,4 +1,4 @@
-import { FrameNotificationDetails } from '@farcaster/frame-sdk';
+import type { FrameNotificationDetails } from '@farcaster/frame-sdk';
 import { Redis } from '@upstash/redis';
 import { APP_NAME } from './constants';
 
@@ -9,8 +9,8 @@ const localStore = new Map<string, FrameNotificationDetails>();
 const useRedis = process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN;
 const redis = useRedis
   ? new Redis({
-      url: process.env.KV_REST_API_URL!,
-      token: process.env.KV_REST_API_TOKEN!,
+      url: process.env.KV_REST_API_URL,
+      token: process.env.KV_REST_API_TOKEN,
     })
   : null;
 

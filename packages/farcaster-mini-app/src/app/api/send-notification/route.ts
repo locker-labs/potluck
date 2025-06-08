@@ -1,5 +1,5 @@
 import { notificationDetailsSchema } from '@farcaster/frame-sdk';
-import { NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { setUserNotificationDetails } from '@/lib/kv';
 import { sendFrameNotification } from '@/lib/notifs';
