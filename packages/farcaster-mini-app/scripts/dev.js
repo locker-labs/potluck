@@ -1,9 +1,9 @@
 import localtunnel from 'localtunnel';
-import { spawn } from 'child_process';
-import { createServer } from 'net';
+import { spawn } from 'node:child_process';
+import { createServer } from 'node:net';
 import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // Load environment variables
 dotenv.config({ path: '.env.local' });
@@ -52,7 +52,7 @@ async function killProcessOnPort(port) {
         data.toString().split('\n').forEach(pid => {
           if (pid) {
             try {
-              process.kill(parseInt(pid), 'SIGKILL');
+              process.kill(Number.parseInt(pid), 'SIGKILL');
             } catch (e) {
               if (e.code !== 'ESRCH') throw e;
             }
@@ -61,6 +61,7 @@ async function killProcessOnPort(port) {
       });
       await new Promise((resolve) => lsof.on('close', resolve));
     }
+    // biome-ignore lint/correctness/noUnusedVariables: no need to log error
   } catch (e) {
     // Ignore errors if no process found
   }
@@ -159,6 +160,7 @@ async function startDev() {
             }
           }
           console.log('🛑 Next.js dev server stopped');
+          // biome-ignore lint/correctness/noUnusedVariables: no need to log error
         } catch (e) {
           // Ignore errors when killing nextDev
           console.log('Note: Next.js process already terminated');
@@ -169,6 +171,7 @@ async function startDev() {
         try {
           await tunnel.close();
           console.log('🌐 Tunnel closed');
+          // biome-ignore lint/correctness/noUnusedVariables: no need to log error
         } catch (e) {
           console.log('Note: Tunnel already closed');
         }

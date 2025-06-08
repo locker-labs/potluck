@@ -18,7 +18,10 @@
     "dev": "next dev",
     "start": "next start",
     "lint": "next lint",
-    "format": "biome format .",
+    "format": "biome format --write .",
+    "format:check": "biome format --check .",
+    "lint:biome": "biome lint .",
+    "check": "biome check .",
     "deploy:vercel": "node scripts/deploy.js",
     "cleanup": "sudo kill -9 $(sudo netstat -tulpn | grep :3000 | awk '{print $7}' | cut -d'/' -f1)"
   },
