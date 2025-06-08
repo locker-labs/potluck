@@ -7,7 +7,7 @@ export default function NavBar() {
       <div className="w-full flex justify-between items-center">
         <div className="flex items-center space-x-2">
           <Image
-            src="/potluck-logo.png"
+            src="/logo.png"
             alt="Logo"
             width={40}
             height={40}

@@ -43,16 +43,22 @@ export function getSecretEnvVars() {
   return { seedPhrase, fid };
 }
 
-export function getFrameEmbedMetadata(ogImageUrl?: string) {
+export function getFrameEmbedMetadata(options?: { ogImageUrl?: string; pathname?: string }) {
+  const ogImageUrl = options?.ogImageUrl;
+  const pathname = options?.pathname;
+  let buttonTitle = APP_BUTTON_TEXT;
+  if (pathname?.includes('/pot/')) {
+    buttonTitle = "Join Pot";
+  }
   return {
     version: "next",
     imageUrl: ogImageUrl ?? APP_OG_IMAGE_URL,
     button: {
-      title: APP_BUTTON_TEXT,
+      title: buttonTitle,
       action: {
         type: "launch_frame",
         name: APP_NAME,
-        url: APP_URL,
+        url: `${APP_URL}${pathname}`,
         splashImageUrl: APP_SPLASH_URL,
         iconUrl: APP_ICON_URL,
         splashBackgroundColor: APP_SPLASH_BACKGROUND_COLOR,
