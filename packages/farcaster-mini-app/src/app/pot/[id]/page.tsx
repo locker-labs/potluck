@@ -1,13 +1,13 @@
-import type { Metadata } from "next";
-import PotPage from "@/components/pages/PotPage";
-import { APP_NAME, APP_DESCRIPTION, APP_OG_IMAGE_URL } from "@/lib/constants";
-import { getFrameEmbedMetadata } from "@/lib/utils";
-import {fetchPot, potMapper} from "@/lib/helpers/contract";
-import type {TPot, TPotObject} from "@/lib/types";
+import type { Metadata } from 'next';
+import PotPage from '@/components/pages/PotPage';
+import { APP_NAME, APP_DESCRIPTION, APP_OG_IMAGE_URL } from '@/lib/constants';
+import { getFrameEmbedMetadata } from '@/lib/utils';
+import { fetchPot, potMapper } from '@/lib/helpers/contract';
+import type { TPot, TPotObject } from '@/lib/types';
 
 type Props = {
-  params: Promise<{ id: string }>
-}
+  params: Promise<{ id: string }>;
+};
 
 export const revalidate = 300;
 
@@ -33,12 +33,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           url: APP_OG_IMAGE_URL,
           width: 800,
           height: 600,
-          alt: "twitterimage",
+          alt: 'twitterimage',
         },
       ],
     },
     other: {
-      "fc:frame": JSON.stringify(getFrameEmbedMetadata({ pathname: `/pot/${id}` })),
+      'fc:frame': JSON.stringify(getFrameEmbedMetadata({ pathname: `/pot/${id}` })),
     },
   };
 }
@@ -47,5 +47,5 @@ export default async function Page({ params }: Props) {
   const { id } = await params;
   if (!id) return null;
 
-  return <PotPage id={id} />
+  return <PotPage id={id} />;
 }

@@ -1,6 +1,6 @@
-import { publicClient } from '@/clients/viem'
-import { contractAddress, deploymentBlockBigInt, PotCreatedEventSignature } from '@/config'
-import { parseAbiItem } from 'viem'
+import { publicClient } from '@/clients/viem';
+import { contractAddress, deploymentBlockBigInt, PotCreatedEventSignature } from '@/config';
+import { parseAbiItem } from 'viem';
 
 export const getPotCreatedLogs = async () => {
   let potCreatedLogsFilter;
@@ -10,7 +10,7 @@ export const getPotCreatedLogs = async () => {
   }
 
   if (!potCreatedLogsFilter) {
-    potCreatedLogsFilter = await publicClient.createEventFilter({ 
+    potCreatedLogsFilter = await publicClient.createEventFilter({
       address: contractAddress,
       event: parseAbiItem(PotCreatedEventSignature),
       fromBlock: deploymentBlockBigInt,
@@ -18,19 +18,19 @@ export const getPotCreatedLogs = async () => {
   }
 
   const logs = await publicClient.getFilterLogs({ filter: potCreatedLogsFilter });
-  console.log("Filter logs:", logs);
+  console.log('Filter logs:', logs);
   return logs;
-}
+};
 
 export const getPotCreatedLogsOG = async () => {
   return await publicClient.getLogs({
     address: contractAddress,
     event: parseAbiItem(PotCreatedEventSignature),
-  })
-}
+  });
+};
 
 export const getLogs = async () => {
-  return await publicClient.getLogs({  
+  return await publicClient.getLogs({
     address: contractAddress,
     //   event: parseAbiItem('event Transfer(address indexed from, address indexed to, uint256)'),
     //   args: {
@@ -39,14 +39,14 @@ export const getLogs = async () => {
     //   },
     fromBlock: deploymentBlockBigInt,
   });
-}
+};
 
 export const getFilterLogs = async () => {
-  const filter = await publicClient.createEventFilter({ 
+  const filter = await publicClient.createEventFilter({
     address: contractAddress,
     event: parseAbiItem(PotCreatedEventSignature),
   });
   const logs = await publicClient.getFilterLogs({ filter });
-  console.log("Filter logs:", logs);
+  console.log('Filter logs:', logs);
   return logs;
-}
+};

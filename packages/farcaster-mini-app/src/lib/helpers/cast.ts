@@ -52,12 +52,12 @@ It’s saving, with upside.
 }
 
 export function generateRandomCast(amount: number, periodSeconds: bigint, potId: bigint): string {
-    const random = Math.random();
-    if (random < 0.33) {
-        return generateDegenCast(amount, periodSeconds, potId);
-    }
-    if (random < 0.66) {
-      return generateMemeCast(amount, periodSeconds, potId);
-    }
-    return generateBalancedCast(amount, periodSeconds, potId);    
+  const random = Math.random();
+  if (random < 0.33) {
+    return generateDegenCast(amount, periodSeconds, potId);
+  }
+  if (random < 0.66) {
+    return generateMemeCast(amount, periodSeconds, potId);
+  }
+  return generateBalancedCast(amount, periodSeconds, potId);
 }

@@ -1,12 +1,12 @@
-import { SimpleButton } from "./SimpleButton";
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { SimpleButton } from './SimpleButton';
+import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
 interface GradientButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
   className?: string;
 }
 
-export function GradientButton3({ children, className = "", ...props }: GradientButtonProps) {
+export function GradientButton3({ children, className = '', ...props }: GradientButtonProps) {
   return (
     <SimpleButton
       className={`px-[16px] py-[12px]
@@ -19,4 +19,3 @@ export function GradientButton3({ children, className = "", ...props }: Gradient
     </SimpleButton>
   );
 }
-

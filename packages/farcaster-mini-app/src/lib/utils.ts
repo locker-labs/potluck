@@ -1,7 +1,18 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { mnemonicToAccount } from 'viem/accounts';
-import { APP_BUTTON_TEXT, APP_DESCRIPTION, APP_ICON_URL, APP_NAME, APP_OG_IMAGE_URL, APP_PRIMARY_CATEGORY, APP_SPLASH_BACKGROUND_COLOR, APP_TAGS, APP_URL, APP_WEBHOOK_URL } from './constants';
+import {
+  APP_BUTTON_TEXT,
+  APP_DESCRIPTION,
+  APP_ICON_URL,
+  APP_NAME,
+  APP_OG_IMAGE_URL,
+  APP_PRIMARY_CATEGORY,
+  APP_SPLASH_BACKGROUND_COLOR,
+  APP_TAGS,
+  APP_URL,
+  APP_WEBHOOK_URL,
+} from './constants';
 import { APP_SPLASH_URL } from './constants';
 
 interface FrameMetadata {
@@ -17,7 +28,7 @@ interface FrameMetadata {
   description?: string;
   primaryCategory?: string;
   tags?: string[];
-};
+}
 
 interface FrameManifest {
   accountAssociation?: {
@@ -35,7 +46,7 @@ export function cn(...inputs: ClassValue[]) {
 export function getSecretEnvVars() {
   const seedPhrase = process.env.SEED_PHRASE;
   const fid = process.env.FID;
-  
+
   if (!seedPhrase || !fid) {
     return null;
   }
@@ -48,15 +59,15 @@ export function getFrameEmbedMetadata(options?: { ogImageUrl?: string; pathname?
   const pathname = options?.pathname;
   let buttonTitle = APP_BUTTON_TEXT;
   if (pathname?.includes('/pot/')) {
-    buttonTitle = "Join Pot";
+    buttonTitle = 'Join Pot';
   }
   return {
-    version: "next",
+    version: 'next',
     imageUrl: ogImageUrl ?? APP_OG_IMAGE_URL,
     button: {
       title: buttonTitle,
       action: {
-        type: "launch_frame",
+        type: 'launch_frame',
         name: APP_NAME,
         url: `${APP_URL}${pathname}`,
         splashImageUrl: APP_SPLASH_URL,
@@ -92,7 +103,9 @@ export async function getFarcasterMetadata(): Promise<FrameManifest> {
 
   const secretEnvVars = getSecretEnvVars();
   if (!secretEnvVars) {
-    console.warn('No seed phrase or FID found in environment variables -- generating unsigned metadata');
+    console.warn(
+      'No seed phrase or FID found in environment variables -- generating unsigned metadata',
+    );
   }
 
   let accountAssociation;
@@ -109,31 +122,31 @@ export async function getFarcasterMetadata(): Promise<FrameManifest> {
     const encodedHeader = Buffer.from(JSON.stringify(header), 'utf-8').toString('base64');
 
     const payload = {
-      domain
+      domain,
     };
     const encodedPayload = Buffer.from(JSON.stringify(payload), 'utf-8').toString('base64url');
 
-    const signature = await account.signMessage({ 
-      message: `${encodedHeader}.${encodedPayload}`
+    const signature = await account.signMessage({
+      message: `${encodedHeader}.${encodedPayload}`,
     });
     const encodedSignature = Buffer.from(signature, 'utf-8').toString('base64url');
 
     accountAssociation = {
       header: encodedHeader,
       payload: encodedPayload,
-      signature: encodedSignature
+      signature: encodedSignature,
     };
   }
 
   return {
     accountAssociation,
     frame: {
-      version: "1",
-      name: APP_NAME ?? "Frames v2 Demo",
+      version: '1',
+      name: APP_NAME ?? 'Frames v2 Demo',
       iconUrl: APP_ICON_URL,
       homeUrl: APP_URL,
       imageUrl: APP_OG_IMAGE_URL,
-      buttonTitle: APP_BUTTON_TEXT ?? "Launch Frame",
+      buttonTitle: APP_BUTTON_TEXT ?? 'Launch Frame',
       splashImageUrl: APP_SPLASH_URL,
       splashBackgroundColor: APP_SPLASH_BACKGROUND_COLOR,
       webhookUrl: APP_WEBHOOK_URL,

@@ -12,7 +12,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const REPO_URL = 'https://github.com/neynarxyz/create-farcaster-mini-app.git';
-const SCRIPT_VERSION = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8')).version;
+const SCRIPT_VERSION = JSON.parse(
+  fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'),
+).version;
 
 // ANSI color codes
 const purple = '\x1b[35m';
@@ -44,14 +46,11 @@ async function queryNeynarApp(apiKey) {
     return null;
   }
   try {
-    const response = await fetch(
-      `https://api.neynar.com/portal/app_by_api_key?starter_kit=true`,
-      {
-        headers: {
-          'x-api-key': apiKey
-        }
-      }
-    );
+    const response = await fetch(`https://api.neynar.com/portal/app_by_api_key?starter_kit=true`, {
+      headers: {
+        'x-api-key': apiKey,
+      },
+    });
     const data = await response.json();
     return data;
   } catch (error) {
@@ -76,16 +75,17 @@ export async function init() {
       {
         type: 'confirm',
         name: 'useNeynar',
-        message: `🪐 ${purple}${bright}${italic}Neynar is an API that makes it easy to build on Farcaster.${reset}\n\n` +
-        'Benefits of using Neynar in your mini app:\n' +
-        '- Pre-configured webhook handling (no setup required)\n' +
-        '- Automatic mini app analytics in your dev portal\n' +
-        '- Send manual notifications from dev.neynar.com\n' +
-        '- Built-in rate limiting and error handling\n\n' +
-        `${purple}${bright}${italic}A demo API key is included if you would like to try out Neynar before signing up!${reset}\n\n` +
-        'Would you like to use Neynar in your mini app?',
-        default: true
-      }
+        message:
+          `🪐 ${purple}${bright}${italic}Neynar is an API that makes it easy to build on Farcaster.${reset}\n\n` +
+          'Benefits of using Neynar in your mini app:\n' +
+          '- Pre-configured webhook handling (no setup required)\n' +
+          '- Automatic mini app analytics in your dev portal\n' +
+          '- Send manual notifications from dev.neynar.com\n' +
+          '- Built-in rate limiting and error handling\n\n' +
+          `${purple}${bright}${italic}A demo API key is included if you would like to try out Neynar before signing up!${reset}\n\n` +
+          'Would you like to use Neynar in your mini app?',
+        default: true,
+      },
     ]);
 
     if (!neynarAnswers.useNeynar) {
@@ -98,8 +98,8 @@ export async function init() {
         type: 'password',
         name: 'neynarApiKey',
         message: 'Enter your Neynar API key (or press enter to skip):',
-        default: null
-      }
+        default: null,
+      },
     ]);
 
     if (neynarKeyAnswer.neynarApiKey) {
@@ -110,14 +110,20 @@ export async function init() {
           type: 'confirm',
           name: 'useDemo',
           message: 'Would you like to try the demo Neynar API key?',
-          default: true
-        }
+          default: true,
+        },
       ]);
 
       if (useDemoKey.useDemo) {
-        console.warn('\n⚠️ Note: the demo key is for development purposes only and is aggressively rate limited.');
-        console.log('For production, please sign up for a Neynar account at https://neynar.com/ and configure the API key in your .env or .env.local file with NEYNAR_API_KEY.');
-        console.log(`\n${purple}${bright}${italic}Neynar now has a free tier! See https://neynar.com/#pricing for details.\n${reset}`);
+        console.warn(
+          '\n⚠️ Note: the demo key is for development purposes only and is aggressively rate limited.',
+        );
+        console.log(
+          'For production, please sign up for a Neynar account at https://neynar.com/ and configure the API key in your .env or .env.local file with NEYNAR_API_KEY.',
+        );
+        console.log(
+          `\n${purple}${bright}${italic}Neynar now has a free tier! See https://neynar.com/#pricing for details.\n${reset}`,
+        );
         neynarApiKey = 'FARCASTER_V2_FRAMES_DEMO';
       }
     }
@@ -129,8 +135,8 @@ export async function init() {
           type: 'confirm',
           name: 'retry',
           message: 'Try configuring Neynar again?',
-          default: true
-        }
+          default: true,
+        },
       ]);
       if (!retry) {
         useNeynar = false;
@@ -151,9 +157,10 @@ export async function init() {
         {
           type: 'confirm',
           name: 'retry',
-          message: '⚠️  Could not find a client ID for this API key. Would you like to try configuring Neynar again?',
-          default: true
-        }
+          message:
+            '⚠️  Could not find a client ID for this API key. Would you like to try configuring Neynar again?',
+          default: true,
+        },
       ]);
       if (!retry) {
         useNeynar = false;
@@ -166,7 +173,8 @@ export async function init() {
     break;
   }
 
-  const defaultFrameName = (neynarAppName && !neynarAppName.toLowerCase().includes('demo')) ? neynarAppName : undefined;
+  const defaultFrameName =
+    neynarAppName && !neynarAppName.toLowerCase().includes('demo') ? neynarAppName : undefined;
 
   const answers = await inquirer.prompt([
     {
@@ -179,18 +187,19 @@ export async function init() {
           return 'Project name cannot be empty';
         }
         return true;
-      }
+      },
     },
     {
       type: 'input',
       name: 'description',
       message: 'Give a one-line description of your mini app (optional):',
-      default: 'A Farcaster mini app created with Neynar'
+      default: 'A Farcaster mini app created with Neynar',
     },
     {
       type: 'list',
       name: 'primaryCategory',
-      message: 'It is strongly recommended to choose a primary category and tags to help users discover your mini app.\n\nSelect a primary category:',
+      message:
+        'It is strongly recommended to choose a primary category and tags to help users discover your mini app.\n\nSelect a primary category:',
       choices: [
         new inquirer.Separator(),
         { name: 'Skip (not recommended)', value: null },
@@ -207,9 +216,9 @@ export async function init() {
         { name: 'Education', value: 'education' },
         { name: 'Developer Tools', value: 'developer-tools' },
         { name: 'Entertainment', value: 'entertainment' },
-        { name: 'Art & Creativity', value: 'art-creativity' }
+        { name: 'Art & Creativity', value: 'art-creativity' },
       ],
-      default: null
+      default: null,
     },
     {
       type: 'input',
@@ -221,9 +230,9 @@ export async function init() {
         // Split by both spaces and commas, trim whitespace, and filter out empty strings
         return input
           .split(/[,\s]+/)
-          .map(tag => tag.trim())
-          .filter(tag => tag.length > 0);
-      }
+          .map((tag) => tag.trim())
+          .filter((tag) => tag.length > 0);
+      },
     },
     {
       type: 'input',
@@ -235,8 +244,8 @@ export async function init() {
           return 'Button text cannot be empty';
         }
         return true;
-      }
-    }
+      },
+    },
   ]);
 
   // Ask about localhost vs tunnel
@@ -244,11 +253,12 @@ export async function init() {
     {
       type: 'confirm',
       name: 'useTunnel',
-      message: 'Would you like to test on mobile and/or test the app with Warpcast developer tools?\n' +
+      message:
+        'Would you like to test on mobile and/or test the app with Warpcast developer tools?\n' +
         `⚠️ ${yellow}${italic}Both mobile testing and the Warpcast debugger require setting up a tunnel to serve your app from localhost to the broader internet.\n${reset}` +
         'Configure a tunnel for mobile testing and/or Warpcast developer tools?',
-      default: true
-    }
+      default: true,
+    },
   ]);
   answers.useTunnel = hostingAnswer.useTunnel;
 
@@ -257,9 +267,10 @@ export async function init() {
     {
       type: 'confirm',
       name: 'enableAnalytics',
-      message: 'Would you like to help improve Neynar products by sharing usage data from your mini app?',
-      default: true
-    }
+      message:
+        'Would you like to help improve Neynar products by sharing usage data from your mini app?',
+      default: true,
+    },
   ]);
   answers.enableAnalytics = analyticsAnswer.enableAnalytics;
 
@@ -273,19 +284,19 @@ export async function init() {
   try {
     console.log(`\nCloning repository from ${REPO_URL}...`);
     // Use separate commands for better cross-platform compatibility
-    execSync(`git clone ${REPO_URL} "${projectPath}"`, { 
+    execSync(`git clone ${REPO_URL} "${projectPath}"`, {
       stdio: 'inherit',
-      shell: process.platform === 'win32'
+      shell: process.platform === 'win32',
     });
-    execSync('git fetch origin main', { 
-      cwd: projectPath, 
+    execSync('git fetch origin main', {
+      cwd: projectPath,
       stdio: 'inherit',
-      shell: process.platform === 'win32'
+      shell: process.platform === 'win32',
     });
-    execSync('git reset --hard origin/main', { 
-      cwd: projectPath, 
+    execSync('git reset --hard origin/main', {
+      cwd: projectPath,
       stdio: 'inherit',
-      shell: process.platform === 'win32'
+      shell: process.platform === 'win32',
     });
   } catch (error) {
     console.error('\n❌ Error: Failed to create project directory.');
@@ -322,45 +333,45 @@ export async function init() {
 
   // Add dependencies
   packageJson.dependencies = {
-    "@farcaster/auth-client": ">=0.3.0 <1.0.0",
-    "@farcaster/auth-kit": ">=0.6.0 <1.0.0",
-    "@farcaster/frame-core": ">=0.0.29 <1.0.0",
-    "@farcaster/frame-node": ">=0.0.18 <1.0.0",
-    "@farcaster/frame-sdk": ">=0.0.31 <1.0.0",
-    "@farcaster/frame-wagmi-connector": ">=0.0.19 <1.0.0",
-    "@farcaster/mini-app-solana": "^0.0.5",
-    "@radix-ui/react-label": "^2.1.1",
-    "@solana/wallet-adapter-react": "^0.15.38",
-    "@tanstack/react-query": "^5.61.0",
-    "@upstash/redis": "^1.34.3",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "dotenv": "^16.4.7",
-    "lucide-react": "^0.469.0",
-    "mipd": "^0.0.7",
-    "next": "15.0.3",
-    "next-auth": "^4.24.11",
-    "react": "^18",
-    "react-dom": "^18",
-    "tailwind-merge": "^2.6.0",
-    "tailwindcss-animate": "^1.0.7",
-    "viem": "^2.23.6",
-    "wagmi": "^2.14.12",
-    "zod": "^3.24.2"
+    '@farcaster/auth-client': '>=0.3.0 <1.0.0',
+    '@farcaster/auth-kit': '>=0.6.0 <1.0.0',
+    '@farcaster/frame-core': '>=0.0.29 <1.0.0',
+    '@farcaster/frame-node': '>=0.0.18 <1.0.0',
+    '@farcaster/frame-sdk': '>=0.0.31 <1.0.0',
+    '@farcaster/frame-wagmi-connector': '>=0.0.19 <1.0.0',
+    '@farcaster/mini-app-solana': '^0.0.5',
+    '@radix-ui/react-label': '^2.1.1',
+    '@solana/wallet-adapter-react': '^0.15.38',
+    '@tanstack/react-query': '^5.61.0',
+    '@upstash/redis': '^1.34.3',
+    'class-variance-authority': '^0.7.1',
+    clsx: '^2.1.1',
+    dotenv: '^16.4.7',
+    'lucide-react': '^0.469.0',
+    mipd: '^0.0.7',
+    next: '15.0.3',
+    'next-auth': '^4.24.11',
+    react: '^18',
+    'react-dom': '^18',
+    'tailwind-merge': '^2.6.0',
+    'tailwindcss-animate': '^1.0.7',
+    viem: '^2.23.6',
+    wagmi: '^2.14.12',
+    zod: '^3.24.2',
   };
 
   packageJson.devDependencies = {
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "crypto": "^1.0.1",
-    "eslint": "^8",
-    "eslint-config-next": "15.0.3",
-    "localtunnel": "^2.0.2",
-    "pino-pretty": "^13.0.0",
-    "postcss": "^8",
-    "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    '@types/node': '^20',
+    '@types/react': '^18',
+    '@types/react-dom': '^18',
+    crypto: '^1.0.1',
+    eslint: '^8',
+    'eslint-config-next': '15.0.3',
+    localtunnel: '^2.0.2',
+    'pino-pretty': '^13.0.0',
+    postcss: '^8',
+    tailwindcss: '^3.4.1',
+    typescript: '^5',
   };
 
   // Add Neynar dependencies if selected
@@ -394,10 +405,12 @@ export async function init() {
       fs.appendFileSync(envPath, `\nNEYNAR_API_KEY="${neynarApiKey}"`);
       fs.appendFileSync(envPath, `\nNEYNAR_CLIENT_ID="${neynarClientId}"`);
     } else if (useNeynar) {
-      console.log('\n⚠️  Could not find a Neynar client ID and/or API key. Please configure Neynar manually in .env.local with NEYNAR_API_KEY and NEYNAR_CLIENT_ID');
+      console.log(
+        '\n⚠️  Could not find a Neynar client ID and/or API key. Please configure Neynar manually in .env.local with NEYNAR_API_KEY and NEYNAR_CLIENT_ID',
+      );
     }
     fs.appendFileSync(envPath, `\nUSE_TUNNEL="${answers.useTunnel}"`);
-    
+
     fs.unlinkSync(envExamplePath);
     console.log('\nCreated .env.local file from .env.example');
   } else {
@@ -419,15 +432,15 @@ export async function init() {
   // Install dependencies
   console.log('\nInstalling dependencies...');
 
-  execSync('npm cache clean --force', { 
-    cwd: projectPath, 
+  execSync('npm cache clean --force', {
+    cwd: projectPath,
     stdio: 'inherit',
-    shell: process.platform === 'win32'
+    shell: process.platform === 'win32',
   });
-  execSync('npm install', { 
-    cwd: projectPath, 
+  execSync('npm install', {
+    cwd: projectPath,
     stdio: 'inherit',
-    shell: process.platform === 'win32'
+    shell: process.platform === 'win32',
   });
 
   // Remove the bin directory
@@ -441,12 +454,14 @@ export async function init() {
   console.log('\nInitializing git repository...');
   execSync('git init', { cwd: projectPath });
   execSync('git add .', { cwd: projectPath });
-  execSync('git commit -m "initial commit from @neynar/create-farcaster-mini-app"', { cwd: projectPath });
+  execSync('git commit -m "initial commit from @neynar/create-farcaster-mini-app"', {
+    cwd: projectPath,
+  });
 
   // Calculate border length based on message length
   const message = `✨🪐 Successfully created frame ${projectName} with git and dependencies installed! 🪐✨`;
   const borderLength = message.length;
-  const borderStars = '✨'.repeat((borderLength / 2) + 1);
+  const borderStars = '✨'.repeat(borderLength / 2 + 1);
 
   console.log(`\n${borderStars}`);
   console.log(`${message}`);

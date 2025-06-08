@@ -1,9 +1,9 @@
-import type { Metadata } from "next";
-import localFont from 'next/font/local'
-import { getSession } from "@/auth"
-import "@/app/globals.css";
-import { Providers } from "@/app/providers";
-import { APP_NAME, APP_DESCRIPTION } from "@/lib/constants";
+import type { Metadata } from 'next';
+import localFont from 'next/font/local';
+import { getSession } from '@/auth';
+import '@/app/globals.css';
+import { Providers } from '@/app/providers';
+import { APP_NAME, APP_DESCRIPTION } from '@/lib/constants';
 
 export const metadata: Metadata = {
   title: APP_NAME,
@@ -21,18 +21,18 @@ const satoshi = localFont({
       style: 'italic',
     },
   ],
-})
+});
 
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
-}>) {  
-  const session = await getSession()
+}>) {
+  const session = await getSession();
 
   return (
-    <html lang="en" className={satoshi.className}>
-      <body className="antialiased">
+    <html lang='en' className={satoshi.className}>
+      <body className='antialiased'>
         <Providers session={session}>{children}</Providers>
       </body>
     </html>

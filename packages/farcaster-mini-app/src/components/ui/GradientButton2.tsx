@@ -1,5 +1,5 @@
-import { SimpleButton } from "./SimpleButton";
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { SimpleButton } from './SimpleButton';
+import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
 interface GradientButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
@@ -8,7 +8,13 @@ interface GradientButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   isLoading?: boolean;
 }
 
-export function GradientButton2({ children, isLoading = false, className = "", isActive = false, ...props }: GradientButtonProps) {
+export function GradientButton2({
+  children,
+  isLoading = false,
+  className = '',
+  isActive = false,
+  ...props
+}: GradientButtonProps) {
   return (
     <SimpleButton
       isLoading={isLoading}
@@ -16,9 +22,11 @@ export function GradientButton2({ children, isLoading = false, className = "", i
         font-medium text-sm text-white
         px-[16px] py-3
         rounded-full
-        ${isActive
-          ? 'bg-gradient-to-r from-app-cyan to-[#a756f2] hover:from-app-cyan hover:to-[#a756f2]'
-          : 'border border-[1.75px] border-[#9ca3ae] bg-[#1f2936]'}
+        ${
+          isActive
+            ? 'bg-gradient-to-r from-app-cyan to-[#a756f2] hover:from-app-cyan hover:to-[#a756f2]'
+            : 'border border-[1.75px] border-[#9ca3ae] bg-[#1f2936]'
+        }
       disabled:text-gray-100
       shadow-md ${className}`}
       {...props}
@@ -27,4 +35,3 @@ export function GradientButton2({ children, isLoading = false, className = "", i
     </SimpleButton>
   );
 }
-

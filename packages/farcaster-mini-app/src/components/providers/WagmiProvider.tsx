@@ -1,10 +1,10 @@
-import { createConfig, http, WagmiProvider } from "wagmi";
-import { chain } from "@/config";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { farcasterFrame } from "@farcaster/frame-wagmi-connector";
+import { createConfig, http, WagmiProvider } from 'wagmi';
+import { chain } from '@/config';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { farcasterFrame } from '@farcaster/frame-wagmi-connector';
 import { metaMask } from 'wagmi/connectors';
-import { APP_NAME, APP_URL } from "@/lib/constants";
-import type React from "react";
+import { APP_NAME, APP_URL } from '@/lib/constants';
+import type React from 'react';
 
 export const config = createConfig({
   chains: [chain],
@@ -27,9 +27,7 @@ const queryClient = new QueryClient();
 export default function Provider({ children }: { children: React.ReactNode }) {
   return (
     <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        {children}
-      </QueryClientProvider>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     </WagmiProvider>
   );
 }
