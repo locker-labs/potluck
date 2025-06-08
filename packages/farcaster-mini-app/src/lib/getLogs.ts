@@ -1,6 +1,6 @@
 import { publicClient } from '@/clients/viem';
 import { contractAddress, deploymentBlockBigInt, PotCreatedEventSignature } from '@/config';
-import { parseAbiItem } from 'viem';
+import { type Address, parseAbiItem } from 'viem';
 
 export const getPotCreatedLogs = async () => {
   let potCreatedLogsFilter;
@@ -19,6 +19,30 @@ export const getPotCreatedLogs = async () => {
 
   const logs = await publicClient.getFilterLogs({ filter: potCreatedLogsFilter });
   console.log('Filter logs:', logs);
+  return logs;
+};
+
+export const getPotCreatedLogsForAddress = async (address: Address) => {
+  let filter;
+
+  if (typeof localStorage !== 'undefined') {
+    filter = JSON.parse(localStorage.getItem(`potCreatedLogsFilter:${address}`) || 'null');
+    console.log(`Filter logs of creator ${address.slice(8)} from ls:`, filter);
+  }
+
+  if (!filter) {
+    filter = await publicClient.createEventFilter({
+      address: contractAddress,
+      event: parseAbiItem(PotCreatedEventSignature),
+      fromBlock: deploymentBlockBigInt,
+      args: { creator: address },
+    });
+
+    // localStorage.setItem(`potCreatedLogsFilter:${address}`, JSON.stringify(filter));
+  }
+
+  const logs = await publicClient.getFilterLogs({ filter });
+  console.log(`Filter logs of creator ${address.slice(8)}:`, logs);
   return logs;
 };
 

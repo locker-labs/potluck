@@ -18,5 +18,9 @@ export function timeFromNow(secondsSinceEpoch: number): string {
   if (hours) parts.push(`${hours}hr`);
   if (minutes || parts.length === 0) parts.push(`${minutes}min`);
 
+  if (isPast) {
+    return `Completed ${parts.join(' ')} ago`;
+  }
+
   return (isPast ? '- ' : '') + parts.join(' ');
 }

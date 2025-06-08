@@ -4,10 +4,9 @@ import type { TPot, TPotObject } from '@/lib/types';
 import { getPotParticipants, fetchPot, potMapper } from '@/lib/helpers/contract';
 import { formatUnits, type Address } from 'viem';
 import { Loader2, Clock5, UsersRound } from 'lucide-react';
-import { GradientButton } from '../ui/GradientButton';
+import { GradientButton, GradientButton2 } from '../ui/Buttons';
 import { GradientCard } from '../ui/GradientCard';
 import Link from 'next/link';
-import { GradientButton2 } from '../ui/GradientButton2';
 import { useJoinPot } from '@/hooks/useJoinPot';
 import { useAccount } from 'wagmi';
 import { useConnection } from '@/hooks/useConnection';
@@ -39,7 +38,6 @@ export default function PotList() {
   const [selectedPeriod, setSelectedPeriod] = useState<
     'all' | 'daily' | 'weekly' | 'biweekly' | 'monthly'
   >('all');
-  console.log('pots:', pots);
 
   // -------
   // EFFECTS

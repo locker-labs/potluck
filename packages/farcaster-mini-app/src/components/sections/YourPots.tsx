@@ -1,25 +1,18 @@
+import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { getPotCreatedLogs } from '@/lib/getLogs';
+import { getPotCreatedLogsForAddress } from '@/lib/getLogs';
 import type { TPot, TPotObject } from '@/lib/types';
 import { getPotParticipants, fetchPot, potMapper } from '@/lib/helpers/contract';
 import { formatUnits, type Address } from 'viem';
-import { Loader2, Clock5, UsersRound } from 'lucide-react';
-import { GradientButton } from '../ui/GradientButton';
-import { GradientCard } from '../ui/GradientCard';
-import Link from 'next/link';
-import { GradientButton2 } from '../ui/GradientButton2';
+import { Loader2, UsersRound } from 'lucide-react';
+import { BorderButton, GradientButton4 } from '../ui/Buttons';
+import { GradientCard2 } from '../ui/GradientCard';
 import { useJoinPot } from '@/hooks/useJoinPot';
 import { useAccount } from 'wagmi';
 import { useConnection } from '@/hooks/useConnection';
 import { toast } from 'sonner';
-
-// Helper to map period to seconds
-const periodSecondsMap = {
-  daily: BigInt(86400),
-  weekly: BigInt(604800),
-  biweekly: BigInt(1209600),
-  monthly: BigInt(2592000),
-};
+import { timeFromNow } from '@/lib/helpers/time';
+import { DurationPill } from '@/components/ui/Pill';
 
 // let _loadPotsEffectFlag = true;
 let _fetchPotsEffectFlag = true; // prevent multiple fetches
@@ -27,22 +20,25 @@ let _fetchPotsEffectFlag = true; // prevent multiple fetches
 let potIdToPotMap: Record<string, TPotObject> = {};
 
 export default function YourPots() {
+  const { ensureConnection } = useConnection();
   const { handleJoinPot, joiningPotId } = useJoinPot();
+  const { isConnected, isConnecting, address } = useAccount();
 
   // ------
   // STATES
   // ------
-
   const [loading, setLoading] = useState(true);
   const [pots, setPots] = useState<TPotObject[]>([]);
-  const [selectedPeriod, setSelectedPeriod] = useState<
-    'all' | 'daily' | 'weekly' | 'biweekly' | 'monthly'
-  >('all');
-  console.log('pots:', pots);
 
   // -------
   // EFFECTS
   // -------
+  useEffect(() => {
+    if (!isConnected) {
+      setPots([]);
+      setLoading(true);
+    }
+  }, [isConnected]);
 
   // Load pots from local storage on mount
   useEffect(() => {
@@ -58,6 +54,8 @@ export default function YourPots() {
 
   // Get logs from contract on mount
   useEffect(() => {
+    if (!address) return;
+
     if (!_fetchPotsEffectFlag) {
       console.log('Skipping fetch pots effect as it has already run.');
       return;
@@ -65,7 +63,7 @@ export default function YourPots() {
     _fetchPotsEffectFlag = false;
 
     (async () => {
-      const _logs = (await getPotCreatedLogs()) as unknown as Array<{
+      const _logs = (await getPotCreatedLogsForAddress(address)) as unknown as Array<{
         address: Address;
         args: { potId: bigint; creator: Address };
         blockNumber: number;
@@ -115,143 +113,202 @@ export default function YourPots() {
       setLoading(false);
       _fetchPotsEffectFlag = true;
     })();
-  }, []);
+  }, [address]);
 
   // ---------
   // RENDERING
   // ---------
 
   // Filtered pots based on selected tab
-  const filteredPots: TPotObject[] =
-    selectedPeriod === 'all'
-      ? pots
-      : pots.filter((pot) => pot.period === periodSecondsMap[selectedPeriod]);
+  const filteredPots: TPotObject[] = pots;
 
   return (
-    <div>
-      <h2 className='text-2xl font-bold mb-3'>Available Pots</h2>
-      {/* Filter Tabs */}
-      <div className='max-w-min'>
-        <div className='flex gap-4 mb-4'>
-          {['all', 'daily', 'weekly', 'monthly'].map((tab) => (
-            <GradientButton2
-              key={tab}
-              onClick={() => {
-                if (selectedPeriod !== tab) setSelectedPeriod(tab as typeof selectedPeriod);
-              }}
-              isActive={selectedPeriod === tab}
-              className={`${tab === 'all' ? 'px-[20px]' : ''} py-0 h-[40px] font-bold flex items-center text-[12px]`}
-            >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </GradientButton2>
-          ))}
+    <div className={'mt-6'}>
+      <h2 className='text-2xl font-bold mb-3'>Your Pots</h2>
+
+      {!isConnected || !address ? (
+        // ----------------------
+        // CONNECT WALLET SECTION
+        // ----------------------
+        <div className={'w-full h-[213px] flex flex-col items-center justify-center'}>
+          <GradientButton4
+            isActive={true}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              ensureConnection()
+                .then(() => {
+                  toast.success('Wallet connected');
+                })
+                .catch(() => {
+                  toast.error('Failed to connect wallet');
+                });
+            }}
+            disabled={isConnecting}
+            className='h-[30px] max-w-min min-w-[120px] whitespace-nowrap flex items-center justify-center justify-self-end'
+          >
+            {isConnecting ? 'Connecting' : !isConnected || !address ? 'Connect wallet' : null}
+          </GradientButton4>
+          <p className={'text-sm text-cyan-400 mt-2'}>Connect your wallet to see your pots</p>
         </div>
-      </div>
-      {/* End Filter Tabs */}
-      {!loading && filteredPots.length === 0 ? (
-        <div className='text-center py-10 rounded-xl'>
-          No pots available.
-          <br />
-          Be the first to create one!
-        </div>
+      ) : filteredPots.length === 0 ? (
+        loading ? (
+          // ---------------------
+          // INITIAL LOADING STATE
+          // ---------------------
+          <div className={'w-full h-[213px] flex flex-col items-center justify-center'}>
+            <Loader2 className='my-auto animate-spin' color='#7C65C1' size={32} />
+          </div> // -----------------------
+        ) : (
+          // NO POTS AVAILABLE STATE
+          // -----------------------
+          <div className={'w-full h-[213px] flex flex-col items-center justify-center'}>
+            <p className={'text-sm text-cyan-400 mt-2'}>No pots available</p>
+          </div>
+        )
       ) : (
-        <div className='grid gap-[22px] md:grid-cols-2 lg:grid-cols-3'>
+        // --------------------
+        // DISPLAY POTS SECTION
+        // --------------------
+        <div className='max-h-[213px] flex flex-row overflow-x-scroll gap-[12px] md:grid-cols-2 lg:grid-cols-3'>
           {filteredPots.map((pot: TPotObject) => (
-            <PotCard
+            <YourPotCard
               key={pot.id}
               pot={pot}
               isJoining={joiningPotId !== null}
               joiningPotId={joiningPotId}
               handleJoinPot={handleJoinPot}
+              isConnected={isConnected}
+              isConnecting={isConnecting}
+              address={address}
+              className={filteredPots.length === 1 ? 'w-full' : ''}
             />
           ))}
+          {loading ? (
+            <div
+              className={
+                'min-w-[315px] max-w-[315px] min-h-[213px] max-h-[213px] flex justify-center'
+              }
+            >
+              <Loader2 className='my-auto animate-spin' color='#7C65C1' size={32} />
+            </div>
+          ) : null}
         </div>
       )}
-      {loading ? (
-        <div className='mt-4 w-full flex justify-center'>
-          <Loader2 className='animate-spin' color='#7C65C1' size={32} />
-        </div>
-      ) : null}
     </div>
   );
 }
 
-export function PotCard({
+export function YourPotCard({
   pot,
   isJoining,
   joiningPotId,
   handleJoinPot,
+  isConnected,
+  isConnecting,
+  address,
+  className,
 }: {
   pot: TPotObject;
   isJoining: boolean;
   joiningPotId: bigint | null;
   handleJoinPot: (pot: TPotObject) => void;
+  isConnected: boolean;
+  isConnecting: boolean;
+  address: Address;
+  className?: string;
 }) {
-  const { isConnected, isConnecting, address } = useAccount();
-  const { ensureConnection } = useConnection();
+  const router = useRouter();
   const isJoined = pot.activeParticipants.includes(address as Address);
+  const completedContributions: number = isJoined ? 1 + pot.round : pot.round;
 
   return (
-    <GradientCard key={pot.id}>
-      <Link href={`/pot/${pot.id}`} className='block'>
-        <p className='text-[24px] font-normal'>{pot.name}</p>
-        <div className='grid grid-cols-3'>
-          <div className='col-start-3 text-start'>
-            <p className='text-cyan-400 font-bold text-[28px] leading-none'>${pot.totalPool}</p>
-            <p className='text-[13px] font-light leading-relaxed'>Total Pool</p>
-          </div>
+    <GradientCard2
+      key={pot.id}
+      className={`min-w-[315px] max-w-full pt-[12px] px-[12px] pb-[12px] ${className}`}
+    >
+      <div className={'flex justify-end'}>
+        <DurationPill text={`${timeFromNow(Number(pot.deadline))}`} className={'text-[15px]'} />
+      </div>
+      <p className='text-[18px] font-bold leading-none'>{pot.name}</p>
+      <div className='grid grid-cols-3'>
+        <div className='col-start-3 text-end'>
+          <p className='text-cyan-400 font-bold text-[20px] leading-none'>${pot.totalPool}</p>
+          <p className='text-xs font-light leading-relaxed'>Total Pool</p>
         </div>
+      </div>
 
-        <div className='mt-3 mb-2 grid grid-cols-5'>
-          <div className='col-span-3 grid grid-cols-2'>
-            <div className='flex items-center justify-start gap-1'>
-              <UsersRound strokeWidth='1.25px' size={18} color='#14b6d3' />
-              <span className='font-base text-[14px]'>
-                {String(pot.round) === '0'
-                  ? String(pot.totalParticipants)
-                  : `${String(pot.activeParticipants.length)}/${String(pot.totalParticipants)}`}
-              </span>
-            </div>
-            <p className='font-base text-[14px]'>
-              ${formatUnits(pot.entryAmount, 6)} {pot.periodString}
-            </p>
+      <div className='mt-0 grid grid-cols-5'>
+        <div className='col-span-3 grid grid-cols-2'>
+          <div className='flex items-center justify-start gap-1'>
+            <UsersRound strokeWidth='1.25px' size={18} color='#14b6d3' />
+            <span className='font-base text-[14px]'>
+              {String(pot.round) === '0'
+                ? String(pot.totalParticipants)
+                : `${String(pot.activeParticipants.length)}/${String(pot.totalParticipants)}`}
+            </span>
           </div>
-          <div className='col-start-4 col-span-2'>
-            <div className=' flex items-center justify-center gap-1'>
-              <Clock5 size={14} color='#14b6d3' />
-              <span className='font-bold text-[14px]'>Closes in {pot.deadlineString}</span>
-            </div>
-          </div>
+          <p className='font-base text-[14px]'>
+            ${formatUnits(pot.entryAmount, 6)} {pot.periodString}
+          </p>
         </div>
+      </div>
 
-        <GradientButton
+      {/* User contribution progress bar */}
+      <p className={'mt-4 text-xs text-white/80 leading-none'}>
+        {completedContributions}/{pot.totalParticipants} contribution
+        {pot.totalParticipants > 1 ? 's' : ''} complete
+      </p>
+      <div className='mt-1 w-full h-2 bg-[#2d0046] rounded-full'>
+        <div
+          style={{
+            width: `${Math.trunc((100 * completedContributions) / pot.totalParticipants)}%`,
+          }}
+          className={'rounded-full h-2 bg-green-500'}
+        />
+      </div>
+
+      {/* Buttons */}
+      <div className={'w-full mt-[14px] grid grid-cols-2 gap-4'}>
+        {/* View Details */}
+        <BorderButton
+          type='button'
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            router.push(`/pot/${pot.id}`);
+          }}
+          className='h-[30px] max-w-min min-w-[87px] whitespace-nowrap flex items-center justify-center'
+        >
+          View Details
+        </BorderButton>
+        {/* Pay Now */}
+        <GradientButton4
+          type='button'
+          isActive={true}
           onClick={(e) => {
             e.stopPropagation();
             e.preventDefault();
             if (isJoined) {
-              toast.info('You have already joined this pot');
+              toast.info('You have already paid for this pot');
               return;
             }
-            if (isConnected && address) {
-              handleJoinPot(pot);
-            } else {
-              ensureConnection();
-            }
+            handleJoinPot(pot);
           }}
-          disabled={isJoining && joiningPotId === pot.id}
-          className='w-full'
+          disabled={isJoined || (isJoining && joiningPotId === pot.id)}
+          className='h-[30px] max-w-min min-w-[87px] whitespace-nowrap flex items-center justify-center justify-self-end'
         >
           {isConnecting
             ? 'Connecting'
             : !isConnected
               ? 'Connect'
               : isJoined
-                ? 'Joined'
+                ? 'Paid'
                 : isJoining && joiningPotId === pot.id
-                  ? 'Joining...'
-                  : 'Join Pot'}
-        </GradientButton>
-      </Link>
-    </GradientCard>
+                  ? 'Paying...'
+                  : 'Pay Now'}
+        </GradientButton4>
+      </div>
+    </GradientCard2>
   );
 }

@@ -11,7 +11,7 @@ export function SimpleButton({
 }: ButtonProps) {
   return (
     <button
-      className={`max-w-full mx-auto block py-3 px-6 transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+      className={`max-w-full block py-3 px-6 transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
       {...props}
     >
       {isLoading ? (

@@ -6,7 +6,6 @@ import {
   TrendingUp,
   CircleCheckBig,
   Loader2,
-  Clock5,
   UsersRound,
   MessageSquarePlus,
 } from 'lucide-react';
@@ -17,17 +16,17 @@ import { fetchPot, getPotParticipants, potMapper } from '@/lib/helpers/contract'
 import type { TPotObject } from '@/lib/types/contract.type';
 import { formatUnits } from 'viem';
 import { useJoinPot } from '@/hooks/useJoinPot';
-import { GradientButton } from '../ui/GradientButton';
+import { GradientButton, GradientButton3 } from '../ui/Buttons';
 import { GradientCard2 } from '../ui/GradientCard';
 import { useSearchParams } from 'next/navigation';
 import { getInviteLink } from '@/lib/helpers/inviteLink';
 import { useConnection } from '@/hooks/useConnection';
 import { useAccount } from 'wagmi';
-import { GradientButton3 } from '../ui/GradientButton3';
 import { useRouter } from 'next/navigation';
 import { MoveLeft } from 'lucide-react';
 import { timeFromNow } from '@/lib/helpers/time';
 import { formatAddress } from '@/lib/address';
+import { DurationPill } from '@/components/ui/Pill';
 
 export default function PotPage({ id }: { id: string }) {
   const router = useRouter();
@@ -157,12 +156,7 @@ export default function PotPage({ id }: { id: string }) {
       <GradientCard2 className='w-full mt-4 pb-4'>
         <div>
           <div className='flex'>
-            <div className='flex bg-cyan-500/20 py-1 px-1.5 rounded-full gap-1.5 items-center'>
-              <Clock5 size={14} className='text-cyan-400' />
-              <p className='text-xs font-bold text-cyan-400'>
-                Next draw in: {timeFromNow(Number(pot.deadline))}
-              </p>
-            </div>
+            <DurationPill text={`Next draw in: ${timeFromNow(Number(pot.deadline))}`} />
           </div>
         </div>
 
