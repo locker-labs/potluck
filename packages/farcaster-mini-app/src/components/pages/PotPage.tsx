@@ -98,7 +98,7 @@ export default function PotPage({ id }: { id: string }) {
         toast.error("Pot ID is not available. Please create a pot first.");
         return;
       }
-      const castText = generateRandomCast(Number(pot?.entryAmount ?? 0n), pot?.period ?? 0n, potId);
+      const castText = generateRandomCast(Number(formatUnits(pot?.entryAmount ?? 0n, 6)), pot?.period ?? 0n, potId);
       // Open Warpcast in a new tab with pre-filled message
       const warpcastUrl = `https://farcaster.xyz/~/compose?text=${encodeURIComponent(castText)}`;
       window.open(warpcastUrl, '_blank');
