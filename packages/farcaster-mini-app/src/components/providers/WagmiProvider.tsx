@@ -1,5 +1,5 @@
 import { createConfig, http, WagmiProvider } from "wagmi";
-import { baseSepolia } from "wagmi/chains";
+import { chain } from "@/config";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { farcasterFrame } from "@farcaster/frame-wagmi-connector";
 import { metaMask } from 'wagmi/connectors';
@@ -7,9 +7,9 @@ import { APP_NAME, APP_URL } from "@/lib/constants";
 import type React from "react";
 
 export const config = createConfig({
-  chains: [baseSepolia],
+  chains: [chain],
   transports: {
-    [baseSepolia.id]: http(),
+    [chain.id]: http(`${process.env.NEXT_PUBLIC_BASE_RPC_URL}`),
   },
   connectors: [
     farcasterFrame(),

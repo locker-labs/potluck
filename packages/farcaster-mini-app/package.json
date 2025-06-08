@@ -12,8 +12,9 @@
   },
   "types": "./index.d.ts",
   "scripts": {
-    "dev-tunnel": "node scripts/dev.js",
-    "build": "node scripts/build.js",
+    "dev-script": "node scripts/dev.js",
+    "build-script": "node scripts/build.js",
+    "build": "next build",
     "dev": "next dev",
     "start": "next start",
     "lint": "next lint",
