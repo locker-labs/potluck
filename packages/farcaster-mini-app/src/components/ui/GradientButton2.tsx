@@ -1,4 +1,4 @@
-import { Button } from "./Button";
+import { SimpleButton } from "./SimpleButton";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 interface GradientButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -10,7 +10,7 @@ interface GradientButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 export function GradientButton2({ children, isLoading = false, className = "", isActive = false, ...props }: GradientButtonProps) {
   return (
-    <Button
+    <SimpleButton
       isLoading={isLoading}
       className={`transition-colors
         font-medium text-sm text-white
@@ -24,7 +24,7 @@ export function GradientButton2({ children, isLoading = false, className = "", i
       {...props}
     >
       {children}
-    </Button>
+    </SimpleButton>
   );
 }
 

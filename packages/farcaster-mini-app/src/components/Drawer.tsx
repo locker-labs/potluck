@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { X } from 'lucide-react';
-import { Button } from './ui/Button';
+import { SimpleButton } from './ui/SimpleButton';
 
 interface DrawerProps {
   isOpen: boolean;
@@ -28,9 +28,9 @@ export default function Drawer({ isOpen, onClose, children }: DrawerProps) {
         <div className="p-4">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold">Menu</h2>
-            <Button onClick={onClose} className="p-1">
+            <SimpleButton onClick={onClose} className="p-1">
               <X className="h-6 w-6" />
-            </Button>
+            </SimpleButton>
           </div>
           
           <div className="space-y-4">

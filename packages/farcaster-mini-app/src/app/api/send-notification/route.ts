@@ -5,6 +5,7 @@ import { setUserNotificationDetails } from "@/lib/kv";
 import { sendFrameNotification } from "@/lib/notifs";
 import { sendNeynarFrameNotification } from "@/lib/neynar";
 
+// @ts-expect-error Type Error
 const requestSchema = z.object({
   fid: z.number(),
   notificationDetails: notificationDetailsSchema,

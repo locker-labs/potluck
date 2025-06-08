@@ -1,4 +1,4 @@
-import { Button } from "./Button";
+import { SimpleButton } from "./SimpleButton";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 interface GradientButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -8,7 +8,7 @@ interface GradientButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 export function GradientButton3({ children, className = "", ...props }: GradientButtonProps) {
   return (
-    <Button
+    <SimpleButton
       className={`px-[16px] py-[12px]
         rounded-[12px] bg-app-dark border border-app-light
       disabled:text-gray-100
@@ -16,7 +16,7 @@ export function GradientButton3({ children, className = "", ...props }: Gradient
       {...props}
     >
       {children}
-    </Button>
+    </SimpleButton>
   );
 }
 
