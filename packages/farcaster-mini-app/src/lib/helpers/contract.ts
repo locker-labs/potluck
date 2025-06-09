@@ -2,6 +2,7 @@ import { abi, contractAddress } from '@/config';
 import { publicClient } from '@/clients/viem';
 import type { TPot, TPotObject } from '../types';
 import { pad, formatUnits, hexToString, type Address } from 'viem';
+import { keccak256, encodePacked } from 'viem';
 
 const periodSecondsMap = {
   daily: BigInt(86400),
@@ -38,7 +39,7 @@ function getDeadlineString(deadline: bigint): string {
   return `${months}m`;
 }
 
-export function potMapper(pot: TPot, creator: Address, activeParticipants: Address[]): TPotObject {
+export function potMapper(pot: TPot, creator: Address, participants: Address[]): TPotObject {
   return {
     id: pot[0],
     name: hexToString(pot[1]), // Decoded from bytes
@@ -50,10 +51,9 @@ export function potMapper(pot: TPot, creator: Address, activeParticipants: Addre
     period: pot[7], // in seconds
     totalParticipants: pot[8], // uint32
     // TODO: parse participants from bytes32
-    participants: [pot[9]], // Array of Ethereum addresses
+    participants: participants, // Array of Ethereum addresses
     participantsRoot: pot[10], // bytes32
     // derived properties
-    activeParticipants: activeParticipants,
     periodString: getPeriodInText(pot[7]),
     deadlineString: getDeadlineString(pot[3]),
     totalPool: formatUnits(BigInt(pot[8]) * pot[6], 6), // total pool = number of participants * entry amount
@@ -82,3 +82,18 @@ export async function getPotParticipants(potIdBigInt: bigint): Promise<Address[]
 }
 
 export const emptyBytes32 = pad('0x', { size: 32 });
+
+export async function getHasJoinedRound(
+  potIdBigInt: bigint,
+  round: number,
+  address: Address,
+): Promise<boolean> {
+  return (await publicClient.readContract({
+    address: contractAddress,
+    abi: abi,
+    functionName: 'hasJoinedRound',
+    args: [
+      keccak256(encodePacked(['uint256', 'uint32', 'address'], [potIdBigInt, round, address])),
+    ],
+  })) as boolean;
+}

@@ -193,7 +193,6 @@ export default function CreatePotPage() {
   };
 
   // EFFECTS
-  // TODO: mark biome lint/correctness/useExhaustiveDependencies as warning
   useEffect(() => {
     refetchAllowance();
   }, [isSubmitting]);

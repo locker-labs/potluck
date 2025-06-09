@@ -29,8 +29,14 @@ if (chainId === 8453) {
 }
 
 const PotCreatedEventSignature = 'event PotCreated(uint256 indexed potId, address indexed creator)';
+const PotJoinedEventSignature =
+  'event PotJoined(uint256 indexed potId, uint32 roundId, address indexed user)';
+const PotPayoutEventSignature =
+  'event PotPayout(uint256 indexed potId, address indexed winner, uint256 amount, uint32 round)';
 const PotCreatedEventSignatureHash =
   '0xde307469e0906e8d7a6e84aec39b533cfe12dd01b2737a0f7855112613372317';
+const PotJoinedEventSignatureHash =
+  '0x672d3f5897f7a8042cd8c8557caf58ece26929a410c3b1a66a34ccfd3460fcde';
 
 const abi = [
   {
@@ -289,6 +295,9 @@ export {
   contractAddress,
   tokenAddress,
   PotCreatedEventSignature,
+  PotJoinedEventSignature,
+  PotPayoutEventSignature,
   PotCreatedEventSignatureHash,
+  PotJoinedEventSignatureHash,
   abi,
 };

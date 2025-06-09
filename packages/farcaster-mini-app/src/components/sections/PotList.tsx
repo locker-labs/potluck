@@ -139,7 +139,7 @@ export default function PotList() {
                 if (selectedPeriod !== tab) setSelectedPeriod(tab as typeof selectedPeriod);
               }}
               isActive={selectedPeriod === tab}
-              className={`${tab === 'all' ? 'px-[20px]' : ''} py-0 h-[40px] font-bold flex items-center text-[12px]`}
+              className={`${tab === 'all' ? 'px-[20px]' : ''} h-[40px] font-bold flex items-center text-[12px] rounded-full`}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
             </GradientButton2>
@@ -188,7 +188,7 @@ export function PotCard({
 }) {
   const { isConnected, isConnecting, address } = useAccount();
   const { ensureConnection } = useConnection();
-  const isJoined = pot.activeParticipants.includes(address as Address);
+  const isJoined = pot.participants.includes(address as Address);
 
   return (
     <GradientCard key={pot.id}>
@@ -208,7 +208,7 @@ export function PotCard({
               <span className='font-base text-[14px]'>
                 {String(pot.round) === '0'
                   ? String(pot.totalParticipants)
-                  : `${String(pot.activeParticipants.length)}/${String(pot.totalParticipants)}`}
+                  : `${String(pot.participants.length)}/${String(pot.totalParticipants)}`}
               </span>
             </div>
             <p className='font-base text-[14px]'>

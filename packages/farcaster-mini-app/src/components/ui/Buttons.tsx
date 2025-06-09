@@ -37,9 +37,7 @@ export function GradientButton2({
   return (
     <SimpleButton
       isLoading={isLoading}
-      className={`font-medium text-sm text-white
-        px-[16px] py-3
-        rounded-full
+      className={`text-white px-[16px]
         ${
           isActive
             ? 'bg-gradient-to-r from-app-cyan to-[#a756f2] hover:from-app-cyan hover:to-[#a756f2]'

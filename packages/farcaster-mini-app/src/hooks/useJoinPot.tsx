@@ -5,13 +5,16 @@ import { useAccount, useWriteContract } from 'wagmi';
 import { toast } from 'sonner';
 import { useApproveTokens } from '@/hooks/useApproveTokens';
 import type { TPotObject } from '@/lib/types';
+import { useTokenBalance } from '@/hooks/useTokenBalance';
 
 export function useJoinPot() {
+  const { data: tokenBalance, isLoading: isLoadingBalance } = useTokenBalance();
   const { allowance, isLoadingAllowance, approveTokensAsync, refetchAllowance } =
     useApproveTokens();
   const { address: joinee } = useAccount();
   const { writeContractAsync } = useWriteContract();
   const [joiningPotId, setJoiningPotId] = useState<bigint | null>(null);
+  const isLoading: boolean = isLoadingBalance || isLoadingAllowance;
 
   const joinPot = async (id: bigint): Promise<void> => {
     if (!joinee) {
@@ -43,12 +46,30 @@ export function useJoinPot() {
   };
 
   const handleJoinPot = async (pot: TPotObject) => {
-    if (!pot) return;
-    const potId = pot.id;
-    const entryAmount = pot.entryAmount;
+    if (!pot) {
+      toast.error('Pot not found.');
+      return;
+    }
+    const potId: bigint = pot.id;
+    const entryAmount: bigint = pot.entryAmount;
+
+    if (!joinee) {
+      toast.error('Please connect your wallet to join the pot.');
+      return;
+    }
 
     if (allowance === undefined) {
       toast.error('Unable to fetch token allowance. Please try again.');
+      return;
+    }
+
+    if (tokenBalance === undefined) {
+      toast.error('Unable to fetch token balance. Please try again.');
+      return;
+    }
+
+    if (entryAmount > tokenBalance) {
+      toast.error('You do not have enough USDC.');
       return;
     }
 
@@ -59,8 +80,8 @@ export function useJoinPot() {
         await approveTokensAsync(entryAmount);
         await refetchAllowance();
       }
-      const res = await joinPot(potId);
-      console.log('Join pot response:', res);
+
+      await joinPot(potId);
 
       // Check if the transaction was successful
 
@@ -80,5 +101,5 @@ export function useJoinPot() {
     }
   };
 
-  return { joiningPotId, joinPot, handleJoinPot, isLoading: isLoadingAllowance };
+  return { joiningPotId, joinPot, handleJoinPot, isLoading, tokenBalance };
 }

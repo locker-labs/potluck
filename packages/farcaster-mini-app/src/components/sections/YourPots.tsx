@@ -158,8 +158,9 @@ export default function YourPots() {
           // ---------------------
           <div className={'w-full h-[213px] flex flex-col items-center justify-center'}>
             <Loader2 className='my-auto animate-spin' color='#7C65C1' size={32} />
-          </div> // -----------------------
+          </div>
         ) : (
+          // -----------------------
           // NO POTS AVAILABLE STATE
           // -----------------------
           <div className={'w-full h-[213px] flex flex-col items-center justify-center'}>
@@ -219,8 +220,9 @@ export function YourPotCard({
   className?: string;
 }) {
   const router = useRouter();
-  const isJoined = pot.activeParticipants.includes(address as Address);
+  const isJoined = pot.participants.includes(address as Address);
   const completedContributions: number = isJoined ? 1 + pot.round : pot.round;
+  const deadlinePassed: boolean = pot.deadline < Math.floor(Date.now() / 1000);
 
   return (
     <GradientCard2
@@ -228,7 +230,10 @@ export function YourPotCard({
       className={`min-w-[315px] max-w-full pt-[12px] px-[12px] pb-[12px] ${className}`}
     >
       <div className={'flex justify-end'}>
-        <DurationPill text={`${timeFromNow(Number(pot.deadline))}`} className={'text-[15px]'} />
+        <DurationPill
+          text={deadlinePassed ? 'Awaiting payout' : `${timeFromNow(Number(pot.deadline))}`}
+          className={'text-[15px]'}
+        />
       </div>
       <p className='text-[18px] font-bold leading-none'>{pot.name}</p>
       <div className='grid grid-cols-3'>
@@ -245,7 +250,7 @@ export function YourPotCard({
             <span className='font-base text-[14px]'>
               {String(pot.round) === '0'
                 ? String(pot.totalParticipants)
-                : `${String(pot.activeParticipants.length)}/${String(pot.totalParticipants)}`}
+                : `${String(pot.participants.length)}/${String(pot.totalParticipants)}`}
             </span>
           </div>
           <p className='font-base text-[14px]'>

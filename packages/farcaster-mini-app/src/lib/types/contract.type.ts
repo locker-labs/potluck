@@ -1,6 +1,5 @@
 import type { Address } from 'viem';
 
-// Todo: check the types of Pot object received from the smart contract and verify the types here
 export type TPotObject = {
   id: bigint;
   name: string; // Decoded from bytes
@@ -14,7 +13,6 @@ export type TPotObject = {
   participants: Address[]; // Array of Ethereum addresses
   participantsRoot: Address; // bytes32
   // derived properties
-  activeParticipants: Address[]; // Array of Ethereum addresses who have participated in current round
   periodString: string; // e.g., "daily", "weekly", "biweekly", "monthly"
   deadlineString: string; // e.g., "5h", "2d", "1w"
   totalPool: string; // total pool = number of participants * entry amount
@@ -35,7 +33,6 @@ export const mockPotObject: TPotObject = {
   totalParticipants: 1,
   participants: ['0x1234567890abcdef1234567890abcdef12345678'],
   participantsRoot: '0x1234567890abcdef1234567890abcdef12345678',
-  activeParticipants: ['0x1234567890abcdef1234567890abcdef12345678'],
   periodString: 'daily',
   deadlineString: '5h',
   creator: '0x1234567890abcdef1234567890abcdef12345678',
