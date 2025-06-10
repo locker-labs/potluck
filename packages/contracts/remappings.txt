@@ -1,3 +1,2 @@
 @openzeppelin/=lib/openzeppelin-contracts/
 modulekit=lib/modulekit/src/
-erc7579=lib/modulekit/src/accounts/common/interfaces/IERC7579Account.sol
