@@ -4,7 +4,6 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 /**
  * @title Potluck
@@ -13,7 +12,6 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
  *         Platform collects a fixed fee on creation, sent to `treasury`.
  */
 contract Potluck is Ownable {
-    using MerkleProof for bytes32[];
     using SafeERC20 for IERC20;
 
     //––––––––––––––––––––
@@ -29,7 +27,8 @@ contract Potluck is Ownable {
     error RoundNotReady(uint256 deadline, uint256 nowTimestamp);
     error InsufficientFundsToRollover(uint256 total, uint256 rollover);
     error NoEligibleParticipants();
-    error InvalidParticipant(address participant, uint256 potId);
+    error NotPotCreator(address sender, uint256 potId);
+    error NotAllowed(address user, uint256 potId);
 
     //––––––––––––––––––––
     // STATE
@@ -43,6 +42,18 @@ contract Potluck is Ownable {
     /// @notice Where all creation fees go
     address public treasury;
 
+    enum PotStatus {
+        Active,
+        Completed,
+        Cancelled
+    }
+
+    struct PotRequest {
+        address requestor;
+        uint256 timestamp;
+        PotStatus status;
+    }
+
     struct Pot {
         uint256 id;
         bytes name;
@@ -54,16 +65,23 @@ contract Potluck is Ownable {
         uint256 period;
         uint32 totalParticipants;
         address[] participants;
-        bytes32 participantsRoot;
+        bool isPublic;
     }
 
     mapping(uint256 => Pot) public pots;
     mapping(bytes32 => bool) public hasJoinedRound; // keccak(pot,round,user)
     mapping(bytes32 => bool) public hasWon; // keccak(pot,user)
 
+    // Simple allow-list: potId => participant => allowed
+    mapping(uint256 => mapping(address => bool)) public isAllowed;
+    mapping(uint256 => address[]) public allowedParticipants;
+    mapping(uint256 => PotRequest[]) public requestedParticipants;
+
     event PotCreated(uint256 indexed potId, address indexed creator);
     event PotJoined(uint256 indexed potId, uint32 roundId, address indexed user);
     event PotPayout(uint256 indexed potId, address indexed winner, uint256 amount, uint32 round);
+    event PotAllowRequested(uint256 indexed potId, address indexed requestor);
+    event AllowedParticipantAdded(uint256 indexed potId, address indexed user);
 
     //––––––––––––––––––––
     // CONSTRUCTOR
@@ -78,13 +96,9 @@ contract Potluck is Ownable {
     // CREATE
     //––––––––––––––––––––
 
-    function createPot(
-        bytes memory name,
-        address token,
-        uint256 entryAmount,
-        uint256 periodSeconds,
-        bytes32 participantsRoot
-    ) external {
+    function createPot(bytes memory name, address token, uint256 entryAmount, uint256 periodSeconds, bool isPublic)
+        external
+    {
         if (entryAmount == 0) revert EntryAmountZero();
         if (periodSeconds < 1 hours) revert PeriodTooShort();
 
@@ -102,37 +116,72 @@ contract Potluck is Ownable {
         p.token = token;
         p.entryAmount = entryAmount;
         p.period = periodSeconds;
-        p.participantsRoot = participantsRoot;
         p.totalParticipants = 1;
         p.deadline = block.timestamp + periodSeconds;
         p.balance = entryAmount;
         p.participants.push(msg.sender);
+        p.isPublic = isPublic;
+
+        if (!isPublic) {
+            isAllowed[potId][msg.sender] = true;
+            allowedParticipants[potId].push(msg.sender);
+        }
 
         // mark joined in round 0
-        hasJoinedRound[keccak256(abi.encodePacked(potId, uint32(0), msg.sender))] = true;
+        bytes32 key = keccak256(abi.encodePacked(potId, uint32(0), msg.sender));
+        hasJoinedRound[key] = true;
 
         emit PotCreated(potId, msg.sender);
         emit PotJoined(potId, 0, msg.sender);
     }
 
     //––––––––––––––––––––
+    // ALLOW MANAGEMENT
+    //––––––––––––––––––––
+
+    /// @notice Pot creator can add allowed participants
+    function allowParticipants(uint256 potId, address[] calldata participants) external {
+        Pot storage p = pots[potId];
+        if (msg.sender != p.participants[0]) revert NotPotCreator(msg.sender, potId);
+        for (uint256 i = 0; i < participants.length; i++) {
+            address participant = participants[i];
+            if (!isAllowed[potId][participant]) {
+                isAllowed[potId][participant] = true;
+                allowedParticipants[potId].push(participant);
+                emit AllowedParticipantAdded(potId, participant);
+            }
+        }
+    }
+
+    function requestPotAllow(uint256 potId) external {
+        requestedParticipants[potId].push(
+            PotRequest({requestor: msg.sender, timestamp: block.timestamp, status: PotStatus.Active})
+        );
+        emit PotAllowRequested(potId, msg.sender);
+    }
+
+    function cancelPotAllowRequest(uint256 potId, uint256 requestIndex) external {
+        PotRequest storage request = requestedParticipants[potId][requestIndex];
+        if (msg.sender != request.requestor) revert NotAllowed(msg.sender, potId);
+        if (msg.sender != pots[potId].participants[0]) revert NotPotCreator(msg.sender, potId);
+        request.status = PotStatus.Cancelled;
+    }
+
+    /// @notice View allowed participants for a pot
+    function getAllowedParticipants(uint256 potId) external view returns (address[] memory) {
+        return allowedParticipants[potId];
+    }
+
+    //––––––––––––––––––––
     // JOIN
     //––––––––––––––––––––
-    function joinPot(uint256 potId, bytes32[] calldata proof) external {
+
+    function joinPot(uint256 potId) external {
         Pot storage p = pots[potId];
         if (p.balance == 0) revert PotDoesNotExist(potId);
         if (block.timestamp >= p.deadline) revert RoundEnded(p.deadline, block.timestamp);
-        if (p.participants.length >= MAX_PARTICIPANTS) {
-            revert PotFull(MAX_PARTICIPANTS);
-        }
-        if (!hasJoinedRound[keccak256(abi.encodePacked(potId, uint32(0), msg.sender))] && p.round > 0) {
-            revert InvalidParticipant(msg.sender, potId);
-        }
-        bytes32 root = p.participantsRoot;
-        bytes32 leaf = keccak256(abi.encodePacked(msg.sender));
-        if (root != bytes32(0) && !proof.verify(root, leaf)) {
-            revert InvalidParticipant(msg.sender, potId);
-        }
+        if (p.participants.length >= MAX_PARTICIPANTS) revert PotFull(MAX_PARTICIPANTS);
+        if (!isAllowed[potId][msg.sender] && !p.isPublic) revert NotAllowed(msg.sender, potId);
 
         bytes32 key = keccak256(abi.encodePacked(potId, p.round, msg.sender));
         if (hasJoinedRound[key]) revert AlreadyJoined(potId, p.round, msg.sender);
@@ -153,6 +202,7 @@ contract Potluck is Ownable {
     //––––––––––––––––––––
     // PAYOUT
     //––––––––––––––––––––
+
     function triggerPotPayout(uint256 potId) external {
         Pot storage p = pots[potId];
         if (p.balance == 0) revert PotDoesNotExist(potId);
@@ -190,7 +240,6 @@ contract Potluck is Ownable {
         if (isLast) {
             // pot complete
             p.balance = 0;
-
             delete p.participants;
             return;
         }
