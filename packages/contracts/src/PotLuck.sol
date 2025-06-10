@@ -278,5 +278,4 @@ contract Potluck is Ownable {
     function getAllowedParticipants(uint256 potId) external view returns (address[] memory) {
         return allowedParticipants[potId];
     }
-
 }
