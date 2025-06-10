@@ -167,11 +167,6 @@ contract Potluck is Ownable {
         request.status = PotStatus.Cancelled;
     }
 
-    /// @notice View allowed participants for a pot
-    function getAllowedParticipants(uint256 potId) external view returns (address[] memory) {
-        return allowedParticipants[potId];
-    }
-
     //––––––––––––––––––––
     // JOIN
     //––––––––––––––––––––
@@ -275,4 +270,13 @@ contract Potluck is Ownable {
     function getParticipants(uint256 potId) external view returns (address[] memory) {
         return pots[potId].participants;
     }
+
+    function getRequests(uint256 potId) external view returns (PotRequest[] memory) {
+        return requestedParticipants[potId];
+    }
+
+    function getAllowedParticipants(uint256 potId) external view returns (address[] memory) {
+        return allowedParticipants[potId];
+    }
+
 }
