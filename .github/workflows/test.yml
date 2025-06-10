@@ -35,6 +35,11 @@ jobs:
           cd packages/contracts
           forge fmt --check
         id: fmt
+      
+      - name: Install modulekit JS deps
+        run: |
+          cd packages/contracts/lib/modulekit
+          bun install
 
       - name: Run Forge build
         run: |
