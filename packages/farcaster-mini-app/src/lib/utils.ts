@@ -3,6 +3,7 @@ import { twMerge } from 'tailwind-merge';
 import { mnemonicToAccount } from 'viem/accounts';
 import {
   APP_BUTTON_TEXT,
+  APP_SUBTITLE,
   APP_DESCRIPTION,
   APP_ICON_URL,
   APP_NAME,
@@ -11,13 +12,15 @@ import {
   APP_SPLASH_BACKGROUND_COLOR,
   APP_TAGS,
   APP_URL,
-  APP_WEBHOOK_URL,
+  APP_CHAIN_LIST,
+  APP_REQUIRED_CAPABILITIES,
 } from './constants';
 import { APP_SPLASH_URL } from './constants';
 
 interface FrameMetadata {
   version: string;
   name: string;
+  subtitle?: string;
   iconUrl: string;
   homeUrl: string;
   imageUrl?: string;
@@ -28,6 +31,12 @@ interface FrameMetadata {
   description?: string;
   primaryCategory?: string;
   tags?: string[];
+  tagline?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImageUrl?: string;
+  requiredChains?: string[];
+  requiredCapabilities?: string[];
 }
 
 interface FrameManifest {
@@ -146,13 +155,19 @@ export async function getFarcasterMetadata(): Promise<FrameManifest> {
       iconUrl: APP_ICON_URL,
       homeUrl: APP_URL,
       imageUrl: APP_OG_IMAGE_URL,
+      subtitle: APP_SUBTITLE,
       buttonTitle: APP_BUTTON_TEXT ?? 'Launch Frame',
       splashImageUrl: APP_SPLASH_URL,
       splashBackgroundColor: APP_SPLASH_BACKGROUND_COLOR,
-      webhookUrl: APP_WEBHOOK_URL,
       description: APP_DESCRIPTION,
       primaryCategory: APP_PRIMARY_CATEGORY,
       tags: APP_TAGS,
+      tagline: APP_DESCRIPTION,
+      ogTitle: APP_NAME,
+      ogDescription: APP_DESCRIPTION,
+      ogImageUrl: APP_OG_IMAGE_URL,
+      requiredChains: APP_CHAIN_LIST,
+      requiredCapabilities: APP_REQUIRED_CAPABILITIES,
     },
   };
 }

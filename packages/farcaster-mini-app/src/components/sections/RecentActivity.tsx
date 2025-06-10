@@ -3,10 +3,10 @@
 import { useState } from 'react';
 import { formatAddress } from '@/lib/address';
 import { Loader2, MoveUpRight, ExternalLink } from 'lucide-react';
-import { type Abi, formatUnits, GetFilterLogsReturnType } from 'viem';
+import { type Abi, formatUnits, type GetFilterLogsReturnType } from 'viem';
 import Link from 'next/link';
 import Image from 'next/image';
-import { TPotObject } from '@/lib/types';
+import type { TPotObject } from '@/lib/types';
 import { useEffect } from 'react';
 import { publicClient } from '@/clients/viem';
 import { formatDateFromTimestamp } from '@/lib/date';
@@ -92,12 +92,7 @@ export function RecentActivity({
               <div>
                 <div className={'mb-1.5 flex items-center'}>
                   <span className={'mr-1'}>
-                    <Image
-                      src={'/usd-coin-usdc-logo-24x24.png'}
-                      alt={'usdc-logo'}
-                      width={16}
-                      height={16}
-                    />
+                    <Image src={'/usdc.png'} alt={'usdc'} width={16} height={16} />
                   </span>
                   {/* TODO: add platform fee for creator */}
                   <span className={'leading-none'}>

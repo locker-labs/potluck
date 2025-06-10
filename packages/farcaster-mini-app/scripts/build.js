@@ -143,7 +143,7 @@ async function validateSeedPhrase(seedPhrase) {
   }
 }
 
-async function generateFarcasterMetadata(domain, fid, accountAddress, seedPhrase, webhookUrl) {
+async function generateFarcasterMetadata(domain, fid, accountAddress, seedPhrase) {
   const header = {
     type: 'custody',
     key: accountAddress,
@@ -175,11 +175,10 @@ async function generateFarcasterMetadata(domain, fid, accountAddress, seedPhrase
       name: process.env.NEXT_PUBLIC_FRAME_NAME,
       iconUrl: `https://${domain}/icon.png`,
       homeUrl: `https://${domain}`,
-      imageUrl: `https://${domain}/api/opengraph-image`,
+      imageUrl: `https://${domain}/og.png`,
       buttonTitle: process.env.NEXT_PUBLIC_FRAME_BUTTON_TEXT,
       splashImageUrl: `https://${domain}/splash.png`,
       splashBackgroundColor: '#f7f7f7',
-      webhookUrl,
       description: process.env.NEXT_PUBLIC_FRAME_DESCRIPTION,
       primaryCategory: process.env.NEXT_PUBLIC_FRAME_PRIMARY_CATEGORY,
       tags,
@@ -336,19 +335,7 @@ async function main() {
     // Generate and sign manifest
     console.log('\n🔨 Generating mini app manifest...');
 
-    // Determine webhook URL based on environment variables
-    const webhookUrl =
-      neynarApiKey && neynarClientId
-        ? `https://api.neynar.com/f/app/${neynarClientId}/event`
-        : `${domain}/api/webhook`;
-
-    const metadata = await generateFarcasterMetadata(
-      domain,
-      fid,
-      accountAddress,
-      seedPhrase,
-      webhookUrl,
-    );
+    const metadata = await generateFarcasterMetadata(domain, fid, accountAddress, seedPhrase);
     console.log('\n✅ Mini app manifest generated' + (seedPhrase ? ' and signed' : ''));
 
     // Read existing .env file or create new one

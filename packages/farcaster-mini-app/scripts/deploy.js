@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import inquirer from 'inquirer';
 import dotenv from 'dotenv';
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import { mnemonicToAccount } from 'viem/accounts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -55,7 +55,7 @@ async function lookupFidByCustodyAddress(custodyAddress, apiKey) {
   return data[lowerCasedCustodyAddress][0].fid;
 }
 
-async function generateFarcasterMetadata(domain, fid, accountAddress, seedPhrase, webhookUrl) {
+async function generateFarcasterMetadata(domain, fid, accountAddress, seedPhrase) {
   const trimmedDomain = domain.trim();
   const header = {
     type: 'custody',
@@ -88,11 +88,10 @@ async function generateFarcasterMetadata(domain, fid, accountAddress, seedPhrase
       name: process.env.NEXT_PUBLIC_FRAME_NAME,
       iconUrl: `https://${trimmedDomain}/icon.png`,
       homeUrl: `https://${trimmedDomain}`,
-      imageUrl: `https://${trimmedDomain}/api/opengraph-image`,
+      imageUrl: `https://${trimmedDomain}/og.png`,
       buttonTitle: process.env.NEXT_PUBLIC_FRAME_BUTTON_TEXT,
       splashImageUrl: `https://${trimmedDomain}/splash.png`,
       splashBackgroundColor: '#f7f7f7',
-      webhookUrl: webhookUrl?.trim(),
       description: process.env.NEXT_PUBLIC_FRAME_DESCRIPTION,
       primaryCategory: process.env.NEXT_PUBLIC_FRAME_PRIMARY_CATEGORY,
       tags,
@@ -463,18 +462,11 @@ async function deployToVercel(useGitHub = false) {
         process.env.NEYNAR_API_KEY ?? 'FARCASTER_V2_FRAMES_DEMO',
       );
 
-      // Determine webhook URL based on Neynar configuration
-      const webhookUrl =
-        process.env.NEYNAR_API_KEY && process.env.NEYNAR_CLIENT_ID
-          ? `https://api.neynar.com/f/app/${process.env.NEYNAR_CLIENT_ID}/event`
-          : `https://${domain}/api/webhook`;
-
       frameMetadata = await generateFarcasterMetadata(
         domain,
         fid,
         accountAddress,
         process.env.SEED_PHRASE,
-        webhookUrl,
       );
       console.log('✅ Frame metadata generated and signed');
     }
@@ -561,19 +553,12 @@ async function deployToVercel(useGitHub = false) {
             );
             console.log('🔄 Updating environment variables with correct domain...');
 
-            // Update domain-dependent environment variables
-            const webhookUrl =
-              process.env.NEYNAR_API_KEY && process.env.NEYNAR_CLIENT_ID
-                ? `https://api.neynar.com/f/app/${process.env.NEYNAR_CLIENT_ID}/event`
-                : `https://${actualDomain}/api/webhook`;
-
             if (frameMetadata) {
               frameMetadata = await generateFarcasterMetadata(
                 actualDomain,
                 fid,
                 await validateSeedPhrase(process.env.SEED_PHRASE),
                 process.env.SEED_PHRASE,
-                webhookUrl,
               );
               // Update FRAME_METADATA env var using the new function
               await setVercelEnvVar('FRAME_METADATA', frameMetadata, projectRoot);

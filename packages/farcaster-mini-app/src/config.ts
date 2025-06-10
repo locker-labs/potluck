@@ -290,6 +290,7 @@ const abi = [
 ];
 
 export {
+  chainId,
   chain,
   deploymentBlockBigInt,
   contractAddress,

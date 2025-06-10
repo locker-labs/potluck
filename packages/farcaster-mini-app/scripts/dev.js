@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // Load environment variables
-dotenv.config({ path: '.env.local' });
+dotenv.config({ path: '.env' });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(path.normalize(path.join(__dirname, '..')));
@@ -110,27 +110,27 @@ async function startDev() {
    1. Open the localtunnel URL in your browser: ${tunnel.url}
    2. Enter your IP address in the password field${ip ? `: ${ip}` : ''} (note that this IP may be incorrect if you are using a VPN)
    3. Click "Click to Submit" -- your mini app should now load in the browser
-   4. Navigate to the Warpcast Mini App Developer Tools: https://warpcast.com/@/developers
+   4. Navigate to the Farcaster Mini App Preview Tool: https://farcaster.xyz/~/developers/mini-apps/preview
    5. Enter your mini app URL: ${tunnel.url}
-   6. Click "Preview" to launch your mini app within Warpcast (note that it may take ~10 seconds to load)
+   6. Click "Open URL as Mini App" to launch your mini app within Farcaster (note that it may take ~10 seconds to load)
 
 
-❗️ You will not be able to load your mini app in Warpcast until    ❗️
+❗️ You will not be able to load your mini app in Farcaster until    ❗️
 ❗️ you submit your IP address in the localtunnel password field ❗️
 
 
-📱 To test in Warpcast mobile app:
-   1. Open Warpcast on your phone
+📱 To test in Farcaster mobile app:
+   1. Open Farcaster on your phone
    2. Go to Settings > Developer > Mini Apps
    4. Enter this URL: ${tunnel.url}
-   5. Click "Preview" (note that it may take ~10 seconds to load)
+   5. Click "Open URL as Mini App" (note that it may take ~10 seconds to load)
 `);
   } else {
     frameUrl = 'http://localhost:3000';
     console.log(`
 💻 To test your mini app:
-   1. Open the Warpcast Mini App Developer Tools: https://warpcast.com/@/developers
-   2. Scroll down to the "Preview Mini App" tool
+   1. Open the Farcaster Mini App Developer Tools: https://farcaster.xyz/~/developers
+   2. Click "Preview Tool"
    3. Enter this URL: ${frameUrl}
    4. Click "Preview" to test your mini app (note that it may take ~5 seconds to load the first time)
 `);

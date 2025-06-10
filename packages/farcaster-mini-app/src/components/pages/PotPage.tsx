@@ -189,7 +189,7 @@ export default function PotPage({ id }: { id: string }) {
     <span className={'flex items-center'}>
       <span className={'leading-none'}>Pay This Round (</span>
       <span className={'mr-1'}>
-        <Image src={'/usd-coin-usdc-logo-24x24.png'} alt={'usdc-logo'} width={16} height={16} />
+        <Image src={'/usdc.png'} alt={'usdc'} width={16} height={16} />
       </span>
       <span className={'leading-none'}>{formatUnits(pot.entryAmount, 6)})</span>
     </span>
@@ -251,7 +251,7 @@ export default function PotPage({ id }: { id: string }) {
             ${formatUnits(pot.entryAmount, 6)} {pot.periodString}
           </p>
           <div className={'flex items-center justify-end gap-1'}>
-            <Image src={'/usd-coin-usdc-logo-24x24.png'} alt={'usdc-logo'} width={16} height={16} />
+            <Image src={'/usdc.png'} alt={'usdc'} width={16} height={16} />
             <p className={'text-sm'}>{truncateNumberString(formatUnits(tokenBalance ?? 0n, 6))}</p>
           </div>
         </div>

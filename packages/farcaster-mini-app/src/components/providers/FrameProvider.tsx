@@ -14,12 +14,13 @@ interface FrameContextType {
   added: boolean;
   notificationDetails: FrameNotificationDetails | null;
   lastEvent: string;
-  addFrame: () => Promise<void>;
+  addMiniApp: () => Promise<void>;
   addFrameResult: string;
 }
 
 const FrameContext = React.createContext<FrameContextType | undefined>(undefined);
 
+// TODO: rename Frame to MiniApp everywhere
 export function useFrame() {
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);
   const [context, setContext] = useState<Context.FrameContext>();
@@ -50,10 +51,10 @@ export function useFrame() {
     }
   }, [context]);
 
-  const addFrame = useCallback(async () => {
+  const addMiniApp = useCallback(async () => {
     try {
       setNotificationDetails(null);
-      const result = await sdk.actions.addFrame();
+      const result = await sdk.actions.addMiniApp();
 
       if (result.notificationDetails) {
         setNotificationDetails(result.notificationDetails);
@@ -167,7 +168,7 @@ export function useFrame() {
     added,
     notificationDetails,
     lastEvent,
-    addFrame,
+    addMiniApp,
     addFrameResult,
     openUrl,
     close,
