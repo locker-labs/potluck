@@ -64,8 +64,8 @@ export function getSecretEnvVars() {
 }
 
 export function getFrameEmbedMetadata(options?: { ogImageUrl?: string; pathname?: string }) {
-  const ogImageUrl = options?.ogImageUrl;
-  const pathname = options?.pathname;
+  const ogImageUrl = options?.ogImageUrl ?? '';
+  const pathname = options?.pathname ?? '';
   let buttonTitle = APP_BUTTON_TEXT;
   if (pathname?.includes('/pot/')) {
     buttonTitle = 'Join Pot';

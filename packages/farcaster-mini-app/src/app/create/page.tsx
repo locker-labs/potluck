@@ -28,7 +28,7 @@ export async function generateMetadata(): Promise<Metadata> {
       ],
     },
     other: {
-      'fc:frame': JSON.stringify(getFrameEmbedMetadata()),
+      'fc:frame': JSON.stringify(getFrameEmbedMetadata({ pathname: '/create' })),
     },
   };
 }
