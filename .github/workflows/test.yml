@@ -9,9 +9,6 @@ on:
       - 'packages/contracts/**'
   workflow_dispatch:
 
-env:
-  FOUNDRY_PROFILE: ci
-
 jobs:
   check:
     name: Foundry project
