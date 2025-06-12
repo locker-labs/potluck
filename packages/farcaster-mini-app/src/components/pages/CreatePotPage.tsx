@@ -25,7 +25,7 @@ import { GradientButton, GradientButton3 } from '../ui/Buttons';
 import { getInviteLink } from '@/lib/helpers/inviteLink';
 import { useConnection } from '@/hooks/useConnection';
 import { emptyBytes32 } from '@/lib/helpers/contract';
-import { getTransactionLink } from "@/lib/helpers/blockExplorer";
+import { getTransactionLink } from '@/lib/helpers/blockExplorer';
 
 const emojis = ['🎯', '🏆', '🔥', '🚀', '💪', '⚡', '🎬', '🎓', '🍕', '☕'];
 
@@ -92,9 +92,7 @@ export default function CreatePotPage() {
       const receipt = await publicClient.waitForTransactionReceipt({ hash, confirmations: 1 });
 
       if (receipt.status === 'reverted') {
-        throw new Error(
-          `Transaction reverted: ${getTransactionLink(receipt.transactionHash)}`,
-        );
+        throw new Error(`Transaction reverted: ${getTransactionLink(receipt.transactionHash)}`);
       }
 
       console.log(`Transaction confirmed: ${getTransactionLink(receipt.transactionHash)}`);
@@ -341,9 +339,7 @@ export default function CreatePotPage() {
                 {hash && (
                   <div>
                     Transaction Hash:{' '}
-                    <Link href={getTransactionLink(hash)}>
-                      {formatAddress(hash)}
-                    </Link>
+                    <Link href={getTransactionLink(hash)}>{formatAddress(hash)}</Link>
                   </div>
                 )}
               </div>

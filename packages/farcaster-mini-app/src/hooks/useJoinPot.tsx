@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { useApproveTokens } from '@/hooks/useApproveTokens';
 import type { TPotObject } from '@/lib/types';
 import { useTokenBalance } from '@/hooks/useTokenBalance';
-import { getTransactionLink } from "@/lib/helpers/blockExplorer";
+import { getTransactionLink } from '@/lib/helpers/blockExplorer';
 
 export function useJoinPot() {
   const { data: tokenBalance, isLoading: isLoadingBalance } = useTokenBalance();
@@ -34,9 +34,7 @@ export function useJoinPot() {
       const receipt = await publicClient.waitForTransactionReceipt({ hash, confirmations: 1 });
 
       if (receipt.status === 'reverted') {
-        throw new Error(
-          `Transaction reverted: ${getTransactionLink(receipt.transactionHash)}`,
-        );
+        throw new Error(`Transaction reverted: ${getTransactionLink(receipt.transactionHash)}`);
       }
 
       console.log(`Transaction confirmed: ${getTransactionLink(receipt.transactionHash)}`);
