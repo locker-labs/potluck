@@ -1,12 +1,12 @@
 import localtunnel from 'localtunnel';
-import { spawn } from 'child_process';
-import { createServer } from 'net';
+import { spawn } from 'node:child_process';
+import { createServer } from 'node:net';
 import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // Load environment variables
-dotenv.config({ path: '.env.local' });
+dotenv.config({ path: '.env' });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(path.normalize(path.join(__dirname, '..')));
@@ -18,16 +18,16 @@ let isCleaningUp = false;
 async function checkPort(port) {
   return new Promise((resolve) => {
     const server = createServer();
-    
+
     server.once('error', () => {
       resolve(true); // Port is in use
     });
-    
+
     server.once('listening', () => {
       server.close();
       resolve(false); // Port is free
     });
-    
+
     server.listen(port);
   });
 }
@@ -49,18 +49,23 @@ async function killProcessOnPort(port) {
       // Unix-like systems: Use lsof
       const lsof = spawn('lsof', ['-ti', `:${port}`]);
       lsof.stdout.on('data', (data) => {
-        data.toString().split('\n').forEach(pid => {
-          if (pid) {
-            try {
-              process.kill(parseInt(pid), 'SIGKILL');
-            } catch (e) {
-              if (e.code !== 'ESRCH') throw e;
+        //   biome-ignore  lint/complexity/noForEach: allow forEach here
+        data
+          .toString()
+          .split('\n')
+          .forEach((pid) => {
+            if (pid) {
+              try {
+                process.kill(Number.parseInt(pid), 'SIGKILL');
+              } catch (e) {
+                if (e.code !== 'ESRCH') throw e;
+              }
             }
-          }
-        });
+          });
       });
       await new Promise((resolve) => lsof.on('close', resolve));
     }
+    // biome-ignore lint/correctness/noUnusedVariables: no need to log error
   } catch (e) {
     // Ignore errors if no process found
   }
@@ -70,13 +75,15 @@ async function startDev() {
   // Check if port 3000 is already in use
   const isPortInUse = await checkPort(3000);
   if (isPortInUse) {
-    console.error('Port 3000 is already in use. To find and kill the process using this port:\n\n' +
-      (process.platform === 'win32' 
-        ? '1. Run: netstat -ano | findstr :3000\n' +
-          '2. Note the PID (Process ID) from the output\n' +
-          '3. Run: taskkill /PID <PID> /F\n'
-        : `On macOS/Linux, run:\nnpm run cleanup\n`) +
-      '\nThen try running this command again.');
+    console.error(
+      'Port 3000 is already in use. To find and kill the process using this port:\n\n' +
+        (process.platform === 'win32'
+          ? '1. Run: netstat -ano | findstr :3000\n' +
+            '2. Note the PID (Process ID) from the output\n' +
+            '3. Run: taskkill /PID <PID> /F\n'
+          : `On macOS/Linux, run:\nnpm run cleanup\n`) +
+        '\nThen try running this command again.',
+    );
     process.exit(1);
   }
 
@@ -88,7 +95,9 @@ async function startDev() {
     tunnel = await localtunnel({ port: 3000 });
     let ip;
     try {
-      ip = await fetch('https://ipv4.icanhazip.com').then(res => res.text()).then(ip => ip.trim());
+      ip = await fetch('https://ipv4.icanhazip.com')
+        .then((res) => res.text())
+        .then((ip) => ip.trim());
     } catch (error) {
       console.error('Error getting IP address:', error);
     }
@@ -101,32 +110,32 @@ async function startDev() {
    1. Open the localtunnel URL in your browser: ${tunnel.url}
    2. Enter your IP address in the password field${ip ? `: ${ip}` : ''} (note that this IP may be incorrect if you are using a VPN)
    3. Click "Click to Submit" -- your mini app should now load in the browser
-   4. Navigate to the Warpcast Mini App Developer Tools: https://warpcast.com/~/developers
+   4. Navigate to the Farcaster Mini App Preview Tool: https://farcaster.xyz/~/developers/mini-apps/preview
    5. Enter your mini app URL: ${tunnel.url}
-   6. Click "Preview" to launch your mini app within Warpcast (note that it may take ~10 seconds to load)
+   6. Click "Open URL as Mini App" to launch your mini app within Farcaster (note that it may take ~10 seconds to load)
 
 
-❗️ You will not be able to load your mini app in Warpcast until    ❗️
+❗️ You will not be able to load your mini app in Farcaster until    ❗️
 ❗️ you submit your IP address in the localtunnel password field ❗️
 
 
-📱 To test in Warpcast mobile app:
-   1. Open Warpcast on your phone
+📱 To test in Farcaster mobile app:
+   1. Open Farcaster on your phone
    2. Go to Settings > Developer > Mini Apps
    4. Enter this URL: ${tunnel.url}
-   5. Click "Preview" (note that it may take ~10 seconds to load)
+   5. Click "Open URL as Mini App" (note that it may take ~10 seconds to load)
 `);
   } else {
     frameUrl = 'http://localhost:3000';
     console.log(`
 💻 To test your mini app:
-   1. Open the Warpcast Mini App Developer Tools: https://warpcast.com/~/developers
-   2. Scroll down to the "Preview Mini App" tool
+   1. Open the Farcaster Mini App Developer Tools: https://farcaster.xyz/~/developers
+   2. Click "Preview Tool"
    3. Enter this URL: ${frameUrl}
    4. Click "Preview" to test your mini app (note that it may take ~5 seconds to load the first time)
 `);
   }
-  
+
   // Start next dev with appropriate configuration
   const nextBin = path.normalize(path.join(projectRoot, 'node_modules', '.bin', 'next'));
 
@@ -134,7 +143,7 @@ async function startDev() {
     stdio: 'inherit',
     env: { ...process.env, NEXT_PUBLIC_URL: frameUrl, NEXTAUTH_URL: frameUrl },
     cwd: projectRoot,
-    shell: process.platform === 'win32' // Add shell option for Windows
+    shell: process.platform === 'win32', // Add shell option for Windows
   });
 
   // Handle cleanup
@@ -159,16 +168,18 @@ async function startDev() {
             }
           }
           console.log('🛑 Next.js dev server stopped');
+          // biome-ignore lint/correctness/noUnusedVariables: no need to log error
         } catch (e) {
           // Ignore errors when killing nextDev
           console.log('Note: Next.js process already terminated');
         }
       }
-      
+
       if (tunnel) {
         try {
           await tunnel.close();
           console.log('🌐 Tunnel closed');
+          // biome-ignore lint/correctness/noUnusedVariables: no need to log error
         } catch (e) {
           console.log('Note: Tunnel already closed');
         }
@@ -192,4 +203,4 @@ async function startDev() {
   }
 }
 
-startDev().catch(console.error); 
+startDev().catch(console.error);

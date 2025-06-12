@@ -1,0 +1,64 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.5.3/schema.json",
+  "organizeImports": { "enabled": true },
+  "linter": {
+    "enabled": true,
+    "ignore": [
+      "./eslint.config.mjs",
+      "**/.next/**",
+      "**/node_modules/**",
+      "**/.git/**",
+      "**/.vscode/**",
+      "**/dist/**",
+      "**/build/**"
+    ],
+    "rules": {
+      "recommended": true,
+      "style": {
+        "useImportType": "warn",
+        "useTemplate": "warn",
+        "noUnusedTemplateLiteral": "warn",
+        "useNumberNamespace": "warn",
+        "noUselessElse": "warn"
+      },
+      "correctness": {
+        "useExhaustiveDependencies": "warn",
+        "noUnusedVariables": "error"
+      },
+      "suspicious": {
+        "noImplicitAnyLet": "warn"
+      }
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "jsxQuoteStyle": "single",
+      "lineEnding": "lf"
+    }
+  },
+  "json": {
+    "formatter": {
+      "lineWidth": 100,
+      "indentStyle": "space",
+      "indentWidth": 2,
+      "lineEnding": "lf"
+    }
+  },
+  "formatter": {
+    "enabled": true,
+    "ignore": [
+      "**/.next/**",
+      "**/node_modules/**",
+      "**/.git/**",
+      "**/.vscode/**",
+      "**/dist/**",
+      "**/build/**"
+    ],
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100,
+    "formatWithErrors": false,
+    "lineEnding": "lf"
+  }
+}
