@@ -5,11 +5,11 @@ if (!process.env.NEXT_PUBLIC_URL) {
 }
 
 if (!process.env.NEXT_PUBLIC_MINI_APP_URL) {
-  throw new Error('NEXT_PUBLIC_RPC_URL environment variable is not set.');
+  throw new Error('NEXT_PUBLIC_MINI_APP_URL environment variable is not set.');
 }
 
 if (!process.env.NEXT_PUBLIC_RPC_URL) {
-  throw new Error('NEXT_PUBLIC_MINI_APP_URL environment variable is not set.');
+  throw new Error('NEXT_PUBLIC_RPC_URL environment variable is not set.');
 }
 
 export const APP_URL = process.env.NEXT_PUBLIC_URL;
