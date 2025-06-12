@@ -10,6 +10,7 @@ import type { TPotObject } from '@/lib/types';
 import { useEffect } from 'react';
 import { publicClient } from '@/clients/viem';
 import { formatDateFromTimestamp } from '@/lib/date';
+import { getTransactionLink } from "@/lib/helpers/blockExplorer";
 
 export function RecentActivity({
   logsState,
@@ -99,7 +100,7 @@ export function RecentActivity({
                     {formatUnits(isWinner ? winnerPayout : entryAmount, 6)}
                   </span>
                 </div>
-                <Link href={`https://sepolia.basescan.org/tx/${log.transactionHash}`}>
+                <Link href={getTransactionLink(log.transactionHash)}>
                   <div className={'flex items-center gap-1'}>
                     <p className='text-xs leading-none'>{formattedAddress}</p>
                     <ExternalLink size={12} />
