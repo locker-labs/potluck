@@ -2,4 +2,5 @@
 root = "packages/contracts"
 src = "src"
 out = "out"
+test = "test"
 libs = ["lib"]
