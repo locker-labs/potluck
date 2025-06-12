@@ -6,27 +6,48 @@ if (!process.env.NEXT_PUBLIC_CHAIN_ID) {
   throw new Error('NEXT_PUBLIC_CHAIN_ID environment variable is not set');
 }
 
-const chainId = Number(process.env.NEXT_PUBLIC_CHAIN_ID) as 8453 | 84532;
+const chainId = Number(process.env.NEXT_PUBLIC_CHAIN_ID);
 
-let chain: Chain;
-let deploymentBlockBigInt: bigint; // Block number where the contract was deployed
-let contractAddress: Address;
-let tokenAddress: Address;
-
-if (chainId === 8453) {
-  // Not deployed on mainnet
-  // base mainnet
-  chain = base;
-  deploymentBlockBigInt = 0n;
-  contractAddress = zeroAddress;
-  tokenAddress = zeroAddress;
-} else {
-  // base sepolia
-  chain = baseSepolia;
-  deploymentBlockBigInt = 26625932n;
-  contractAddress = '0x16d17ae0adf57782AA3CE8b8162be44300b8a0E8';
-  tokenAddress = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
+if (isNaN(chainId)) {
+  throw new Error(`Invalid chain ID: ${process.env.NEXT_PUBLIC_CHAIN_ID}`);
 }
+
+const chainIds = [8453, 84532]; // Base Mainnet and Base Sepolia
+
+if (!chainIds.includes(chainId)) {
+    throw new Error(
+        `Unsupported chain ID: ${chainId}. Supported: ${chainIds.join(', ')}`
+    );
+}
+
+type TChainId = typeof chainIds[number];
+
+type TContractConfig = {
+  chain: Chain;
+  deploymentBlockBigInt: bigint;
+  contractAddress: Address;
+  tokenAddress: Address;
+}
+
+const chainIdToContractConfig : Record<TChainId, TContractConfig> = {
+    8453: {
+        chain: base,
+        deploymentBlockBigInt: 0n, // Not deployed on mainnet yet
+        contractAddress: zeroAddress,
+        tokenAddress: zeroAddress,
+    },
+    84532: {
+        chain: baseSepolia,
+        deploymentBlockBigInt: 26625932n, // Deployment block for Base Sepolia
+        contractAddress: '0x16d17ae0adf57782AA3CE8b8162be44300b8a0E8',
+        tokenAddress: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
+    },
+}
+
+const chain: Chain = chainIdToContractConfig[chainId].chain;
+const deploymentBlockBigInt: bigint = chainIdToContractConfig[chainId].deploymentBlockBigInt; // Block number where the contract was deployed
+const contractAddress: Address = chainIdToContractConfig[chainId].contractAddress; // Address of the contract
+const tokenAddress: Address = chainIdToContractConfig[chainId].tokenAddress; // Address of the token used in the contract
 
 const PotCreatedEventSignature = 'event PotCreated(uint256 indexed potId, address indexed creator)';
 const PotJoinedEventSignature =

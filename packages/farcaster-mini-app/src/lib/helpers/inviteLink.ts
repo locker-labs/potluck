@@ -1,3 +1,5 @@
+import { MINI_APP_URL } from "@/lib/constants";
+
 export function getInviteLink(potId: bigint): string {
-  return `${window.location.origin}/pot/${potId}?join`;
+  return `${MINI_APP_URL}/pot/${potId}?join`;
 }

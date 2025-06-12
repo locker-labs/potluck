@@ -1,5 +1,5 @@
+import { MINI_APP_URL } from '@/lib/constants';
 import { formatInterval } from '@/lib/date';
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://potluck.locker.money';
 
 export function generateDegenCast(amount: number, periodSeconds: bigint, potId: bigint): string {
   const interval = formatInterval(periodSeconds);
@@ -12,7 +12,7 @@ export function generateDegenCast(amount: number, periodSeconds: bigint, potId: 
 It’s like a raffle — but you can’t lose.
 Onchain. No rug. Just vibes.
 
-👉 ${baseUrl}/pot/${potId}?join
+👉 ${MINI_APP_URL}/pot/${potId}?join
 
 #DeFi #DegenSaving #PotLuck #CryptoRaffle`;
 }
@@ -30,7 +30,7 @@ Now you can do both:
 
 It’s like group therapy… but for your wallet.
 
-👉 ${baseUrl}/pot/${potId}?join
+👉 ${MINI_APP_URL}/pot/${potId}?join
 
 #MemeFi #OnchainFun #PotLuck #SaveToWin`;
 }
@@ -46,7 +46,7 @@ And no one loses — you can always withdraw your savings ✅
 A little thrill. A lot of discipline.  
 It’s saving, with upside.
 
-👉 ${baseUrl}/pot/${potId}?join
+👉 ${MINI_APP_URL}/pot/${potId}?join
 
 #SaveTogether #OnchainSaving #PotLuck`;
 }

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import { APP_NAME } from "@/lib/constants";
 
 export default function NavBar() {
   return (
@@ -15,7 +16,7 @@ export default function NavBar() {
             draggable='false'
           />
           <Link href='/' className='text-[20px] font-bold uppercase'>
-            {process.env.NEXT_PUBLIC_FRAME_NAME}
+            {APP_NAME}
           </Link>
         </div>
       </div>

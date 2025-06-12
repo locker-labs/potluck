@@ -3,13 +3,13 @@ import { chain } from '@/config';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { farcasterFrame } from '@farcaster/frame-wagmi-connector';
 import { metaMask } from 'wagmi/connectors';
-import { APP_NAME, APP_URL } from '@/lib/constants';
+import { APP_NAME, APP_URL, RPC_URL } from '@/lib/constants';
 import type React from 'react';
 
 export const config = createConfig({
   chains: [chain],
   transports: {
-    [chain.id]: http(`${process.env.NEXT_PUBLIC_BASE_RPC_URL}`),
+    [chain.id]: http(RPC_URL),
   },
   connectors: [
     farcasterFrame(),

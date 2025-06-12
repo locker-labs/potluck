@@ -1,7 +1,8 @@
 import { createPublicClient, http } from 'viem';
 import { chain } from '@/config';
+import { RPC_URL } from "@/lib/constants";
 
 export const publicClient = createPublicClient({
   chain: chain,
-  transport: http(`${process.env.NEXT_PUBLIC_BASE_RPC_URL}`),
+  transport: http(RPC_URL),
 });

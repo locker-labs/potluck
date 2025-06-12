@@ -4,6 +4,14 @@ if (!process.env.NEXT_PUBLIC_URL) {
   throw new Error('NEXT_PUBLIC_URL environment variable is not set.');
 }
 
+if (!process.env.NEXT_PUBLIC_MINI_APP_URL) {
+  throw new Error('NEXT_PUBLIC_RPC_URL environment variable is not set.');
+}
+
+if (!process.env.NEXT_PUBLIC_RPC_URL) {
+  throw new Error('NEXT_PUBLIC_MINI_APP_URL environment variable is not set.');
+}
+
 export const APP_URL = process.env.NEXT_PUBLIC_URL;
 export const APP_NAME = process.env.NEXT_PUBLIC_FRAME_NAME;
 export const APP_SUBTITLE = process.env.NEXT_PUBLIC_FRAME_SUBTITLE;
@@ -25,3 +33,6 @@ export const APP_REQUIRED_CAPABILITIES = [
   'actions.composeCast',
   'back',
 ];
+
+export const MINI_APP_URL = process.env.NEXT_PUBLIC_MINI_APP_URL;
+export const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL;
