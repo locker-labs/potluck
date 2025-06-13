@@ -7,7 +7,7 @@ export default function Hero() {
   const router = useRouter();
 
   return (
-    <div className='relative mb-[48px] mt-[20px] flex flex-col items-center justify-center px-4 border border-gray-700 rounded-[12px] pt-7 pb-5 shadow-lg bg-gradient-to-r from-gray-800 to-purple-900'>
+    <div className='relative mb-[12px] mt-[16px] flex flex-col items-center justify-center px-4 border border-gray-700 rounded-[12px] pt-7 pb-5 shadow-lg bg-gradient-to-r from-gray-800 to-purple-900'>
       <Image
         src='/logo-left-top.png'
         alt=''

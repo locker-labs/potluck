@@ -123,7 +123,7 @@ export default function YourPots() {
   const filteredPots: TPotObject[] = pots;
 
   return (
-    <div className={'mt-6'}>
+    <div>
       <h2 className='text-2xl font-bold mb-3'>Your Pots</h2>
 
       {!isConnected || !address ? (
