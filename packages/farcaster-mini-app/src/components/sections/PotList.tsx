@@ -9,7 +9,6 @@ import { GradientCard } from '../ui/GradientCard';
 import Link from 'next/link';
 import { useJoinPot } from '@/hooks/useJoinPot';
 import { useAccount } from 'wagmi';
-import { useConnection } from '@/hooks/useConnection';
 import { toast } from 'sonner';
 
 // Helper to map period to seconds
@@ -186,8 +185,7 @@ export function PotCard({
   joiningPotId: bigint | null;
   handleJoinPot: (pot: TPotObject) => void;
 }) {
-  const { isConnected, isConnecting, address } = useAccount();
-  const { ensureConnection } = useConnection();
+  const { address } = useAccount();
   const isJoined = pot.participants.includes(address as Address);
 
   return (
@@ -231,24 +229,12 @@ export function PotCard({
               toast.info('You have already joined this pot');
               return;
             }
-            if (isConnected && address) {
-              handleJoinPot(pot);
-            } else {
-              ensureConnection();
-            }
+            handleJoinPot(pot);
           }}
           disabled={isJoining && joiningPotId === pot.id}
           className='w-full'
         >
-          {isConnecting
-            ? 'Connecting'
-            : !isConnected
-              ? 'Connect'
-              : isJoined
-                ? 'Joined'
-                : isJoining && joiningPotId === pot.id
-                  ? 'Joining...'
-                  : 'Join Pot'}
+          {isJoined ? 'Joined' : isJoining && joiningPotId === pot.id ? 'Joining...' : 'Join Pot'}
         </GradientButton>
       </Link>
     </GradientCard>
