@@ -1,19 +1,22 @@
 import { publicClient } from '@/clients/viem';
 import { contractAddress, abi } from '@/config';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAccount, useWriteContract } from 'wagmi';
 import { toast } from 'sonner';
 import { useApproveTokens } from '@/hooks/useApproveTokens';
 import type { TPotObject } from '@/lib/types';
 import { useTokenBalance } from '@/hooks/useTokenBalance';
 import { getTransactionLink } from '@/lib/helpers/blockExplorer';
+import { useConnection } from '@/hooks/useConnection';
 
 export function useJoinPot() {
+  const { ensureConnection } = useConnection();
   const { data: tokenBalance, isLoading: isLoadingBalance } = useTokenBalance();
   const { allowance, isLoadingAllowance, approveTokensAsync, refetchAllowance } =
     useApproveTokens();
   const { address: joinee } = useAccount();
   const { writeContractAsync } = useWriteContract();
+  const [pendingPot, setPendingPot] = useState<TPotObject | null>(null);
   const [joiningPotId, setJoiningPotId] = useState<bigint | null>(null);
   const isLoading: boolean = isLoadingBalance || isLoadingAllowance;
 
@@ -53,7 +56,14 @@ export function useJoinPot() {
     const entryAmount: bigint = pot.entryAmount;
 
     if (!joinee) {
-      toast.error('Please connect your wallet to join the pot.');
+      try {
+        await ensureConnection();
+      } catch {
+        console.error('Failed to connect wallet:');
+        toast.error('Failed to connect wallet');
+        return;
+      }
+      setPendingPot(pot);
       return;
     }
 
@@ -99,6 +109,13 @@ export function useJoinPot() {
       setJoiningPotId(null);
     }
   };
+
+  useEffect(() => {
+    if (pendingPot && allowance !== undefined && tokenBalance !== undefined) {
+      handleJoinPot(pendingPot);
+      setPendingPot(null);
+    }
+  }, [pendingPot, allowance, tokenBalance]);
 
   return { joiningPotId, joinPot, handleJoinPot, isLoading, tokenBalance };
 }
