@@ -55,7 +55,7 @@ export function RecentActivity({
   return (
     <div className='py-4 max-h-[300px] overflow-y-auto'>
       <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
-        {logsState.logs.map((log, index) => {
+        {logsState.logs.filter((log) => log.eventName !== 'PotCreated').map((log, index) => {
           const entryAmount: bigint = pot.entryAmount;
           const totalParticipants = pot.totalParticipants;
           const winnerPayout = BigInt(totalParticipants - 1) * entryAmount;
