@@ -15,7 +15,7 @@ export default function NavBar() {
             className='min-w-[40px] max-w-[40px] aspect-auto object-cover'
             draggable='false'
           />
-          <Link href='/' className='text-[20px] font-bold uppercase'>
+          <Link href='/' className='text-[24px] font-bold uppercase'>
             {APP_NAME}
           </Link>
         </div>
