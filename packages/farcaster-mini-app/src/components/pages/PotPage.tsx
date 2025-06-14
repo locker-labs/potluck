@@ -211,9 +211,7 @@ export default function PotPage({ id }: { id: string }) {
           <div className='flex items-center justify-start gap-1'>
             <UsersRound strokeWidth='1.25px' size={18} color='#14b6d3' />
             <span className='font-base text-[14px]'>
-              {isRoundZero
-                ? String(pot.totalParticipants)
-                : `${String(pot.participants.length)}/${String(pot.totalParticipants)}`}
+              {`${String(pot.participants.length)}/${String(pot.totalParticipants)}`}
             </span>
           </div>
           <p className='font-base text-[14px]'>
