@@ -97,3 +97,11 @@ export async function getHasJoinedRound(
     ],
   })) as boolean;
 }
+
+export async function getPlatformFee(): Promise<bigint> {
+  return (await publicClient.readContract({
+    address: contractAddress,
+    abi: abi,
+    functionName: 'platformFee',
+  })) as bigint;
+}
