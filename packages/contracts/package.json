@@ -1,8 +1,14 @@
 {
-  "name": "contracts",
+  "name": "@potluck/contracts",
+  "version": "0.1.0",
   "module": "index.ts",
   "type": "module",
-  "private": true,
+  "private": false,
+  "main": "index.ts",
+  "types": "index.ts",
+  "files": [
+    "out/**/*.json"
+  ],
   "devDependencies": {
     "@types/bun": "latest"
   },
