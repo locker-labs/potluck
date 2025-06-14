@@ -1,27 +1,30 @@
 import { publicClient } from '@/clients/viem';
 import { contractAddress, abi } from '@/config';
 import { useState, useEffect } from 'react';
-import { useAccount, useWriteContract } from 'wagmi';
+import { useWriteContract } from 'wagmi';
 import { toast } from 'sonner';
 import { useApproveTokens } from '@/hooks/useApproveTokens';
 import type { TPotObject } from '@/lib/types';
 import { useTokenBalance } from '@/hooks/useTokenBalance';
 import { getTransactionLink } from '@/lib/helpers/blockExplorer';
 import { useConnection } from '@/hooks/useConnection';
+import { getHasJoinedRound } from '@/lib/helpers/contract';
 
 export function useJoinPot() {
-  const { ensureConnection } = useConnection();
+  const { address, ensureConnection, isConnected } = useConnection();
   const { data: tokenBalance, isLoading: isLoadingBalance } = useTokenBalance();
   const { allowance, isLoadingAllowance, approveTokensAsync, refetchAllowance } =
     useApproveTokens();
-  const { address: joinee } = useAccount();
   const { writeContractAsync } = useWriteContract();
+
   const [pendingPot, setPendingPot] = useState<TPotObject | null>(null);
   const [joiningPotId, setJoiningPotId] = useState<bigint | null>(null);
+  const [joinedPotId, setJoinedPotId] = useState<bigint | null>(null);
+
   const isLoading: boolean = isLoadingBalance || isLoadingAllowance;
 
   const joinPot = async (id: bigint): Promise<void> => {
-    if (!joinee) {
+    if (!address) {
       throw new Error('No account connected. Please connect your wallet.');
     }
     try {
@@ -55,7 +58,7 @@ export function useJoinPot() {
     const potId: bigint = pot.id;
     const entryAmount: bigint = pot.entryAmount;
 
-    if (!joinee) {
+    if (!address) {
       try {
         await ensureConnection();
       } catch {
@@ -65,6 +68,31 @@ export function useJoinPot() {
       }
       setPendingPot(pot);
       return;
+    }
+
+    const hasJoinedRound: boolean = isConnected && !!address && pot.participants.includes(address);
+
+    if (hasJoinedRound) {
+      toast.error('You have already joined this pot.');
+      return;
+    }
+
+    const isRoundZero: boolean = pot.round === 0;
+
+    // check if user is trying to join a pot that has already started
+    if (!isRoundZero) {
+      let hasJoinedBefore: boolean | null = null;
+      try {
+        hasJoinedBefore = await getHasJoinedRound(pot.id, 0, address);
+      } catch (e) {
+        console.error('Failed to check if user has joined pot:', e);
+        toast.error('Failed to check if user has joined pot');
+        return;
+      }
+      if (!hasJoinedBefore) {
+        toast.error(`Round ${1 + pot.round} has already started. You cannot join this pot.`);
+        return;
+      }
     }
 
     if (allowance === undefined) {
@@ -85,18 +113,16 @@ export function useJoinPot() {
     setJoiningPotId(potId);
 
     try {
+      setJoinedPotId(null);
       if (entryAmount > BigInt(allowance)) {
         await approveTokensAsync(entryAmount);
         await refetchAllowance();
       }
 
       await joinPot(potId);
-
-      // Check if the transaction was successful
+      setJoinedPotId(potId);
 
       toast.success(`Successfully joined pot #${potId}`);
-
-      // Show success message
     } catch (error: unknown) {
       console.error('Failed to join pot:', error);
       toast.error('Error joining pot', {
@@ -117,5 +143,5 @@ export function useJoinPot() {
     }
   }, [pendingPot, allowance, tokenBalance]);
 
-  return { joiningPotId, joinPot, handleJoinPot, isLoading, tokenBalance };
+  return { joinedPotId, joiningPotId, joinPot, handleJoinPot, isLoading, tokenBalance };
 }
