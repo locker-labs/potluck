@@ -176,11 +176,8 @@ export default function YourPots() {
             <YourPotCard
               key={pot.id}
               pot={pot}
-              isJoining={joiningPotId !== null}
               joiningPotId={joiningPotId}
               handleJoinPot={handleJoinPot}
-              isConnected={isConnected}
-              isConnecting={isConnecting}
               address={address}
               className={filteredPots.length === 1 ? 'w-full' : ''}
             />
@@ -202,27 +199,25 @@ export default function YourPots() {
 
 export function YourPotCard({
   pot,
-  isJoining,
   joiningPotId,
   handleJoinPot,
-  isConnected,
-  isConnecting,
   address,
   className,
 }: {
   pot: TPotObject;
-  isJoining: boolean;
   joiningPotId: bigint | null;
   handleJoinPot: (pot: TPotObject) => void;
-  isConnected: boolean;
-  isConnecting: boolean;
   address: Address;
   className?: string;
 }) {
   const router = useRouter();
   const isJoined = pot.participants.includes(address as Address);
   const completedContributions: number = isJoined ? 1 + pot.round : pot.round;
+
+  const isJoiningPot = joiningPotId === pot.id;
+
   const deadlinePassed: boolean = pot.deadline < Math.floor(Date.now() / 1000);
+  const joinButtonText = isJoined ? 'Paid' : isJoiningPot ? 'Paying' : 'Pay Now';
 
   return (
     <GradientCard2
@@ -292,24 +287,17 @@ export function YourPotCard({
           onClick={(e) => {
             e.stopPropagation();
             e.preventDefault();
-            if (isJoined) {
-              toast.info('You have already paid for this pot');
-              return;
-            }
             handleJoinPot(pot);
           }}
-          disabled={isJoined || (isJoining && joiningPotId === pot.id)}
+          disabled={isJoined || isJoiningPot}
           className='h-[30px] max-w-min min-w-[87px] whitespace-nowrap flex items-center justify-center justify-self-end'
         >
-          {isConnecting
-            ? 'Connecting'
-            : !isConnected
-              ? 'Connect'
-              : isJoined
-                ? 'Paid'
-                : isJoining && joiningPotId === pot.id
-                  ? 'Paying...'
-                  : 'Pay Now'}
+          <span className={'flex items-center justify-center gap-2'}>
+            <span>{joinButtonText}</span>
+            {isJoiningPot ? (
+              <Loader2 className='animate-spin h-4 w-4 text-white' size={20} />
+            ) : null}
+          </span>
         </GradientButton4>
       </div>
     </GradientCard2>

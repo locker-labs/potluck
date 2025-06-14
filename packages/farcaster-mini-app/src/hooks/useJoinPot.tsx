@@ -81,6 +81,7 @@ export function useJoinPot() {
 
     // check if user is trying to join a pot that has already started
     if (!isRoundZero) {
+      setJoiningPotId(potId);
       let hasJoinedBefore: boolean | null = null;
       try {
         hasJoinedBefore = await getHasJoinedRound(pot.id, 0, address);
@@ -136,6 +137,7 @@ export function useJoinPot() {
     }
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: handleJoinPot and setPendingPot are not required in dependency array
   useEffect(() => {
     if (pendingPot && allowance !== undefined && tokenBalance !== undefined) {
       handleJoinPot(pendingPot);
