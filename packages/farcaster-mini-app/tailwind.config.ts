@@ -24,6 +24,10 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['var(--font-satoshi)', 'sans-serif'],
+        satoshi: ['var(--font-satoshi)', 'sans-serif'],
+      },
       colors: {
         background: 'var(--background)',
         foreground: 'var(--foreground)',
