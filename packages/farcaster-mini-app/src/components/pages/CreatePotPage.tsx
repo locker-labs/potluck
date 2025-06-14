@@ -14,12 +14,15 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import Link from 'next/link';
+import Image from 'next/image';
 import { formatAddress } from '@/lib/address';
 import { GradientButton, GradientButton3 } from '../ui/Buttons';
 import { getTransactionLink } from '@/lib/helpers/blockExplorer';
 import { useCreatePot } from '@/hooks/useCreatePot';
 import { useCopyInviteLink } from '@/hooks/useCopyInviteLink';
 import { useCreateCast } from '@/hooks/useCreateCast';
+import { formatUnits } from 'viem';
+import { usePlatformFee } from '@/hooks/usePlatformFee';
 
 const emojis = ['🎯', '🏆', '🔥', '🚀', '💪', '⚡', '🎬', '🎓', '🍕', '☕'];
 
@@ -47,6 +50,12 @@ export default function CreatePotPage() {
     amount: amountBigInt,
     period: timePeriod,
   });
+
+  const { fee } = usePlatformFee();
+
+  const amountUsdc = formatUnits(amountBigInt, 6);
+  const feeUsdc = formatUnits(fee ?? 0n, 6);
+  const totalAmountUsdc = formatUnits(amountBigInt + (fee ?? 0n), 6);
 
   const disabled = isLoading || isCreatingPot || !amount || !name || Number.parseFloat(amount) <= 0;
 
@@ -88,7 +97,7 @@ export default function CreatePotPage() {
         <form onSubmit={handleSubmit} className='space-y-6'>
           {/* Name */}
           <div>
-            <label htmlFor='pot-name' className='block text-sm font-bold mb-1'>
+            <label htmlFor='pot-name' className='block text-base font-bold mb-2.5'>
               Pot Name
             </label>
             <Input
@@ -103,7 +112,7 @@ export default function CreatePotPage() {
 
           {/* Choose Emoji */}
           <div>
-            <label htmlFor='choose-emoji' className='block text-sm font-bold mb-1'>
+            <label htmlFor='choose-emoji' className='block text-base font-bold mb-2.5'>
               Choose Emoji
             </label>
             <div className='grid grid-cols-5 gap-2'>
@@ -122,14 +131,14 @@ export default function CreatePotPage() {
 
           {/* Entry Amount */}
           <div>
-            <label htmlFor='enrty-amount' className='block text-sm font-bold mb-1'>
+            <label htmlFor='enrty-amount' className='block text-base font-bold mb-2.5'>
               Individual Contribution Amount
             </label>
             <Input
               id='enrty-amount'
               type='number'
-              min='0.01'
-              step='0.01'
+              min='1'
+              step='1'
               value={amount}
               onChange={(e) => {
                 // Prevent negative values
@@ -151,7 +160,7 @@ export default function CreatePotPage() {
 
           {/* Choose Time Period */}
           <div>
-            <label htmlFor='time-period' className='block text-sm font-bold mb-1'>
+            <label htmlFor='time-period' className='block text-base font-bold mb-2.5'>
               Frequency
             </label>
             <div className='grid grid-cols-3 gap-2.5'>
@@ -165,6 +174,37 @@ export default function CreatePotPage() {
                   {period.label}
                 </button>
               ))}
+            </div>
+          </div>
+
+          <div className='border border-gray-700 rounded-[12px] px-3 pt-4'>
+            <div>
+              <p className='block text-base font-bold mb-2.5'>Payment Summary</p>
+
+              <div className='mb-2 mt-5 w-full flex items-start justify-between'>
+                <p className='text-sm font-normal'>Participation Amount:</p>
+                <p className='text-sm font-normal'>{amountUsdc} USDC</p>
+              </div>
+
+              <div className='mb-2 w-full flex items-start justify-between'>
+                <p className='text-sm font-normal'>Platform Fee:</p>
+                <p className='text-sm font-normal'>{fee ? feeUsdc : '-'} USDC</p>
+              </div>
+
+              <hr />
+
+              <div className='mt-2 mb-3 w-full flex items-start justify-between'>
+                <p className='text-sm font-bold'>Total:</p>
+                <p className='text-sm font-bold'>{totalAmountUsdc} USDC</p>
+              </div>
+
+              <div className='mt-2 mb-3 w-full flex items-start justify-between border border-[1px] border-[#FFB300] rounded-[8px] bg-[#45412E] py-2 px-4'>
+                <Image className='mr-3' src='/warning.png' alt='warning' width={32} height={32} />
+                <p className='text-xs font-normal text-[#FFB300]'>
+                  You will be asked to confirm a wallet transaction. Please ensure you have enough
+                  funds available.
+                </p>
+              </div>
             </div>
           </div>
 
