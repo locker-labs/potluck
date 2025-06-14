@@ -30,7 +30,7 @@ export default function PotPage({ id }: { id: string }) {
   const joinSearchParam = searchParams.get('join');
   const autoJoin = joinSearchParam === '' || !!joinSearchParam;
 
-  const { isConnected, address, isConnecting } = useAccount();
+  const { isConnected, address } = useAccount();
   const { ensureConnection } = useConnection();
   const { handleJoinPot, isLoading: isLoadingJoinPot, joiningPotId, tokenBalance } = useJoinPot();
 
@@ -99,11 +99,11 @@ export default function PotPage({ id }: { id: string }) {
     }
   }, [autoJoin, pot, isLoadingJoinPot]);
 
-  // Has user joined pot previously
+  // Has user joined pot previously (requires wallet connection)
   useEffect(() => {
     if (isConnected && address && !!pot) {
       (async () => {
-        setHasJoinedBefore(await getHasJoinedRound(pot.id, pot.round, address));
+        setHasJoinedBefore(await getHasJoinedRound(pot.id, 0, address));
       })();
     }
   }, [isConnected, address, pot]);
@@ -128,8 +128,8 @@ export default function PotPage({ id }: { id: string }) {
   const isJoiningPot: boolean = joiningPotId !== null;
   const hasJoinedRound: boolean = isConnected && !!address && pot.participants.includes(address);
   const initialLoading: boolean = isLoadingJoinPot || loadingPot;
-  const cannotJoinPot: boolean = !isRoundZero && !hasJoinedBefore;
-  const insufficientBalance: boolean = tokenBalance === undefined || tokenBalance < pot.entryAmount;
+  const cannotJoinPot: boolean = !isRoundZero && hasJoinedBefore !== null && !hasJoinedBefore;
+  const insufficientBalance: boolean = tokenBalance !== undefined && tokenBalance < pot.entryAmount;
   const deadlinePassed: boolean = pot.deadline < BigInt(Math.floor(Date.now() / 1000));
   const completedContributions: number = hasJoinedRound ? 1 + pot.round : pot.round;
 
@@ -140,10 +140,12 @@ export default function PotPage({ id }: { id: string }) {
     cannotJoinPot ||
     insufficientBalance ||
     deadlinePassed;
-  const joinButtonText = hasJoinedRound ? (
+  const joinButtonText = initialLoading ? (
+    'Loading'
+  ) : hasJoinedRound ? (
     'Joined'
   ) : isJoiningPot ? (
-    'Joining...'
+    'Joining'
   ) : deadlinePassed ? (
     'Pot Expired ⌛'
   ) : insufficientBalance ? (
@@ -232,37 +234,22 @@ export default function PotPage({ id }: { id: string }) {
           />
         </div>
 
-        {!isConnected || !address ? (
-          // Connect Wallet Button
-          <GradientButton2
-            isActive={true}
-            className='w-full h-[35px] flex items-center justify-center mt-3 mx-auto shadow-lg hover:shadow-xl transition-all duration-300 text-base font-bold rounded-xl'
-            onClick={(e) => {
-              e.preventDefault();
-              ensureConnection()
-                .then(() => {})
-                .catch(() => {});
-            }}
-            disabled={false}
-          >
-            {isConnecting ? 'Connecting' : 'Connect'}
-          </GradientButton2>
-        ) : (
-          // Join Pot Button
-          <GradientButton2
-            isActive={true}
-            className='w-full h-[35px] flex items-center justify-center mt-3 mx-auto shadow-lg hover:shadow-xl transition-all duration-300 text-base font-bold rounded-xl'
-            onClick={(e) => {
-              e.preventDefault();
-              handleJoinPot(pot)
-                .then(() => {})
-                .catch(() => {});
-            }}
-            disabled={disabled}
-          >
-            {joinButtonText}
-          </GradientButton2>
-        )}
+        <GradientButton2
+          isActive={true}
+          className='w-full h-[35px] flex items-center justify-center mt-3 mx-auto shadow-lg hover:shadow-xl transition-all duration-300 text-base font-bold rounded-xl'
+          onClick={(e) => {
+            e.preventDefault();
+            handleJoinPot(pot).then().catch();
+          }}
+          disabled={disabled}
+        >
+          <span className={'flex items-center justify-center gap-2'}>
+            <span>{joinButtonText}</span>
+            {initialLoading ? (
+              <Loader2 className='animate-spin h-5 w-5 text-white' size={20} />
+            ) : null}
+          </span>
+        </GradientButton2>
       </GradientCard2>
 
       <div className='mt-4 grid grid-cols-3 gap-4'>
