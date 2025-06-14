@@ -17,7 +17,6 @@ import { MoveLeft } from 'lucide-react';
 import { timeFromNow } from '@/lib/helpers/time';
 import { DurationPill } from '@/components/ui/Pill';
 import Image from 'next/image';
-import { truncateNumberString } from '@/lib/helpers/math';
 import { getAllLogsForAPot } from '@/lib/getLogs';
 import { RecentActivity } from '@/components/sections/RecentActivity';
 import { ShareDropdown } from '@/components/ui/ShareDropdown';
@@ -217,10 +216,6 @@ export default function PotPage({ id }: { id: string }) {
           <p className='font-base text-[14px]'>
             ${formatUnits(pot.entryAmount, 6)} {pot.periodString}
           </p>
-          <div className={'flex items-center justify-end gap-1'}>
-            <Image src={'/usdc.png'} alt={'usdc'} width={16} height={16} />
-            <p className={'text-sm'}>{truncateNumberString(formatUnits(tokenBalance ?? 0n, 6))}</p>
-          </div>
         </div>
 
         {/* User contribution progress bar */}
