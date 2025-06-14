@@ -2,7 +2,6 @@
 
 import { TrendingUp, Loader2, UsersRound } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
 import { fetchPot, getPotParticipants, potMapper, getHasJoinedRound } from '@/lib/helpers/contract';
 import type { TPotObject } from '@/lib/types/contract.type';
 import { type Abi, formatUnits, type GetFilterLogsReturnType } from 'viem';
@@ -10,7 +9,6 @@ import { useJoinPot } from '@/hooks/useJoinPot';
 import { GradientButton2, GradientButton3 } from '../ui/Buttons';
 import { GradientCard2 } from '../ui/GradientCard';
 import { useSearchParams } from 'next/navigation';
-import { useConnection } from '@/hooks/useConnection';
 import { useAccount } from 'wagmi';
 import { useRouter } from 'next/navigation';
 import { MoveLeft } from 'lucide-react';
@@ -31,7 +29,6 @@ export default function PotPage({ id }: { id: string }) {
   const autoJoin = joinSearchParam === '' || !!joinSearchParam;
 
   const { isConnected, address } = useAccount();
-  const { ensureConnection } = useConnection();
   const { handleJoinPot, isLoading: isLoadingJoinPot, joiningPotId, tokenBalance } = useJoinPot();
 
   // STATES
@@ -85,16 +82,7 @@ export default function PotPage({ id }: { id: string }) {
   useEffect(() => {
     if (!isLoadingJoinPot && autoJoin && pot) {
       (async function handleAutoJoin() {
-        if (isConnected && address) {
-          await handleJoinPot(pot);
-        } else {
-          ensureConnection().then(() => {
-            handleJoinPot(pot).catch((err) => {
-              console.error('Failed to join pot:', err);
-              toast.error('Failed to join pot');
-            });
-          });
-        }
+        await handleJoinPot(pot);
       })();
     }
   }, [autoJoin, pot, isLoadingJoinPot]);

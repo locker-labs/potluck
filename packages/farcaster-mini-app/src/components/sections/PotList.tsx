@@ -202,6 +202,7 @@ export function PotCard({
   }, [isConnected, address, pot]);
 
   // Update hasJoinedRound when joinedPotId changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     if (!address) {
       setHasJoinedRound(false);
