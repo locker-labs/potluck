@@ -9,8 +9,6 @@ import { BorderButton, GradientButton4 } from '../ui/Buttons';
 import { GradientCard2 } from '../ui/GradientCard';
 import { useJoinPot } from '@/hooks/useJoinPot';
 import { useAccount } from 'wagmi';
-import { useConnection } from '@/hooks/useConnection';
-import { toast } from 'sonner';
 import { timeFromNow } from '@/lib/helpers/time';
 import { DurationPill } from '@/components/ui/Pill';
 
@@ -20,7 +18,6 @@ let _fetchPotsEffectFlag = true; // prevent multiple fetches
 let potIdToPotMap: Record<string, TPotObject> = {};
 
 export default function YourPots() {
-  const { ensureConnection } = useConnection();
   const { handleJoinPot, joiningPotId, joinedPotId, tokenBalance } = useJoinPot();
   const { isConnected, isConnecting, address } = useAccount();
 
@@ -136,13 +133,13 @@ export default function YourPots() {
             onClick={(e) => {
               e.stopPropagation();
               e.preventDefault();
-              ensureConnection()
-                .then(() => {
-                  toast.success('Wallet connected');
-                })
-                .catch(() => {
-                  toast.error('Failed to connect wallet');
-                });
+              // ensureConnection()
+              //   .then(() => {
+              //     toast.success('Wallet connected');
+              //   })
+              //   .catch(() => {
+              //     toast.error('Failed to connect wallet');
+              //   });
             }}
             disabled={isConnecting}
             className='h-[30px] max-w-min min-w-[120px] whitespace-nowrap flex items-center justify-center justify-self-end'
