@@ -21,7 +21,7 @@ let potIdToPotMap: Record<string, TPotObject> = {};
 
 export default function YourPots() {
   const { ensureConnection } = useConnection();
-  const { handleJoinPot, joiningPotId } = useJoinPot();
+  const { handleJoinPot, joiningPotId, joinedPotId, tokenBalance } = useJoinPot();
   const { isConnected, isConnecting, address } = useAccount();
 
   // ------
@@ -177,9 +177,11 @@ export default function YourPots() {
               key={pot.id}
               pot={pot}
               joiningPotId={joiningPotId}
+              joinedPotId={joinedPotId}
               handleJoinPot={handleJoinPot}
               address={address}
               className={filteredPots.length === 1 ? 'w-full' : ''}
+              tokenBalance={tokenBalance}
             />
           ))}
           {loading ? (
@@ -200,24 +202,68 @@ export default function YourPots() {
 export function YourPotCard({
   pot,
   joiningPotId,
+  joinedPotId,
   handleJoinPot,
   address,
   className,
+  tokenBalance,
 }: {
   pot: TPotObject;
   joiningPotId: bigint | null;
+  joinedPotId: bigint | null;
   handleJoinPot: (pot: TPotObject) => void;
   address: Address;
   className?: string;
+  tokenBalance: bigint | undefined;
 }) {
   const router = useRouter();
   const isJoined = pot.participants.includes(address as Address);
+
+  const [hasJoinedRound, setHasJoinedRound] = useState<boolean>(
+    !!address && pot.participants.includes(address),
+  );
+
   const completedContributions: number = isJoined ? 1 + pot.round : pot.round;
 
-  const isJoiningPot = joiningPotId === pot.id;
+  // Update hasJoinedRound when joinedPotId changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  useEffect(() => {
+    if (!address) {
+      setHasJoinedRound(false);
+    } else {
+      if (!hasJoinedRound) {
+        if (joinedPotId === pot.id) {
+          setHasJoinedRound(true);
+        } else {
+          setHasJoinedRound(pot.participants.includes(address));
+        }
+      }
+    }
+  }, [joinedPotId, address]);
 
-  const deadlinePassed: boolean = pot.deadline < Math.floor(Date.now() / 1000);
-  const joinButtonText = isJoined ? 'Paid' : isJoiningPot ? 'Paying' : 'Pay Now';
+  // DERIVED STATE
+  const isRoundZero: boolean = pot.round === 0;
+  const isJoiningPot: boolean = joiningPotId === pot.id;
+  const initialLoading: boolean = false;
+  const insufficientBalance: boolean = tokenBalance !== undefined && tokenBalance < pot.entryAmount;
+  const deadlinePassed: boolean = pot.deadline < BigInt(Math.floor(Date.now() / 1000));
+
+  const disabled: boolean =
+    isJoiningPot || hasJoinedRound || initialLoading || insufficientBalance || deadlinePassed;
+
+  const joinButtonText = initialLoading
+    ? 'Loading'
+    : hasJoinedRound
+      ? 'Paid'
+      : isJoiningPot
+        ? 'Paying'
+        : deadlinePassed
+          ? 'Expired ⌛'
+          : insufficientBalance
+            ? 'Insufficient Balance 💰'
+            : isRoundZero
+              ? 'Join Pot'
+              : 'Pay Now';
 
   return (
     <GradientCard2
@@ -289,7 +335,7 @@ export function YourPotCard({
             e.preventDefault();
             handleJoinPot(pot);
           }}
-          disabled={isJoined || isJoiningPot}
+          disabled={disabled}
           className='h-[30px] max-w-min min-w-[87px] whitespace-nowrap flex items-center justify-center justify-self-end'
         >
           <span className={'flex items-center justify-center gap-2'}>
