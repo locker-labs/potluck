@@ -239,7 +239,7 @@ export function PotCard({
   ) : isJoiningPot ? (
     'Joining'
   ) : deadlinePassed ? (
-    'Pot Expired ⌛'
+    'Expired ⌛'
   ) : insufficientBalance ? (
     'Insufficient Balance 💰'
   ) : isRoundZero ? (
@@ -282,7 +282,9 @@ export function PotCard({
           <div className='col-start-4 col-span-2'>
             <div className=' flex items-center justify-center gap-1'>
               <Clock5 size={14} color='#14b6d3' />
-              <span className='font-bold text-[14px]'>Closes in {pot.deadlineString}</span>
+              <span className='font-bold text-[14px]'>
+                {deadlinePassed ? 'Awaiting Payout' : `Closes in ${pot.deadlineString}`}
+              </span>
             </div>
           </div>
         </div>

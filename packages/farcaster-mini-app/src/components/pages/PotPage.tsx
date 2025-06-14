@@ -135,7 +135,7 @@ export default function PotPage({ id }: { id: string }) {
   ) : isJoiningPot ? (
     'Joining'
   ) : deadlinePassed ? (
-    'Pot Expired ⌛'
+    'Expired ⌛'
   ) : insufficientBalance ? (
     'Insufficient Balance 💰'
   ) : isRoundZero ? (
