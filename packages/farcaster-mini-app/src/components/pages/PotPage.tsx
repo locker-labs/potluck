@@ -1,28 +1,23 @@
 'use client';
 
-import { generateRandomCast } from '@/lib/helpers/cast';
-import { TrendingUp, CircleCheckBig, Loader2, UsersRound, MessageSquarePlus } from 'lucide-react';
+import { TrendingUp, Loader2, UsersRound } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Copy } from 'lucide-react';
-import { toast } from 'sonner';
 import { fetchPot, getPotParticipants, potMapper, getHasJoinedRound } from '@/lib/helpers/contract';
 import type { TPotObject } from '@/lib/types/contract.type';
-import { type Abi, formatUnits, GetFilterLogsReturnType } from 'viem';
+import { type Abi, formatUnits, type GetFilterLogsReturnType } from 'viem';
 import { useJoinPot } from '@/hooks/useJoinPot';
 import { GradientButton2, GradientButton3 } from '../ui/Buttons';
 import { GradientCard2 } from '../ui/GradientCard';
 import { useSearchParams } from 'next/navigation';
-import { getInviteLink } from '@/lib/helpers/inviteLink';
-import { useConnection } from '@/hooks/useConnection';
 import { useAccount } from 'wagmi';
 import { useRouter } from 'next/navigation';
 import { MoveLeft } from 'lucide-react';
 import { timeFromNow } from '@/lib/helpers/time';
 import { DurationPill } from '@/components/ui/Pill';
 import Image from 'next/image';
-import { truncateNumberString } from '@/lib/helpers/math';
 import { getAllLogsForAPot } from '@/lib/getLogs';
 import { RecentActivity } from '@/components/sections/RecentActivity';
+import { ShareDropdown } from '@/components/ui/ShareDropdown';
 
 const defaultLogsState = { loading: true, error: null, logs: [] };
 
@@ -33,12 +28,10 @@ export default function PotPage({ id }: { id: string }) {
   const joinSearchParam = searchParams.get('join');
   const autoJoin = joinSearchParam === '' || !!joinSearchParam;
 
-  const { isConnected, address, isConnecting } = useAccount();
-  const { ensureConnection } = useConnection();
+  const { isConnected, address } = useAccount();
   const { handleJoinPot, isLoading: isLoadingJoinPot, joiningPotId, tokenBalance } = useJoinPot();
 
   // STATES
-  const [copied, setCopied] = useState(false);
   const [pot, setPot] = useState<TPotObject | null>(null);
   const [loadingPot, setLoadingPot] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -89,59 +82,19 @@ export default function PotPage({ id }: { id: string }) {
   useEffect(() => {
     if (!isLoadingJoinPot && autoJoin && pot) {
       (async function handleAutoJoin() {
-        if (isConnected && address) {
-          await handleJoinPot(pot);
-        } else {
-          ensureConnection().then(() => {
-            handleJoinPot(pot).catch((err) => {
-              console.error('Failed to join pot:', err);
-              toast.error('Failed to join pot');
-            });
-          });
-        }
+        await handleJoinPot(pot);
       })();
     }
   }, [autoJoin, pot, isLoadingJoinPot]);
 
-  // Has user joined pot previously
+  // Has user joined pot previously (requires wallet connection)
   useEffect(() => {
     if (isConnected && address && !!pot) {
       (async () => {
-        setHasJoinedBefore(await getHasJoinedRound(pot.id, pot.round, address));
+        setHasJoinedBefore(await getHasJoinedRound(pot.id, 0, address));
       })();
     }
   }, [isConnected, address, pot]);
-
-  // Handle copy invite link
-  const handleCopyLink = async () => {
-    if (potId === null) {
-      toast.error('Pot ID is not available. Please create a pot first.');
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(getInviteLink(potId));
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch (err) {
-      console.error('Failed to copy link:', err);
-      toast.error('Failed to copy link');
-    }
-  };
-
-  const handleCastOnFarcaster = () => {
-    if (!potId) {
-      toast.error('Pot ID is not available. Please create a pot first.');
-      return;
-    }
-    const castText = generateRandomCast(
-      Number(formatUnits(pot?.entryAmount ?? 0n, 6)),
-      pot?.period ?? 0n,
-      potId,
-    );
-    // Open Warpcast in a new tab with pre-filled message
-    const warpcastUrl = `https://farcaster.xyz/~/compose?text=${encodeURIComponent(castText)}`;
-    window.open(warpcastUrl, '_blank');
-  };
 
   if (loadingPot) {
     return (
@@ -163,9 +116,9 @@ export default function PotPage({ id }: { id: string }) {
   const isJoiningPot: boolean = joiningPotId !== null;
   const hasJoinedRound: boolean = isConnected && !!address && pot.participants.includes(address);
   const initialLoading: boolean = isLoadingJoinPot || loadingPot;
-  const cannotJoinPot: boolean = !isRoundZero && !hasJoinedBefore;
-  const insufficientBalance: boolean = tokenBalance === undefined || tokenBalance < pot.entryAmount;
-  const deadlinePassed: boolean = pot.deadline < Math.floor(Date.now() / 1000);
+  const cannotJoinPot: boolean = !isRoundZero && hasJoinedBefore !== null && !hasJoinedBefore;
+  const insufficientBalance: boolean = tokenBalance !== undefined && tokenBalance < pot.entryAmount;
+  const deadlinePassed: boolean = pot.deadline < BigInt(Math.floor(Date.now() / 1000));
   const completedContributions: number = hasJoinedRound ? 1 + pot.round : pot.round;
 
   const disabled: boolean =
@@ -175,12 +128,14 @@ export default function PotPage({ id }: { id: string }) {
     cannotJoinPot ||
     insufficientBalance ||
     deadlinePassed;
-  const joinButtonText = hasJoinedRound ? (
+  const joinButtonText = initialLoading ? (
+    'Loading'
+  ) : hasJoinedRound ? (
     'Joined'
   ) : isJoiningPot ? (
-    'Joining...'
+    'Joining'
   ) : deadlinePassed ? (
-    'Pot Expired ⌛'
+    'Expired ⌛'
   ) : insufficientBalance ? (
     'Insufficient Balance 💰'
   ) : isRoundZero ? (
@@ -207,8 +162,11 @@ export default function PotPage({ id }: { id: string }) {
           >
             <MoveLeft size={20} />
           </GradientButton3>
-          <div className='w-full whitespace-nowrap'>
-            <p className='text-2xl font-bold'>{pot.name}</p>
+          <div className='flex items-center justify-start gap-2'>
+            <div className='w-full'>
+              <p className='text-2xl font-bold'>{pot.name}</p>
+            </div>
+            <ShareDropdown pot={pot} />
           </div>
         </div>
         {hasJoinedBefore || hasJoinedRound ? (
@@ -242,18 +200,12 @@ export default function PotPage({ id }: { id: string }) {
           <div className='flex items-center justify-start gap-1'>
             <UsersRound strokeWidth='1.25px' size={18} color='#14b6d3' />
             <span className='font-base text-[14px]'>
-              {isRoundZero
-                ? String(pot.totalParticipants)
-                : `${String(pot.participants.length)}/${String(pot.totalParticipants)}`}
+              {`${String(pot.participants.length)}/${String(pot.totalParticipants)}`}
             </span>
           </div>
           <p className='font-base text-[14px]'>
             ${formatUnits(pot.entryAmount, 6)} {pot.periodString}
           </p>
-          <div className={'flex items-center justify-end gap-1'}>
-            <Image src={'/usdc.png'} alt={'usdc'} width={16} height={16} />
-            <p className={'text-sm'}>{truncateNumberString(formatUnits(tokenBalance ?? 0n, 6))}</p>
-          </div>
         </div>
 
         {/* User contribution progress bar */}
@@ -270,37 +222,22 @@ export default function PotPage({ id }: { id: string }) {
           />
         </div>
 
-        {!isConnected || !address ? (
-          // Connect Wallet Button
-          <GradientButton2
-            isActive={true}
-            className='w-full h-[35px] flex items-center justify-center mt-3 mx-auto shadow-lg hover:shadow-xl transition-all duration-300 text-base font-bold rounded-xl'
-            onClick={(e) => {
-              e.preventDefault();
-              ensureConnection()
-                .then(() => {})
-                .catch(() => {});
-            }}
-            disabled={false}
-          >
-            {isConnecting ? 'Connecting' : 'Connect'}
-          </GradientButton2>
-        ) : (
-          // Join Pot Button
-          <GradientButton2
-            isActive={true}
-            className='w-full h-[35px] flex items-center justify-center mt-3 mx-auto shadow-lg hover:shadow-xl transition-all duration-300 text-base font-bold rounded-xl'
-            onClick={(e) => {
-              e.preventDefault();
-              handleJoinPot(pot)
-                .then(() => {})
-                .catch(() => {});
-            }}
-            disabled={disabled}
-          >
-            {joinButtonText}
-          </GradientButton2>
-        )}
+        <GradientButton2
+          isActive={true}
+          className='w-full h-[35px] flex items-center justify-center mt-3 mx-auto shadow-lg hover:shadow-xl transition-all duration-300 text-base font-bold rounded-xl'
+          onClick={(e) => {
+            e.preventDefault();
+            handleJoinPot(pot).then().catch();
+          }}
+          disabled={disabled}
+        >
+          <span className={'flex items-center justify-center gap-2'}>
+            <span>{joinButtonText}</span>
+            {initialLoading ? (
+              <Loader2 className='animate-spin h-5 w-5 text-white' size={20} />
+            ) : null}
+          </span>
+        </GradientButton2>
       </GradientCard2>
 
       <div className='mt-4 grid grid-cols-3 gap-4'>
@@ -340,24 +277,6 @@ export default function PotPage({ id }: { id: string }) {
           <p className='font-bold text-2xl'>-</p>
           <p className='text-sm'>Reputation</p>
         </div>
-      </div>
-
-      <div className='mt-4 gap-3 grid grid-cols-2'>
-        <GradientButton3
-          className='w-full flex items-center justify-center gap-2'
-          onClick={handleCopyLink}
-        >
-          {copied ? <CircleCheckBig size={18} /> : <Copy size={18} />}
-          <p>{copied ? 'Copied!' : 'Invite Link'}</p>
-        </GradientButton3>
-
-        <GradientButton3
-          className='w-full flex items-center justify-center gap-2'
-          onClick={handleCastOnFarcaster}
-        >
-          <MessageSquarePlus size={18} />
-          <p>Cast</p>
-        </GradientButton3>
       </div>
 
       <div className='mt-4 border border-gray-500 pt-6 rounded-xl'>

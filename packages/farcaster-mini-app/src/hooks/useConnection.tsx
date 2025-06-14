@@ -2,7 +2,7 @@ import { useConnect, useAccount } from 'wagmi';
 import sdk from '@farcaster/frame-sdk';
 
 export function useConnection() {
-  const { isConnected } = useAccount();
+  const { isConnected, address } = useAccount();
   const { connectAsync, connectors } = useConnect();
 
   const ensureConnection = async () => {
@@ -15,5 +15,5 @@ export function useConnection() {
     }
   };
 
-  return { ensureConnection };
+  return { address, ensureConnection, isConnected };
 }

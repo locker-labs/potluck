@@ -60,6 +60,7 @@
     "@potluck/contracts": "workspace:*"
   },
   "devDependencies": {
+    "@biomejs/biome": "1.9.4",
     "@neynar/nodejs-sdk": "^2.19.0",
     "@neynar/react": "^0.9.7",
     "@types/node": "^20",
