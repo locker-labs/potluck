@@ -1,18 +1,15 @@
 'use client';
 
-import { generateRandomCast } from '@/lib/helpers/cast';
-import { TrendingUp, CircleCheckBig, Loader2, UsersRound, MessageSquarePlus } from 'lucide-react';
+import { TrendingUp, Loader2, UsersRound } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { fetchPot, getPotParticipants, potMapper, getHasJoinedRound } from '@/lib/helpers/contract';
 import type { TPotObject } from '@/lib/types/contract.type';
-import { type Abi, formatUnits, GetFilterLogsReturnType } from 'viem';
+import { type Abi, formatUnits, type GetFilterLogsReturnType } from 'viem';
 import { useJoinPot } from '@/hooks/useJoinPot';
 import { GradientButton2, GradientButton3 } from '../ui/Buttons';
 import { GradientCard2 } from '../ui/GradientCard';
 import { useSearchParams } from 'next/navigation';
-import { getInviteLink } from '@/lib/helpers/inviteLink';
 import { useConnection } from '@/hooks/useConnection';
 import { useAccount } from 'wagmi';
 import { useRouter } from 'next/navigation';
@@ -23,6 +20,7 @@ import Image from 'next/image';
 import { truncateNumberString } from '@/lib/helpers/math';
 import { getAllLogsForAPot } from '@/lib/getLogs';
 import { RecentActivity } from '@/components/sections/RecentActivity';
+import { ShareDropdown } from '@/components/ui/ShareDropdown';
 
 const defaultLogsState = { loading: true, error: null, logs: [] };
 
@@ -38,7 +36,6 @@ export default function PotPage({ id }: { id: string }) {
   const { handleJoinPot, isLoading: isLoadingJoinPot, joiningPotId, tokenBalance } = useJoinPot();
 
   // STATES
-  const [copied, setCopied] = useState(false);
   const [pot, setPot] = useState<TPotObject | null>(null);
   const [loadingPot, setLoadingPot] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -112,37 +109,6 @@ export default function PotPage({ id }: { id: string }) {
     }
   }, [isConnected, address, pot]);
 
-  // Handle copy invite link
-  const handleCopyLink = async () => {
-    if (potId === null) {
-      toast.error('Pot ID is not available. Please create a pot first.');
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(getInviteLink(potId));
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch (err) {
-      console.error('Failed to copy link:', err);
-      toast.error('Failed to copy link');
-    }
-  };
-
-  const handleCastOnFarcaster = () => {
-    if (!potId) {
-      toast.error('Pot ID is not available. Please create a pot first.');
-      return;
-    }
-    const castText = generateRandomCast(
-      Number(formatUnits(pot?.entryAmount ?? 0n, 6)),
-      pot?.period ?? 0n,
-      potId,
-    );
-    // Open Warpcast in a new tab with pre-filled message
-    const warpcastUrl = `https://farcaster.xyz/~/compose?text=${encodeURIComponent(castText)}`;
-    window.open(warpcastUrl, '_blank');
-  };
-
   if (loadingPot) {
     return (
       <div className='flex items-center justify-center min-h-[calc(100vh-96px)]'>
@@ -165,7 +131,7 @@ export default function PotPage({ id }: { id: string }) {
   const initialLoading: boolean = isLoadingJoinPot || loadingPot;
   const cannotJoinPot: boolean = !isRoundZero && !hasJoinedBefore;
   const insufficientBalance: boolean = tokenBalance === undefined || tokenBalance < pot.entryAmount;
-  const deadlinePassed: boolean = pot.deadline < Math.floor(Date.now() / 1000);
+  const deadlinePassed: boolean = pot.deadline < BigInt(Math.floor(Date.now() / 1000));
   const completedContributions: number = hasJoinedRound ? 1 + pot.round : pot.round;
 
   const disabled: boolean =
@@ -207,8 +173,11 @@ export default function PotPage({ id }: { id: string }) {
           >
             <MoveLeft size={20} />
           </GradientButton3>
-          <div className='w-full whitespace-nowrap'>
-            <p className='text-2xl font-bold'>{pot.name}</p>
+          <div className='flex items-center justify-start gap-2'>
+            <div className='w-full'>
+              <p className='text-2xl font-bold'>{pot.name}</p>
+            </div>
+            <ShareDropdown pot={pot} />
           </div>
         </div>
         {hasJoinedBefore || hasJoinedRound ? (
@@ -340,24 +309,6 @@ export default function PotPage({ id }: { id: string }) {
           <p className='font-bold text-2xl'>-</p>
           <p className='text-sm'>Reputation</p>
         </div>
-      </div>
-
-      <div className='mt-4 gap-3 grid grid-cols-2'>
-        <GradientButton3
-          className='w-full flex items-center justify-center gap-2'
-          onClick={handleCopyLink}
-        >
-          {copied ? <CircleCheckBig size={18} /> : <Copy size={18} />}
-          <p>{copied ? 'Copied!' : 'Invite Link'}</p>
-        </GradientButton3>
-
-        <GradientButton3
-          className='w-full flex items-center justify-center gap-2'
-          onClick={handleCastOnFarcaster}
-        >
-          <MessageSquarePlus size={18} />
-          <p>Cast</p>
-        </GradientButton3>
       </div>
 
       <div className='mt-4 border border-gray-500 pt-6 rounded-xl'>

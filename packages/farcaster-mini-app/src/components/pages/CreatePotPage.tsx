@@ -4,7 +4,6 @@ import type { FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
-import { toast } from 'sonner';
 import { parseUnits } from 'viem';
 import { MoveLeft, Copy, MessageSquarePlus, Check, Loader2 } from 'lucide-react';
 import {
@@ -16,11 +15,11 @@ import {
 } from '@/components/ui/dialog';
 import Link from 'next/link';
 import { formatAddress } from '@/lib/address';
-import { generateRandomCast } from '@/lib/helpers/cast';
 import { GradientButton, GradientButton3 } from '../ui/Buttons';
-import { getInviteLink } from '@/lib/helpers/inviteLink';
 import { getTransactionLink } from '@/lib/helpers/blockExplorer';
 import { useCreatePot } from '@/hooks/useCreatePot';
+import { useCopyInviteLink } from '@/hooks/useCopyInviteLink';
+import { useCreateCast } from '@/hooks/useCreateCast';
 
 const emojis = ['🎯', '🏆', '🔥', '🚀', '💪', '⚡', '🎬', '🎓', '🍕', '☕'];
 
@@ -37,11 +36,17 @@ export default function CreatePotPage() {
   const [amount, setAmount] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  const router = useRouter();
-  const { potId, setPotId, handleCreatePot, isCreatingPot, isLoading, hash } = useCreatePot();
-
   const potName = `${emoji} ${name.trim()}`;
   const amountBigInt = BigInt(parseUnits(amount, 6));
+
+  const router = useRouter();
+  const { potId, setPotId, handleCreatePot, isCreatingPot, isLoading, hash } = useCreatePot();
+  const { handleCopyLink } = useCopyInviteLink({ potId: potId });
+  const { handleCastOnFarcaster } = useCreateCast({
+    potId,
+    amount: amountBigInt,
+    period: timePeriod,
+  });
 
   const disabled = isLoading || isCreatingPot || !amount || !name || Number.parseFloat(amount) <= 0;
 
@@ -49,33 +54,6 @@ export default function CreatePotPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     await handleCreatePot(potName, amountBigInt, timePeriod);
-  };
-
-  // Handle copy invite link
-  const handleCopyLink = async () => {
-    if (potId === null) {
-      toast.error('Pot ID is not available. Please create a pot first.');
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(getInviteLink(potId));
-      toast.success('Invite link copied to clipboard!');
-    } catch (err) {
-      console.error('Failed to copy link:', err);
-      toast.error('Failed to copy link');
-    }
-  };
-
-  // Handle casting to Farcaster
-  const handleCastOnFarcaster = () => {
-    if (!potId) {
-      toast.error('Pot ID is not available. Please create a pot first.');
-      return;
-    }
-    const castText = generateRandomCast(Number(amount), timePeriod, potId);
-    // Open farcaster in a new tab with pre-filled message
-    const farcasterUrl = `https://farcaster.xyz/~/compose?text=${encodeURIComponent(castText)}`;
-    window.open(farcasterUrl, '_blank');
   };
 
   // EFFECTS
