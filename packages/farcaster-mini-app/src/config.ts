@@ -1,6 +1,11 @@
 import type { Address, Chain } from 'viem';
 import { zeroAddress } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
+import {
+  type AppKitNetwork,
+  baseSepolia as appKitBaseSepolia,
+  base as appKitBase,
+} from '@reown/appkit/networks';
 import { PotluckArtifact, PotluckAddressBaseSepolia } from '@potluck/contracts';
 
 if (!process.env.NEXT_PUBLIC_CHAIN_ID) {
@@ -9,7 +14,7 @@ if (!process.env.NEXT_PUBLIC_CHAIN_ID) {
 
 const chainId = Number(process.env.NEXT_PUBLIC_CHAIN_ID);
 
-if (isNaN(chainId)) {
+if (Number.isNaN(chainId)) {
   throw new Error(`Invalid chain ID: ${process.env.NEXT_PUBLIC_CHAIN_ID}`);
 }
 
@@ -23,6 +28,7 @@ if (!chainIds.includes(chainId)) {
 type TChainId = (typeof chainIds)[number];
 
 type TContractConfig = {
+  appKitNetwork: AppKitNetwork;
   chain: Chain;
   deploymentBlockBigInt: bigint;
   contractAddress: Address;
@@ -32,6 +38,7 @@ type TContractConfig = {
 
 const chainIdToContractConfig: Record<TChainId, TContractConfig> = {
   8453: {
+    appKitNetwork: appKitBase,
     chain: base,
     deploymentBlockBigInt: 0n, // Not deployed on mainnet yet
     contractAddress: zeroAddress,
@@ -39,6 +46,7 @@ const chainIdToContractConfig: Record<TChainId, TContractConfig> = {
     fees: 0n,
   },
   84532: {
+    appKitNetwork: appKitBaseSepolia,
     chain: baseSepolia,
     deploymentBlockBigInt: 26625932n, // Deployment block for Base Sepolia
     contractAddress: PotluckAddressBaseSepolia as Address,
@@ -47,6 +55,7 @@ const chainIdToContractConfig: Record<TChainId, TContractConfig> = {
   },
 };
 
+const appKitNetwork: AppKitNetwork = chainIdToContractConfig[chainId].appKitNetwork;
 const chain: Chain = chainIdToContractConfig[chainId].chain;
 const deploymentBlockBigInt: bigint = chainIdToContractConfig[chainId].deploymentBlockBigInt;
 const contractAddress: Address = chainIdToContractConfig[chainId].contractAddress;
@@ -67,6 +76,7 @@ const PotJoinedEventSignatureHash =
 const abi = PotluckArtifact.abi;
 
 export {
+  appKitNetwork,
   chainId,
   chain,
   deploymentBlockBigInt,
