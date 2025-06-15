@@ -9,6 +9,10 @@
   "files": [
     "out/**/*.json"
   ],
+  "exports": {
+    "./artifacts/*": "./out/*.sol/*.json",
+    ".": "./index.ts"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
