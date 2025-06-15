@@ -61,6 +61,7 @@ const deploymentBlockBigInt: bigint = chainIdToContractConfig[chainId].deploymen
 const contractAddress: Address = chainIdToContractConfig[chainId].contractAddress;
 const tokenAddress: Address = chainIdToContractConfig[chainId].tokenAddress;
 const fees: bigint = chainIdToContractConfig[chainId].fees;
+const MAX_PARTICIPANTS = 100;
 
 const PotCreatedEventSignature = 'event PotCreated(uint256 indexed potId, address indexed creator)';
 const PotJoinedEventSignature =
@@ -89,4 +90,5 @@ export {
   PotJoinedEventSignatureHash,
   abi,
   fees,
+  MAX_PARTICIPANTS,
 };
