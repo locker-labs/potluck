@@ -13,7 +13,7 @@ contract DeployPotluck is Script {
         // Deploy with initial platform fee of 0.01 USDC (6 decimals)
         uint256 platformFee = 10_000; // 0.01 USDC (6 decimals)
         address treasury = vm.envAddress("TREASURY_ADDRESS");
-        
+
         Potluck potluck = new Potluck(platformFee, treasury);
 
         console.log("=== Deployment Info ===");
@@ -25,4 +25,4 @@ contract DeployPotluck is Script {
 
         vm.stopBroadcast();
     }
-} 
+}
