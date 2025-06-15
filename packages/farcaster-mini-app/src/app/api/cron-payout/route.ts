@@ -5,9 +5,8 @@ import { readContract, waitForTransactionReceipt, writeContract } from 'viem/act
 import { baseSepolia } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
 import { contractAddress, abi as potluckAbi } from '@/config';
-
-// envs
-const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL!;
+import { RPC_URL } from '@/lib/constants';
+import { env } from '@/app/api/env';
 
 // Cache to store pot state
 interface PotState {
@@ -26,7 +25,7 @@ const publicClient = createPublicClient({
 const walletClient = createWalletClient({
   chain: baseSepolia,
   transport: http(RPC_URL),
-  account: privateKeyToAccount(process.env.PRIVATE_KEY! as `0x${string}`),
+  account: privateKeyToAccount(env.PAYOUT_PRIVATE_KEY as `0x${string}`),
 });
 
 export async function GET() {
@@ -45,8 +44,8 @@ export async function GET() {
     // 1) Find all eligible pots
     for (let i = 0; i < potCount; i++) {
       if (potStateCache.has(i)) {
-        const potState = potStateCache.get(i)!;
-        if (now >= potState.deadline && potState.balance > 0n) {
+        const potState = potStateCache.get(i);
+        if (potState && now >= potState.deadline && potState.balance > 0n) {
           eligiblePots.push(BigInt(i));
           console.log(`Pot #${i} is eligible for payout`);
         }
@@ -58,6 +57,7 @@ export async function GET() {
         abi: potluckAbi,
         functionName: 'pots',
         args: [BigInt(i)],
+        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
       })) as any;
 
       const currentDeadline = p[3];
@@ -81,6 +81,7 @@ export async function GET() {
     }
 
     return NextResponse.json({ triggered: eligiblePots.length, success: true, checked: potCount });
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   } catch (err: any) {
     console.error('Cron error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
