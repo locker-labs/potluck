@@ -200,7 +200,7 @@ export default function CreatePotPage() {
 
               <div className='mt-2 mb-3 w-full flex items-start justify-between border border-[1px] border-[#FFB300] rounded-[8px] bg-[#45412E] py-2 px-4'>
                 <Image className='mr-3' src='/warning.png' alt='warning' width={32} height={32} />
-                <p className='text-xs font-normal text-[#FFB300]'>
+                <p className='w-full text-left text-xs font-normal text-[#FFB300]'>
                   You will be asked to confirm a wallet transaction. Please ensure you have enough
                   funds available.
                 </p>
@@ -221,7 +221,7 @@ export default function CreatePotPage() {
 
       {/* Success Dialog */}
       <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
-        <DialogContent className='sm:max-w-md rounded-2xl'>
+        <DialogContent className='sm:max-w-md rounded-2xl text-white'>
           <DialogHeader>
             <DialogTitle className='text-center text-2xl font-bold'>
               Congratulations! 🎉
