@@ -1,7 +1,7 @@
 import type { Address, Chain } from 'viem';
 import { zeroAddress } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
-import potluckArtifact from '@potluck/contracts/out/Potluck.sol/Potluck.json';
+import { PotluckArtifact, PotluckAddressBaseSepolia } from '@potluck/contracts';
 
 if (!process.env.NEXT_PUBLIC_CHAIN_ID) {
   throw new Error('NEXT_PUBLIC_CHAIN_ID environment variable is not set');
@@ -16,6 +16,7 @@ if (isNaN(chainId)) {
 const chainIds = [8453, 84532]; // Base Mainnet and Base Sepolia
 
 if (!chainIds.includes(chainId)) {
+  console.log(chainId);
   throw new Error(`Unsupported chain ID: ${chainId}. Supported: ${chainIds.join(', ')}`);
 }
 
@@ -26,6 +27,7 @@ type TContractConfig = {
   deploymentBlockBigInt: bigint;
   contractAddress: Address;
   tokenAddress: Address;
+  fees: bigint;
 };
 
 const chainIdToContractConfig: Record<TChainId, TContractConfig> = {
@@ -34,12 +36,14 @@ const chainIdToContractConfig: Record<TChainId, TContractConfig> = {
     deploymentBlockBigInt: 0n, // Not deployed on mainnet yet
     contractAddress: zeroAddress,
     tokenAddress: zeroAddress,
+    fees: 0n,
   },
   84532: {
     chain: baseSepolia,
     deploymentBlockBigInt: 26625932n, // Deployment block for Base Sepolia
-    contractAddress: potluckArtifact.address, 
+    contractAddress: PotluckAddressBaseSepolia as Address, 
     tokenAddress: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
+    fees: 10000n,
   },
 };
 
@@ -47,6 +51,7 @@ const chain: Chain = chainIdToContractConfig[chainId].chain;
 const deploymentBlockBigInt: bigint = chainIdToContractConfig[chainId].deploymentBlockBigInt;
 const contractAddress: Address = chainIdToContractConfig[chainId].contractAddress;
 const tokenAddress: Address = chainIdToContractConfig[chainId].tokenAddress;
+const fees: bigint = chainIdToContractConfig[chainId].fees;
 
 const PotCreatedEventSignature = 'event PotCreated(uint256 indexed potId, address indexed creator)';
 const PotJoinedEventSignature =
@@ -59,7 +64,7 @@ const PotJoinedEventSignatureHash =
   '0x672d3f5897f7a8042cd8c8557caf58ece26929a410c3b1a66a34ccfd3460fcde';
 
 // Use the ABI from the contract artifact
-const abi = potluckArtifact.abi;
+const abi = PotluckArtifact.abi;
 
 export {
   chainId,
@@ -73,4 +78,5 @@ export {
   PotCreatedEventSignatureHash,
   PotJoinedEventSignatureHash,
   abi,
+  fees,
 };

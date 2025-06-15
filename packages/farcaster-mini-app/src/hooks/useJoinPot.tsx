@@ -33,7 +33,7 @@ export function useJoinPot() {
         address: contractAddress,
         abi,
         functionName: 'joinPot',
-        args: [id, []],
+        args: [id],
       });
 
       // wait for confirmation
