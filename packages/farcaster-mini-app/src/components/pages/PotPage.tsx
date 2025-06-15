@@ -18,6 +18,7 @@ import Image from 'next/image';
 import { getAllLogsForAPot } from '@/lib/getLogs';
 import { RecentActivity } from '@/components/sections/RecentActivity';
 import { ShareDropdown } from '@/components/ui/ShareDropdown';
+import { MAX_PARTICIPANTS } from '@/config';
 
 const defaultLogsState = { loading: true, error: null, logs: [] };
 
@@ -200,7 +201,9 @@ export default function PotPage({ id }: { id: string }) {
           <div className='flex items-center justify-start gap-1'>
             <UsersRound strokeWidth='1.25px' size={18} color='#14b6d3' />
             <span className='font-base text-[14px]'>
-              {`${String(pot.participants.length)}/${String(pot.totalParticipants)}`}
+              {isRoundZero
+                ? `${String(pot.participants.length)}/${String(MAX_PARTICIPANTS)}`
+                : `${String(pot.participants.length)}/${String(pot.totalParticipants)}`}
             </span>
           </div>
           <p className='font-base text-[14px]'>

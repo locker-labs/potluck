@@ -11,6 +11,7 @@ import { useJoinPot } from '@/hooks/useJoinPot';
 import { useAccount } from 'wagmi';
 import { timeFromNow } from '@/lib/helpers/time';
 import { DurationPill } from '@/components/ui/Pill';
+import { MAX_PARTICIPANTS } from '@/config';
 
 // let _loadPotsEffectFlag = true;
 let _fetchPotsEffectFlag = true; // prevent multiple fetches
@@ -286,7 +287,9 @@ export function YourPotCard({
           <div className='flex items-center justify-start gap-1'>
             <UsersRound strokeWidth='1.25px' size={18} color='#14b6d3' />
             <span className='font-base text-[14px]'>
-              {`${String(pot.participants.length)}/${String(pot.totalParticipants)}`}
+              {isRoundZero
+                ? `${String(pot.participants.length)}/${String(MAX_PARTICIPANTS)}`
+                : `${String(pot.participants.length)}/${String(pot.totalParticipants)}`}
             </span>
           </div>
           <p className='font-base text-[14px]'>
