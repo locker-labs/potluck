@@ -181,7 +181,7 @@ contract Potluck is Ownable {
         bytes32 key = keccak256(abi.encodePacked(potId, p.round, msg.sender));
         if (hasJoinedRound[key]) revert AlreadyJoined(potId, p.round, msg.sender);
 
-        // only bump totalParticipants in the first round
+        // only increment totalParticipants in the first round
         if (p.round == 0) {
             p.totalParticipants++;
         }
@@ -198,7 +198,7 @@ contract Potluck is Ownable {
     // PAYOUT
     //––––––––––––––––––––
 
-    function triggerPotPayout(uint256 potId) external {
+    function triggerPotPayout(uint256 potId) public {
         Pot storage p = pots[potId];
         if (p.balance == 0) revert PotDoesNotExist(potId);
         if (block.timestamp < p.deadline) revert RoundNotReady(p.deadline, block.timestamp);
@@ -249,6 +249,12 @@ contract Potluck is Ownable {
         emit PotJoined(potId, nextRound, winner);
 
         p.deadline = block.timestamp + p.period;
+    }
+
+    function triggerBatchPayout(uint256[] calldata potIds) external {
+        for (uint256 i = 0; i < potIds.length; i++) {
+            triggerPotPayout(potIds[i]);
+        }
     }
 
     //––––––––––––––––––––
