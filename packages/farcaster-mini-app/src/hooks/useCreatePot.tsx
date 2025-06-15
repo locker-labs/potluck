@@ -1,5 +1,5 @@
 import { publicClient } from '@/clients/viem';
-import { contractAddress, abi, tokenAddress, PotCreatedEventSignatureHash,fees } from '@/config';
+import { contractAddress, abi, tokenAddress, PotCreatedEventSignatureHash, fees } from '@/config';
 import { useState, useEffect } from 'react';
 import { useAccount, useWriteContract } from 'wagmi';
 import { toast } from 'sonner';
@@ -32,7 +32,7 @@ export function useCreatePot() {
     potName: string,
     amountBigInt: bigint,
     timePeriod: bigint,
-    isPublic: boolean = true
+    isPublic: boolean = true,
   ): Promise<bigint> => {
     try {
       const args = [toHex(potName), tokenAddress, amountBigInt, timePeriod, isPublic];
@@ -43,7 +43,7 @@ export function useCreatePot() {
         timePeriod: timePeriod.toString(),
         fee: toHex(0),
       });
-       console.log(contractAddress);
+      console.log(contractAddress);
       // broadcast transaction
       const txHash = await writeContractAsync({
         address: contractAddress,

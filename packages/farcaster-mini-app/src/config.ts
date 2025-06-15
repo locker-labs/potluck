@@ -41,7 +41,7 @@ const chainIdToContractConfig: Record<TChainId, TContractConfig> = {
   84532: {
     chain: baseSepolia,
     deploymentBlockBigInt: 26625932n, // Deployment block for Base Sepolia
-    contractAddress: PotluckAddressBaseSepolia as Address, 
+    contractAddress: PotluckAddressBaseSepolia as Address,
     tokenAddress: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
     fees: 10000n,
   },

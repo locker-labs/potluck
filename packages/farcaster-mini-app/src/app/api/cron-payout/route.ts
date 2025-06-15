@@ -1,14 +1,10 @@
 // src/app/api/cron-payout/route.ts
-import { NextResponse } from "next/server";
-import {
-  createPublicClient,
-  createWalletClient,
-  http,
-} from "viem";
-import { readContract, waitForTransactionReceipt, writeContract } from "viem/actions";
-import { baseSepolia } from "viem/chains";
-import { privateKeyToAccount } from "viem/accounts";
-import { contractAddress,abi as potluckAbi } from "@/config"; 
+import { NextResponse } from 'next/server';
+import { createPublicClient, createWalletClient, http } from 'viem';
+import { readContract, waitForTransactionReceipt, writeContract } from 'viem/actions';
+import { baseSepolia } from 'viem/chains';
+import { privateKeyToAccount } from 'viem/accounts';
+import { contractAddress, abi as potluckAbi } from '@/config';
 
 // envs
 const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL!;
@@ -39,8 +35,8 @@ export async function GET() {
       await readContract(publicClient, {
         address: contractAddress,
         abi: potluckAbi,
-        functionName: "potCount",
-      })
+        functionName: 'potCount',
+      }),
     );
 
     const now = BigInt(Math.floor(Date.now() / 1000));
@@ -48,9 +44,9 @@ export async function GET() {
 
     // 1) Find all eligible pots
     for (let i = 0; i < potCount; i++) {
-      if(potStateCache.has(i)) {
+      if (potStateCache.has(i)) {
         const potState = potStateCache.get(i)!;
-        if(now >= potState.deadline && potState.balance > 0n) {
+        if (now >= potState.deadline && potState.balance > 0n) {
           eligiblePots.push(BigInt(i));
           console.log(`Pot #${i} is eligible for payout`);
         }
@@ -60,16 +56,16 @@ export async function GET() {
       const p = (await readContract(publicClient, {
         address: contractAddress,
         abi: potluckAbi,
-        functionName: "pots",
+        functionName: 'pots',
         args: [BigInt(i)],
       })) as any;
-      
+
       const currentDeadline = p[3];
       const currentBalance = p[4];
-      
+
       if (currentBalance > 0n && now >= currentDeadline) {
-          eligiblePots.push(BigInt(i));
-          console.log(`Pot #${i} is eligible for payout`);
+        eligiblePots.push(BigInt(i));
+        console.log(`Pot #${i} is eligible for payout`);
       }
     }
     // ToDo: Add batching for more than 10 pots
@@ -77,16 +73,16 @@ export async function GET() {
       const txHash = await writeContract(walletClient, {
         address: contractAddress,
         abi: potluckAbi,
-        functionName: "triggerBatchPayout",
+        functionName: 'triggerBatchPayout',
         args: [eligiblePots],
       });
       console.log(`🔔 triggering batch payout for ${eligiblePots.length} pots`);
       await waitForTransactionReceipt(publicClient, { hash: txHash });
     }
-    
+
     return NextResponse.json({ triggered: eligiblePots.length, success: true, checked: potCount });
   } catch (err: any) {
-    console.error("Cron error:", err);
+    console.error('Cron error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
