@@ -168,7 +168,7 @@ export default function YourPots() {
         // --------------------
         // DISPLAY POTS SECTION
         // --------------------
-        <div className='max-h-[213px] flex flex-row overflow-x-scroll gap-[12px] md:grid-cols-2 lg:grid-cols-3'>
+        <div className='flex flex-row overflow-x-scroll gap-[12px] md:grid-cols-2 lg:grid-cols-3'>
           {filteredPots.map((pot: TPotObject) => (
             <YourPotCard
               key={pot.id}
@@ -274,7 +274,7 @@ export function YourPotCard({
         />
       </div>
       <p className='text-[18px] font-bold leading-none'>{pot.name}</p>
-      <div className='grid grid-cols-3'>
+      <div className='mt-1 grid grid-cols-3'>
         <div className='col-start-3 text-end'>
           <p className='text-cyan-400 font-bold text-[20px] leading-none'>${pot.totalPool}</p>
           <p className='text-xs font-light leading-relaxed'>Total Pool</p>
