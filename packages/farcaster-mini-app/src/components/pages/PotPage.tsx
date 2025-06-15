@@ -30,7 +30,13 @@ export default function PotPage({ id }: { id: string }) {
   // const autoJoin = joinSearchParam === '' || !!joinSearchParam;
 
   const { isConnected, address } = useAccount();
-  const { handleJoinPot, isLoading: isLoadingJoinPot, joiningPotId, joinedPotId, tokenBalance } = useJoinPot();
+  const {
+    handleJoinPot,
+    isLoading: isLoadingJoinPot,
+    joiningPotId,
+    joinedPotId,
+    tokenBalance,
+  } = useJoinPot();
 
   // STATES
   const [pot, setPot] = useState<TPotObject | null>(null);
@@ -38,7 +44,7 @@ export default function PotPage({ id }: { id: string }) {
   const [error, setError] = useState<string | null>(null);
   const [hasJoinedBefore, setHasJoinedBefore] = useState<boolean | null>(null);
   const [hasJoinedRound, setHasJoinedRound] = useState<boolean>(
-      isConnected && !!address && !!pot && pot.participants.includes(address),
+    isConnected && !!address && !!pot && pot.participants.includes(address),
   );
   const [logsState, setLogsState] = useState<{
     loading: boolean;
