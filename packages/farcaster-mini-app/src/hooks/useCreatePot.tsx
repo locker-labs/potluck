@@ -1,5 +1,5 @@
 import { publicClient } from '@/clients/viem';
-import { contractAddress, abi, tokenAddress, PotCreatedEventSignatureHash } from '@/config';
+import { contractAddress, abi, tokenAddress, PotCreatedEventSignatureHash, fees } from '@/config';
 import { useState, useEffect } from 'react';
 import { useAccount, useWriteContract } from 'wagmi';
 import { toast } from 'sonner';
@@ -8,7 +8,6 @@ import { useTokenBalance } from '@/hooks/useTokenBalance';
 import { getTransactionLink } from '@/lib/helpers/blockExplorer';
 import { useConnection } from '@/hooks/useConnection';
 import { type Address, toHex } from 'viem';
-import { emptyBytes32 } from '@/lib/helpers/contract';
 
 let _potName: string;
 let _amount: bigint;
@@ -33,9 +32,10 @@ export function useCreatePot() {
     potName: string,
     amountBigInt: bigint,
     timePeriod: bigint,
+    isPublic: boolean = true,
   ): Promise<bigint> => {
     try {
-      const args = [toHex(potName), tokenAddress, amountBigInt, timePeriod, emptyBytes32];
+      const args = [toHex(potName), tokenAddress, amountBigInt, timePeriod, isPublic];
       console.log('Creating pot with args:', {
         potName,
         tokenAddress,
@@ -43,6 +43,7 @@ export function useCreatePot() {
         timePeriod: timePeriod.toString(),
         fee: toHex(0),
       });
+      console.log(contractAddress);
       // broadcast transaction
       const txHash = await writeContractAsync({
         address: contractAddress,
@@ -50,6 +51,7 @@ export function useCreatePot() {
         functionName: 'createPot',
         args,
       });
+      console.log(txHash);
 
       // wait for confirmation
       const receipt = await publicClient.waitForTransactionReceipt({
@@ -118,8 +120,8 @@ export function useCreatePot() {
     setIsCreatingPot(true);
 
     try {
-      if (4n * amount > BigInt(allowance)) {
-        await approveTokensAsync(4n * amount);
+      if (4n * amount + fees >= BigInt(allowance)) {
+        await approveTokensAsync(4n * amount + fees);
         await refetchAllowance();
       }
 
