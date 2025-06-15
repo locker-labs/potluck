@@ -8,7 +8,7 @@ import { type Abi, formatUnits, type GetFilterLogsReturnType } from 'viem';
 import { useJoinPot } from '@/hooks/useJoinPot';
 import { GradientButton2, GradientButton3 } from '../ui/Buttons';
 import { GradientCard2 } from '../ui/GradientCard';
-import { useSearchParams } from 'next/navigation';
+// import { useSearchParams } from 'next/navigation';
 import { useAccount } from 'wagmi';
 import { useRouter } from 'next/navigation';
 import { MoveLeft } from 'lucide-react';
@@ -25,18 +25,21 @@ const defaultLogsState = { loading: true, error: null, logs: [] };
 export default function PotPage({ id }: { id: string }) {
   const router = useRouter();
   const potId = BigInt(id);
-  const searchParams = useSearchParams();
-  const joinSearchParam = searchParams.get('join');
-  const autoJoin = joinSearchParam === '' || !!joinSearchParam;
+  // const searchParams = useSearchParams();
+  // const joinSearchParam = searchParams.get('join');
+  // const autoJoin = joinSearchParam === '' || !!joinSearchParam;
 
   const { isConnected, address } = useAccount();
-  const { handleJoinPot, isLoading: isLoadingJoinPot, joiningPotId, tokenBalance } = useJoinPot();
+  const { handleJoinPot, isLoading: isLoadingJoinPot, joiningPotId, joinedPotId, tokenBalance } = useJoinPot();
 
   // STATES
   const [pot, setPot] = useState<TPotObject | null>(null);
   const [loadingPot, setLoadingPot] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasJoinedBefore, setHasJoinedBefore] = useState<boolean | null>(null);
+  const [hasJoinedRound, setHasJoinedRound] = useState<boolean>(
+      isConnected && !!address && !!pot && pot.participants.includes(address),
+  );
   const [logsState, setLogsState] = useState<{
     loading: boolean;
     error: string | null;
@@ -80,13 +83,13 @@ export default function PotPage({ id }: { id: string }) {
   }, [potId]);
 
   // join pot from search param
-  useEffect(() => {
-    if (!isLoadingJoinPot && autoJoin && pot) {
-      (async function handleAutoJoin() {
-        await handleJoinPot(pot);
-      })();
-    }
-  }, [autoJoin, pot, isLoadingJoinPot]);
+  // useEffect(() => {
+  //   if (!isLoadingJoinPot && autoJoin && !!pot && !!address) {
+  //     (async function handleAutoJoin() {
+  //       await handleJoinPot(pot);
+  //     })();
+  //   }
+  // }, [autoJoin, pot, isLoadingJoinPot, address]);
 
   // Has user joined pot previously (requires wallet connection)
   useEffect(() => {
@@ -96,6 +99,20 @@ export default function PotPage({ id }: { id: string }) {
       })();
     }
   }, [isConnected, address, pot]);
+
+  // Update state when joinedPotId changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  useEffect(() => {
+    if (!!pot && !!address && !hasJoinedRound) {
+      if (joinedPotId === pot.id) {
+        pot.totalParticipants += 1;
+        pot.participants.push(address);
+        setHasJoinedRound(true);
+      } else {
+        setHasJoinedRound(pot.participants.includes(address));
+      }
+    }
+  }, [pot, joinedPotId, address]);
 
   if (loadingPot) {
     return (
@@ -115,7 +132,6 @@ export default function PotPage({ id }: { id: string }) {
   // DERIVED STATE
   const isRoundZero: boolean = pot.round === 0;
   const isJoiningPot: boolean = joiningPotId !== null;
-  const hasJoinedRound: boolean = isConnected && !!address && pot.participants.includes(address);
   const initialLoading: boolean = isLoadingJoinPot || loadingPot;
   const cannotJoinPot: boolean = !isRoundZero && hasJoinedBefore !== null && !hasJoinedBefore;
   const insufficientBalance: boolean = tokenBalance !== undefined && tokenBalance < pot.entryAmount;
