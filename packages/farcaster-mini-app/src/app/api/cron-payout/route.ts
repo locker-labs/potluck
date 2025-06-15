@@ -33,20 +33,6 @@ const walletClient = createWalletClient({
   account: privateKeyToAccount(process.env.PRIVATE_KEY! as `0x${string}`),
 });
 
-// Helper function to check if a pot needs to be checked
-function shouldCheckPot(potId: number, currentDeadline: bigint, currentBalance: bigint): boolean {
-  const cachedState = potStateCache.get(potId);
-  const now = BigInt(Math.floor(Date.now() / 1000));
-  
-  // If we haven't cached this pot's state or the deadline has passed
-  if (!cachedState || now >= currentDeadline) {
-    potStateCache.set(potId, { deadline: currentDeadline, balance: currentBalance });
-    return true;
-  }
-  
-  return false;
-}
-
 export async function GET() {
   try {
     const potCount = Number(
@@ -86,7 +72,7 @@ export async function GET() {
           console.log(`Pot #${i} is eligible for payout`);
       }
     }
-
+    // ToDo: Add batching for more than 10 pots
     if (eligiblePots.length > 0) {
       const txHash = await writeContract(walletClient, {
         address: contractAddress,
