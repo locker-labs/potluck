@@ -137,7 +137,7 @@ export default function CreatePotPage() {
             <Input
               id='enrty-amount'
               type='number'
-              min='1'
+              min='0.01'
               step='1'
               value={amount}
               onChange={(e) => {
