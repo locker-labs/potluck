@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { mnemonicToAccount } from 'viem/accounts';
+import { privateKeyToAccount } from 'viem/accounts';
 import {
   APP_BUTTON_TEXT,
   APP_SUBTITLE,
@@ -53,14 +53,14 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function getSecretEnvVars() {
-  const seedPhrase = process.env.SEED_PHRASE;
+  const privateKey = process.env.PRIVATE_KEY;
   const fid = process.env.FID;
 
-  if (!seedPhrase || !fid) {
+  if (!privateKey || !fid) {
     return null;
   }
 
-  return { seedPhrase, fid };
+  return { privateKey, fid };
 }
 
 export function getFrameEmbedMetadata(options?: { ogImageUrl?: string; pathname?: string }) {
@@ -113,14 +113,14 @@ export async function getFarcasterMetadata(): Promise<FrameManifest> {
   const secretEnvVars = getSecretEnvVars();
   if (!secretEnvVars) {
     console.warn(
-      'No seed phrase or FID found in environment variables -- generating unsigned metadata',
+      'No private key or FID found in environment variables -- generating unsigned metadata',
     );
   }
 
   let accountAssociation;
   if (secretEnvVars) {
-    // Generate account from seed phrase
-    const account = mnemonicToAccount(secretEnvVars.seedPhrase);
+    // Generate account from private key
+    const account = privateKeyToAccount(secretEnvVars.privateKey as `0x${string}`);
     const custodyAddress = account.address;
 
     const header = {
