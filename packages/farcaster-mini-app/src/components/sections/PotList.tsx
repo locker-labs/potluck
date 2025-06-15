@@ -1,16 +1,15 @@
 import { useState, useEffect } from 'react';
 import { getPotCreatedLogs } from '@/lib/getLogs';
 import type { TPot, TPotObject } from '@/lib/types';
-import { getPotParticipants, fetchPot, potMapper } from '@/lib/helpers/contract';
+import { getPotParticipants, fetchPot, potMapper, getHasJoinedRound } from '@/lib/helpers/contract';
 import { formatUnits, type Address } from 'viem';
 import { Loader2, Clock5, UsersRound } from 'lucide-react';
 import { GradientButton, GradientButton2 } from '../ui/Buttons';
 import { GradientCard } from '../ui/GradientCard';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useJoinPot } from '@/hooks/useJoinPot';
 import { useAccount } from 'wagmi';
-import { useConnection } from '@/hooks/useConnection';
-import { toast } from 'sonner';
 
 // Helper to map period to seconds
 const periodSecondsMap = {
@@ -20,14 +19,12 @@ const periodSecondsMap = {
   monthly: BigInt(2592000),
 };
 
-// let _loadPotsEffectFlag = true;
 let _fetchPotsEffectFlag = true; // prevent multiple fetches
 
 let potIdToPotMap: Record<string, TPotObject> = {};
-// let maxPotId: bigint | null = null;
 
 export default function PotList() {
-  const { handleJoinPot, joiningPotId } = useJoinPot();
+  const { joinedPotId, handleJoinPot, joiningPotId, tokenBalance } = useJoinPot();
 
   // ------
   // STATES
@@ -89,7 +86,6 @@ export default function PotList() {
         let potParticipants: Address[] = [];
 
         try {
-          // fetchedPot = await fetchPot(potId);
           const res = await Promise.all([fetchPot(potId), getPotParticipants(potId)]);
           fetchedPot = res[0];
           potParticipants = res[1];
@@ -159,9 +155,10 @@ export default function PotList() {
             <PotCard
               key={pot.id}
               pot={pot}
-              isJoining={joiningPotId !== null}
               joiningPotId={joiningPotId}
+              joinedPotId={joinedPotId}
               handleJoinPot={handleJoinPot}
+              tokenBalance={tokenBalance}
             />
           ))}
         </div>
@@ -177,18 +174,89 @@ export default function PotList() {
 
 export function PotCard({
   pot,
-  isJoining,
   joiningPotId,
+  joinedPotId,
   handleJoinPot,
+  tokenBalance,
 }: {
   pot: TPotObject;
-  isJoining: boolean;
   joiningPotId: bigint | null;
+  joinedPotId: bigint | null;
   handleJoinPot: (pot: TPotObject) => void;
+  tokenBalance: bigint | undefined;
 }) {
-  const { isConnected, isConnecting, address } = useAccount();
-  const { ensureConnection } = useConnection();
-  const isJoined = pot.participants.includes(address as Address);
+  const { address, isConnected } = useAccount();
+
+  const [hasJoinedBefore, setHasJoinedBefore] = useState<boolean | null>(null);
+  const [hasJoinedRound, setHasJoinedRound] = useState<boolean>(
+    isConnected && !!address && pot.participants.includes(address),
+  );
+
+  // Fetch join status for round 0
+  useEffect(() => {
+    if (isConnected && !!address && !!pot) {
+      (async () => {
+        setHasJoinedBefore(await getHasJoinedRound(pot.id, 0, address));
+      })();
+    }
+  }, [isConnected, address, pot]);
+
+  // Update hasJoinedRound when joinedPotId changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  useEffect(() => {
+    if (!address) {
+      setHasJoinedRound(false);
+    } else {
+      if (!hasJoinedRound) {
+        if (joinedPotId === pot.id) {
+          pot.totalParticipants += 1;
+          pot.participants.push(address);
+          setHasJoinedRound(true);
+        } else {
+          setHasJoinedRound(pot.participants.includes(address));
+        }
+      }
+    }
+  }, [joinedPotId, address]);
+
+  // DERIVED STATE
+  const isRoundZero: boolean = pot.round === 0;
+  const isJoiningPot: boolean = joiningPotId === pot.id;
+  const initialLoading: boolean = false;
+  const cannotJoinPot: boolean = !isRoundZero && hasJoinedBefore !== null && !hasJoinedBefore;
+  const insufficientBalance: boolean = tokenBalance !== undefined && tokenBalance < pot.entryAmount;
+  const deadlinePassed: boolean = pot.deadline < BigInt(Math.floor(Date.now() / 1000));
+
+  const disabled: boolean =
+    isJoiningPot ||
+    hasJoinedRound ||
+    initialLoading ||
+    cannotJoinPot ||
+    insufficientBalance ||
+    deadlinePassed;
+  const joinButtonText = initialLoading ? (
+    'Loading'
+  ) : hasJoinedRound ? (
+    'Joined'
+  ) : isJoiningPot ? (
+    'Joining'
+  ) : deadlinePassed ? (
+    'Expired ⌛'
+  ) : insufficientBalance ? (
+    'Insufficient Balance 💰'
+  ) : isRoundZero ? (
+    'Join Pot'
+  ) : hasJoinedBefore ? (
+    <span className={'flex items-center'}>
+      <span className={'leading-none'}>Pay This Round (</span>
+      <span className={'mr-1'}>
+        <Image src={'/usdc.png'} alt={'usdc'} width={16} height={16} />
+      </span>
+      <span className={'leading-none'}>{formatUnits(pot.entryAmount, 6)})</span>
+    </span>
+  ) : (
+    'Cannot Join 😔'
+  );
 
   return (
     <GradientCard key={pot.id}>
@@ -206,9 +274,7 @@ export function PotCard({
             <div className='flex items-center justify-start gap-1'>
               <UsersRound strokeWidth='1.25px' size={18} color='#14b6d3' />
               <span className='font-base text-[14px]'>
-                {String(pot.round) === '0'
-                  ? String(pot.totalParticipants)
-                  : `${String(pot.participants.length)}/${String(pot.totalParticipants)}`}
+                {`${String(pot.participants.length)}/${String(pot.totalParticipants)}`}
               </span>
             </div>
             <p className='font-base text-[14px]'>
@@ -218,7 +284,9 @@ export function PotCard({
           <div className='col-start-4 col-span-2'>
             <div className=' flex items-center justify-center gap-1'>
               <Clock5 size={14} color='#14b6d3' />
-              <span className='font-bold text-[14px]'>Closes in {pot.deadlineString}</span>
+              <span className='font-bold text-[14px]'>
+                {deadlinePassed ? 'Awaiting Payout' : `Closes in ${pot.deadlineString}`}
+              </span>
             </div>
           </div>
         </div>
@@ -227,28 +295,12 @@ export function PotCard({
           onClick={(e) => {
             e.stopPropagation();
             e.preventDefault();
-            if (isJoined) {
-              toast.info('You have already joined this pot');
-              return;
-            }
-            if (isConnected && address) {
-              handleJoinPot(pot);
-            } else {
-              ensureConnection();
-            }
+            handleJoinPot(pot);
           }}
-          disabled={isJoining && joiningPotId === pot.id}
+          disabled={disabled}
           className='w-full'
         >
-          {isConnecting
-            ? 'Connecting'
-            : !isConnected
-              ? 'Connect'
-              : isJoined
-                ? 'Joined'
-                : isJoining && joiningPotId === pot.id
-                  ? 'Joining...'
-                  : 'Join Pot'}
+          {joinButtonText}
         </GradientButton>
       </Link>
     </GradientCard>

@@ -55,61 +55,63 @@ export function RecentActivity({
   return (
     <div className='py-4 max-h-[300px] overflow-y-auto'>
       <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
-        {logsState.logs.map((log, index) => {
-          const entryAmount: bigint = pot.entryAmount;
-          const totalParticipants = pot.totalParticipants;
-          const winnerPayout = BigInt(totalParticipants - 1) * entryAmount;
-          const isWinner = log.eventName === 'PotPayout';
-          const isCreator = log.eventName === 'PotCreated';
-          const formattedAddress = formatAddress(log.transactionHash);
+        {logsState.logs
+          .filter((log) => log.eventName !== 'PotCreated')
+          .map((log, index) => {
+            const entryAmount: bigint = pot.entryAmount;
+            const totalParticipants = pot.totalParticipants;
+            const winnerPayout = BigInt(totalParticipants - 1) * entryAmount;
+            const isWinner = log.eventName === 'PotPayout';
+            const isCreator = log.eventName === 'PotCreated';
+            const formattedAddress = formatAddress(log.transactionHash);
 
-          return (
-            //   biome-ignore lint/suspicious/noArrayIndexKey: using index as key for simplicity
-            <div key={index} className='px-4 flex items-start justify-between'>
-              <div className='flex items-start gap-2'>
-                {isWinner ? (
-                  '🎉'
-                ) : (
-                  <MoveUpRight className='mt-0.5' strokeWidth='2px' size={20} color='#14b6d3' />
-                )}
+            return (
+              //   biome-ignore lint/suspicious/noArrayIndexKey: using index as key for simplicity
+              <div key={index} className='px-4 flex items-start justify-between'>
+                <div className='flex items-start gap-2'>
+                  {isWinner ? (
+                    '🎉'
+                  ) : (
+                    <MoveUpRight className='mt-0.5' strokeWidth='2px' size={20} color='#14b6d3' />
+                  )}
+                  <div>
+                    <p className={`text-base ${isWinner ? 'text-green-500' : 'text-app-cyan'}`}>
+                      {isWinner ? 'Winner Payout' : isCreator ? 'Created' : 'Deposited'}
+                    </p>
+                    <div className='text-xs'>
+                      {blockMapState.size ? (
+                        formatDateFromTimestamp(Number(blockMapState.get(log.blockNumber) ?? 0))
+                      ) : (
+                        <div
+                          className={
+                            'h-2.5 mt-1 mb-0.5 bg-white/30 w-[120px] animate-pulse rounded-xl shadow-sm'
+                          }
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 <div>
-                  <p className={`text-base ${isWinner ? 'text-green-500' : 'text-app-cyan'}`}>
-                    {isWinner ? 'Winner Payout' : isCreator ? 'Created' : 'Deposited'}
-                  </p>
-                  <div className='text-xs'>
-                    {blockMapState.size ? (
-                      formatDateFromTimestamp(Number(blockMapState.get(log.blockNumber) ?? 0))
-                    ) : (
-                      <div
-                        className={
-                          'h-2.5 mt-1 mb-0.5 bg-white/30 w-[120px] animate-pulse rounded-xl shadow-sm'
-                        }
-                      />
-                    )}
+                  <div className={'mb-1.5 flex items-center'}>
+                    <span className={'mr-1'}>
+                      <Image src={'/usdc.png'} alt={'usdc'} width={16} height={16} />
+                    </span>
+                    {/* TODO: add platform fee for creator */}
+                    <span className={'leading-none'}>
+                      {formatUnits(isWinner ? winnerPayout : entryAmount, 6)}
+                    </span>
                   </div>
+                  <Link href={getTransactionLink(log.transactionHash)}>
+                    <div className={'flex items-center gap-1'}>
+                      <p className='text-xs leading-none'>{formattedAddress}</p>
+                      <ExternalLink size={12} />
+                    </div>
+                  </Link>
                 </div>
               </div>
-
-              <div>
-                <div className={'mb-1.5 flex items-center'}>
-                  <span className={'mr-1'}>
-                    <Image src={'/usdc.png'} alt={'usdc'} width={16} height={16} />
-                  </span>
-                  {/* TODO: add platform fee for creator */}
-                  <span className={'leading-none'}>
-                    {formatUnits(isWinner ? winnerPayout : entryAmount, 6)}
-                  </span>
-                </div>
-                <Link href={getTransactionLink(log.transactionHash)}>
-                  <div className={'flex items-center gap-1'}>
-                    <p className='text-xs leading-none'>{formattedAddress}</p>
-                    <ExternalLink size={12} />
-                  </div>
-                </Link>
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
       </div>
     </div>
   );

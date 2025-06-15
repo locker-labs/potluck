@@ -1,28 +1,36 @@
-import { createConfig, http, WagmiProvider } from 'wagmi';
-import { chain } from '@/config';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { createAppKit } from '@reown/appkit/react';
+import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
+
+import { WagmiProvider } from 'wagmi';
+import { appKitNetwork } from '@/config';
 import { farcasterFrame } from '@farcaster/frame-wagmi-connector';
-import { metaMask } from 'wagmi/connectors';
-import { APP_NAME, APP_URL, RPC_URL } from '@/lib/constants';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
 import type React from 'react';
 
-export const config = createConfig({
-  chains: [chain],
-  transports: {
-    [chain.id]: http(RPC_URL),
-  },
-  connectors: [
-    farcasterFrame(),
-    metaMask({
-      dappMetadata: {
-        name: APP_NAME,
-        url: APP_URL,
-      },
-    }),
-  ],
+const queryClient = new QueryClient();
+
+// Get projectId from https://cloud.reown.com
+export const projectId = process.env.NEXT_PUBLIC_REOWN_APP_ID;
+
+if (!projectId) {
+  throw new Error('NEXT_PUBLIC_REOWN_APP_ID is not defined');
+}
+
+export const wagmiAdapter = new WagmiAdapter({
+  connectors: [farcasterFrame()],
+  projectId,
+  networks: [appKitNetwork],
 });
 
-const queryClient = new QueryClient();
+export const config = wagmiAdapter.wagmiConfig;
+
+// Initialize the app kit
+createAppKit({
+  adapters: [wagmiAdapter],
+  projectId,
+  networks: [appKitNetwork],
+});
 
 export default function Provider({ children }: { children: React.ReactNode }) {
   return (

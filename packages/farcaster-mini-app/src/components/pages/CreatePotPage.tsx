@@ -1,12 +1,11 @@
 'use client';
 
+import type { FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
-import { toast } from 'sonner';
-import { parseUnits, toHex } from 'viem';
-import { useWriteContract, useAccount } from 'wagmi';
-import { MoveLeft, Copy, MessageSquarePlus, Check } from 'lucide-react';
+import { parseUnits } from 'viem';
+import { MoveLeft, Copy, MessageSquarePlus, Check, Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -15,194 +14,72 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import Link from 'next/link';
+import Image from 'next/image';
 import { formatAddress } from '@/lib/address';
-import { useApproveTokens } from '@/hooks/useApproveTokens';
-import { useTokenBalance } from '@/hooks/useTokenBalance';
-import { contractAddress, abi, tokenAddress, PotCreatedEventSignatureHash } from '@/config';
-import { publicClient } from '@/clients/viem';
-import { generateRandomCast } from '@/lib/helpers/cast';
 import { GradientButton, GradientButton3 } from '../ui/Buttons';
-import { getInviteLink } from '@/lib/helpers/inviteLink';
-import { useConnection } from '@/hooks/useConnection';
-import { emptyBytes32 } from '@/lib/helpers/contract';
 import { getTransactionLink } from '@/lib/helpers/blockExplorer';
+import { useCreatePot } from '@/hooks/useCreatePot';
+import { useCopyInviteLink } from '@/hooks/useCopyInviteLink';
+import { useCreateCast } from '@/hooks/useCreateCast';
+import { formatUnits } from 'viem';
+import { usePlatformFee } from '@/hooks/usePlatformFee';
 
 const emojis = ['🎯', '🏆', '🔥', '🚀', '💪', '⚡', '🎬', '🎓', '🍕', '☕'];
 
 const timePeriods = [
   { value: BigInt(86400), label: 'Daily' },
   { value: BigInt(604800), label: 'Weekly' },
-  // { value: BigInt(1209600), label: "Biweekly" },
   { value: BigInt(2592000), label: 'Monthly' },
 ];
-
-let potId: bigint | null = null;
 
 export default function CreatePotPage() {
   const [emoji, setEmoji] = useState<string>(emojis[0]);
   const [name, setName] = useState<string>('');
   const [timePeriod, setTimePeriod] = useState<bigint>(timePeriods[0].value);
   const [amount, setAmount] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-
-  const router = useRouter();
-  const { isConnected } = useAccount();
-  const { ensureConnection } = useConnection();
-  const { data: hash, isPending, writeContractAsync } = useWriteContract();
-  const { data: tokenBalanceBigInt, isLoading: isLoadingBalance } = useTokenBalance();
-  const { allowance, isLoadingAllowance, refetchAllowance, approveTokensAsync } =
-    useApproveTokens();
 
   const potName = `${emoji} ${name.trim()}`;
   const amountBigInt = BigInt(parseUnits(amount, 6));
-  const allowanceBigInt = BigInt(allowance ?? 0);
 
-  const initialLoading = isLoadingAllowance || isLoadingBalance;
-  const isLoading = isSubmitting || isPending;
-  const disabled =
-    !isConnected ||
-    initialLoading ||
-    isLoading ||
-    !amount ||
-    !name ||
-    Number.parseFloat(amount) <= 0;
+  const router = useRouter();
+  const { potId, setPotId, handleCreatePot, isCreatingPot, isLoading, hash } = useCreatePot();
+  const { handleCopyLink } = useCopyInviteLink({ potId: potId });
+  const { handleCastOnFarcaster } = useCreateCast({
+    potId,
+    amount: amountBigInt,
+    period: timePeriod,
+  });
+
+  const { fee } = usePlatformFee();
+
+  const amountUsdc = formatUnits(amountBigInt, 6);
+  const feeUsdc = formatUnits(fee ?? 0n, 6);
+  const totalAmountUsdc = formatUnits(amountBigInt + (fee ?? 0n), 6);
+
+  const disabled = isLoading || isCreatingPot || !amount || !name || Number.parseFloat(amount) <= 0;
 
   // FUNCTIONS
-
-  const createPot = async (): Promise<bigint> => {
-    try {
-      const args = [toHex(potName), tokenAddress, amountBigInt, timePeriod, emptyBytes32];
-      console.log('Creating pot with args:', {
-        potName,
-        tokenAddress,
-        amount: amountBigInt.toString(),
-        timePeriod: timePeriod.toString(),
-        fee: toHex(0),
-      });
-      // broadcast transaction
-      const hash = await writeContractAsync({
-        address: contractAddress,
-        abi,
-        functionName: 'createPot',
-        args,
-      });
-
-      // wait for confirmation
-      const receipt = await publicClient.waitForTransactionReceipt({ hash, confirmations: 1 });
-
-      if (receipt.status === 'reverted') {
-        throw new Error(`Transaction reverted: ${getTransactionLink(receipt.transactionHash)}`);
-      }
-
-      console.log(`Transaction confirmed: ${getTransactionLink(receipt.transactionHash)}`);
-
-      // parse logs to get pot ID
-      const potCreatedEvent = receipt.logs.find(
-        (log) => log.topics[0] === PotCreatedEventSignatureHash,
-      );
-      if (!potCreatedEvent) {
-        throw new Error('PotCreated event not found in transaction logs');
-      }
-
-      potId = BigInt(potCreatedEvent.topics[1] ?? '0');
-
-      return potId;
-    } catch (error) {
-      console.error('Error creating potluck:', error);
-      throw error;
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-
-    if (!amount || Number.parseFloat(amount) <= 0) {
-      toast.warning('Invalid amount', {
-        description: 'Please enter a valid USDC amount greater than 0.',
-      });
-      return;
-    }
-
-    if (tokenBalanceBigInt === undefined) {
-      toast.error('Error fetching token balance', {
-        description: 'Unable to fetch your USDC balance. Please try again later.',
-      });
-      return;
-    }
-
-    if (amountBigInt > tokenBalanceBigInt) {
-      toast.error('Insufficient balance', {
-        description: 'You do not have enough USDC to create this pot.',
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    await ensureConnection();
-
-    try {
-      if (4n * amountBigInt > allowanceBigInt) {
-        await approveTokensAsync(4n * amountBigInt);
-      }
-
-      await createPot();
-
-      // Show success modal instead of toast
-      setShowSuccessModal(true);
-    } catch (error) {
-      console.error('Error creating potluck:', error);
-      toast.error('Error creating potluck', {
-        description:
-          error instanceof Error
-            ? error.message?.split('.')?.[0]
-            : 'Something went wrong. Please try again.',
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Handle copy invite link
-  const handleCopyLink = async () => {
-    if (potId === null) {
-      toast.error('Pot ID is not available. Please create a pot first.');
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(getInviteLink(potId));
-      toast.success('Invite link copied to clipboard!');
-    } catch (err) {
-      console.error('Failed to copy link:', err);
-      toast.error('Failed to copy link');
-    }
-  };
-
-  // Handle casting to Farcaster
-  const handleCastOnFarcaster = () => {
-    if (!potId) {
-      toast.error('Pot ID is not available. Please create a pot first.');
-      return;
-    }
-    const castText = generateRandomCast(Number(amount), timePeriod, potId);
-    // Open Warpcast in a new tab with pre-filled message
-    const warpcastUrl = `https://farcaster.xyz/~/compose?text=${encodeURIComponent(castText)}`;
-    window.open(warpcastUrl, '_blank');
+    await handleCreatePot(potName, amountBigInt, timePeriod);
   };
 
   // EFFECTS
-  useEffect(() => {
-    refetchAllowance();
-  }, [isSubmitting]);
-
   // Redirect to pot page when success modal is closed
   useEffect(() => {
     if (!showSuccessModal && potId) {
       router.push(`/pot/${potId}`);
-      potId = null;
+      setPotId(null);
     }
   }, [showSuccessModal]);
+
+  // Show success modal when pot is created
+  useEffect(() => {
+    if (!!hash && !!potId) {
+      setShowSuccessModal(true);
+    }
+  }, [hash, potId]);
 
   return (
     <div>
@@ -220,7 +97,7 @@ export default function CreatePotPage() {
         <form onSubmit={handleSubmit} className='space-y-6'>
           {/* Name */}
           <div>
-            <label htmlFor='pot-name' className='block text-sm font-bold mb-1'>
+            <label htmlFor='pot-name' className='block text-base font-bold mb-2.5'>
               Pot Name
             </label>
             <Input
@@ -235,7 +112,7 @@ export default function CreatePotPage() {
 
           {/* Choose Emoji */}
           <div>
-            <label htmlFor='choose-emoji' className='block text-sm font-bold mb-1'>
+            <label htmlFor='choose-emoji' className='block text-base font-bold mb-2.5'>
               Choose Emoji
             </label>
             <div className='grid grid-cols-5 gap-2'>
@@ -254,14 +131,14 @@ export default function CreatePotPage() {
 
           {/* Entry Amount */}
           <div>
-            <label htmlFor='enrty-amount' className='block text-sm font-bold mb-1'>
+            <label htmlFor='enrty-amount' className='block text-base font-bold mb-2.5'>
               Individual Contribution Amount
             </label>
             <Input
               id='enrty-amount'
               type='number'
               min='0.01'
-              step='0.01'
+              step='1'
               value={amount}
               onChange={(e) => {
                 // Prevent negative values
@@ -283,7 +160,7 @@ export default function CreatePotPage() {
 
           {/* Choose Time Period */}
           <div>
-            <label htmlFor='time-period' className='block text-sm font-bold mb-1'>
+            <label htmlFor='time-period' className='block text-base font-bold mb-2.5'>
               Frequency
             </label>
             <div className='grid grid-cols-3 gap-2.5'>
@@ -300,28 +177,51 @@ export default function CreatePotPage() {
             </div>
           </div>
 
-          {isConnected ? (
-            <GradientButton type='submit' className='w-full' disabled={disabled}>
-              {initialLoading ? 'Loading...' : isLoading ? 'Launching...' : 'Launch Pot'}
-            </GradientButton>
-          ) : (
-            <GradientButton
-              onClick={(e) => {
-                e.preventDefault();
-                ensureConnection();
-              }}
-              type='button'
-              className='w-full'
-            >
-              Connect
-            </GradientButton>
-          )}
+          <div className='border border-gray-700 rounded-[12px] px-3 pt-4'>
+            <div>
+              <p className='block text-base font-bold mb-2.5'>Payment Summary</p>
+
+              <div className='mb-2 mt-5 w-full flex items-start justify-between'>
+                <p className='text-sm font-normal'>Participation Amount:</p>
+                <p className='text-sm font-normal'>{amountUsdc} USDC</p>
+              </div>
+
+              <div className='mb-2 w-full flex items-start justify-between'>
+                <p className='text-sm font-normal'>Platform Fee:</p>
+                <p className='text-sm font-normal'>{fee ? feeUsdc : '-'} USDC</p>
+              </div>
+
+              <hr />
+
+              <div className='mt-2 mb-3 w-full flex items-start justify-between'>
+                <p className='text-sm font-bold'>Total:</p>
+                <p className='text-sm font-bold'>{totalAmountUsdc} USDC</p>
+              </div>
+
+              <div className='mt-2 mb-3 w-full flex items-start justify-between border border-[1px] border-[#FFB300] rounded-[8px] bg-[#45412E] py-2 px-4'>
+                <Image className='mr-3' src='/warning.png' alt='warning' width={32} height={32} />
+                <p className='w-full text-left text-xs font-normal text-[#FFB300]'>
+                  You will be asked to confirm a wallet transaction. Please ensure you have enough
+                  funds available.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <GradientButton type='submit' className='w-full' disabled={disabled}>
+            <span className={'flex items-center justify-center gap-2'}>
+              <span>{isLoading ? 'Loading' : 'Create'}</span>
+              {isLoading || isCreatingPot ? (
+                <Loader2 className='animate-spin h-5 w-5 text-white' size={20} />
+              ) : null}
+            </span>
+          </GradientButton>
         </form>
       </div>
 
       {/* Success Dialog */}
       <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
-        <DialogContent className='sm:max-w-md rounded-2xl'>
+        <DialogContent className='sm:max-w-md rounded-2xl text-white'>
           <DialogHeader>
             <DialogTitle className='text-center text-2xl font-bold'>
               Congratulations! 🎉

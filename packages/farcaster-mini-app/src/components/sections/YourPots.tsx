@@ -9,10 +9,9 @@ import { BorderButton, GradientButton4 } from '../ui/Buttons';
 import { GradientCard2 } from '../ui/GradientCard';
 import { useJoinPot } from '@/hooks/useJoinPot';
 import { useAccount } from 'wagmi';
-import { useConnection } from '@/hooks/useConnection';
-import { toast } from 'sonner';
 import { timeFromNow } from '@/lib/helpers/time';
 import { DurationPill } from '@/components/ui/Pill';
+import { MAX_PARTICIPANTS } from '@/config';
 
 // let _loadPotsEffectFlag = true;
 let _fetchPotsEffectFlag = true; // prevent multiple fetches
@@ -20,8 +19,7 @@ let _fetchPotsEffectFlag = true; // prevent multiple fetches
 let potIdToPotMap: Record<string, TPotObject> = {};
 
 export default function YourPots() {
-  const { ensureConnection } = useConnection();
-  const { handleJoinPot, joiningPotId } = useJoinPot();
+  const { handleJoinPot, joiningPotId, joinedPotId, tokenBalance } = useJoinPot();
   const { isConnected, isConnecting, address } = useAccount();
 
   // ------
@@ -123,7 +121,7 @@ export default function YourPots() {
   const filteredPots: TPotObject[] = pots;
 
   return (
-    <div className={'mt-6'}>
+    <div>
       <h2 className='text-2xl font-bold mb-3'>Your Pots</h2>
 
       {!isConnected || !address ? (
@@ -136,13 +134,13 @@ export default function YourPots() {
             onClick={(e) => {
               e.stopPropagation();
               e.preventDefault();
-              ensureConnection()
-                .then(() => {
-                  toast.success('Wallet connected');
-                })
-                .catch(() => {
-                  toast.error('Failed to connect wallet');
-                });
+              // ensureConnection()
+              //   .then(() => {
+              //     toast.success('Wallet connected');
+              //   })
+              //   .catch(() => {
+              //     toast.error('Failed to connect wallet');
+              //   });
             }}
             disabled={isConnecting}
             className='h-[30px] max-w-min min-w-[120px] whitespace-nowrap flex items-center justify-center justify-self-end'
@@ -171,18 +169,17 @@ export default function YourPots() {
         // --------------------
         // DISPLAY POTS SECTION
         // --------------------
-        <div className='max-h-[213px] flex flex-row overflow-x-scroll gap-[12px] md:grid-cols-2 lg:grid-cols-3'>
+        <div className='flex flex-row overflow-x-scroll gap-[12px] md:grid-cols-2 lg:grid-cols-3'>
           {filteredPots.map((pot: TPotObject) => (
             <YourPotCard
               key={pot.id}
               pot={pot}
-              isJoining={joiningPotId !== null}
               joiningPotId={joiningPotId}
+              joinedPotId={joinedPotId}
               handleJoinPot={handleJoinPot}
-              isConnected={isConnected}
-              isConnecting={isConnecting}
               address={address}
               className={filteredPots.length === 1 ? 'w-full' : ''}
+              tokenBalance={tokenBalance}
             />
           ))}
           {loading ? (
@@ -202,27 +199,69 @@ export default function YourPots() {
 
 export function YourPotCard({
   pot,
-  isJoining,
   joiningPotId,
+  joinedPotId,
   handleJoinPot,
-  isConnected,
-  isConnecting,
   address,
   className,
+  tokenBalance,
 }: {
   pot: TPotObject;
-  isJoining: boolean;
   joiningPotId: bigint | null;
+  joinedPotId: bigint | null;
   handleJoinPot: (pot: TPotObject) => void;
-  isConnected: boolean;
-  isConnecting: boolean;
   address: Address;
   className?: string;
+  tokenBalance: bigint | undefined;
 }) {
   const router = useRouter();
   const isJoined = pot.participants.includes(address as Address);
+
+  const [hasJoinedRound, setHasJoinedRound] = useState<boolean>(
+    !!address && pot.participants.includes(address),
+  );
+
   const completedContributions: number = isJoined ? 1 + pot.round : pot.round;
-  const deadlinePassed: boolean = pot.deadline < Math.floor(Date.now() / 1000);
+
+  // Update hasJoinedRound when joinedPotId changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  useEffect(() => {
+    if (!address) {
+      setHasJoinedRound(false);
+    } else {
+      if (!hasJoinedRound) {
+        if (joinedPotId === pot.id) {
+          setHasJoinedRound(true);
+        } else {
+          setHasJoinedRound(pot.participants.includes(address));
+        }
+      }
+    }
+  }, [joinedPotId, address]);
+
+  // DERIVED STATE
+  const isRoundZero: boolean = pot.round === 0;
+  const isJoiningPot: boolean = joiningPotId === pot.id;
+  const initialLoading: boolean = false;
+  const insufficientBalance: boolean = tokenBalance !== undefined && tokenBalance < pot.entryAmount;
+  const deadlinePassed: boolean = pot.deadline < BigInt(Math.floor(Date.now() / 1000));
+
+  const disabled: boolean =
+    isJoiningPot || hasJoinedRound || initialLoading || insufficientBalance || deadlinePassed;
+
+  const joinButtonText = initialLoading
+    ? 'Loading'
+    : hasJoinedRound
+      ? 'Paid'
+      : isJoiningPot
+        ? 'Paying'
+        : deadlinePassed
+          ? 'Expired ⌛'
+          : insufficientBalance
+            ? 'Insufficient Balance 💰'
+            : isRoundZero
+              ? 'Join Pot'
+              : 'Pay Now';
 
   return (
     <GradientCard2
@@ -236,7 +275,7 @@ export function YourPotCard({
         />
       </div>
       <p className='text-[18px] font-bold leading-none'>{pot.name}</p>
-      <div className='grid grid-cols-3'>
+      <div className='mt-1 grid grid-cols-3'>
         <div className='col-start-3 text-end'>
           <p className='text-cyan-400 font-bold text-[20px] leading-none'>${pot.totalPool}</p>
           <p className='text-xs font-light leading-relaxed'>Total Pool</p>
@@ -248,8 +287,8 @@ export function YourPotCard({
           <div className='flex items-center justify-start gap-1'>
             <UsersRound strokeWidth='1.25px' size={18} color='#14b6d3' />
             <span className='font-base text-[14px]'>
-              {String(pot.round) === '0'
-                ? String(pot.totalParticipants)
+              {isRoundZero
+                ? `${String(pot.participants.length)}/${String(MAX_PARTICIPANTS)}`
                 : `${String(pot.participants.length)}/${String(pot.totalParticipants)}`}
             </span>
           </div>
@@ -294,24 +333,17 @@ export function YourPotCard({
           onClick={(e) => {
             e.stopPropagation();
             e.preventDefault();
-            if (isJoined) {
-              toast.info('You have already paid for this pot');
-              return;
-            }
             handleJoinPot(pot);
           }}
-          disabled={isJoined || (isJoining && joiningPotId === pot.id)}
+          disabled={disabled}
           className='h-[30px] max-w-min min-w-[87px] whitespace-nowrap flex items-center justify-center justify-self-end'
         >
-          {isConnecting
-            ? 'Connecting'
-            : !isConnected
-              ? 'Connect'
-              : isJoined
-                ? 'Paid'
-                : isJoining && joiningPotId === pot.id
-                  ? 'Paying...'
-                  : 'Pay Now'}
+          <span className={'flex items-center justify-center gap-2'}>
+            <span>{joinButtonText}</span>
+            {isJoiningPot ? (
+              <Loader2 className='animate-spin h-4 w-4 text-white' size={20} />
+            ) : null}
+          </span>
         </GradientButton4>
       </div>
     </GradientCard2>
