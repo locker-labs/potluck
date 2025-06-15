@@ -44,6 +44,80 @@ npm run build
 
 The above command will generate a `.env` file based on the `.env.local` file and user input. Be sure to configure those environment variables on your hosting platform.
 
+## Account Associations
+
+Account associations are used for Farcaster frame authentication. This app supports multiple account associations for different environments (dev, prod, staging, etc.).
+
+### How Account Associations Work
+
+Account associations are stored in `src/lib/accountAssociations.ts` as a simple object with different environment keys:
+
+```typescript
+export const accountAssociations: Record<string, IAccountAssociation> = {
+  dev: {
+    header: "eyJmaWQiOjM3NzM5MywidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweDU5NDg3ZDIxOWRkMDc5NUFiZDM4YzU1MTVFMjdlNzQxOEViODExNkIifQ",
+    payload: "eyJkb21haW4iOiJwb3RsdWNrLWRldi52ZXJjZWwuYXBwIn0",  
+    signature: "MHhiYjExNTY2ZDhjY2E4YzNiZTgyNDM1Njk0ODYyMTc4ZTBlODA1M2Y5NjI4NzQxNmMxY2M4YTY0ZmE1NWZhNDY3MzY3MmY5N2Q1NWE1OTdlNmUyMTI5ZjI2MmY4MDc5MjQ0ZTg2NjNkMzViZWIyNDBhY2M3Yzc5YjUyMmVjNTc2MjFj"
+  }
+  // Add more environments here
+};
+```
+
+### Adding a New Account Association
+
+1. **Generate the account association data** through the Farcaster developer UI or other tooling
+2. **Add it to the `accountAssociations` object** in `src/lib/accountAssociations.ts`:
+
+```typescript
+export const accountAssociations: Record<string, IAccountAssociation> = {
+  dev: {
+    // existing dev association...
+  },
+  prod: {
+    header: "your_production_header_here",
+    payload: "your_production_payload_here", 
+    signature: "your_production_signature_here"
+  },
+  staging: {
+    header: "your_staging_header_here",
+    payload: "your_staging_payload_here",
+    signature: "your_staging_signature_here" 
+  }
+};
+```
+
+### Environment Variable Configuration
+
+Set the `ACCOUNT_ASSOCIATION_ID` environment variable to specify which account association to use:
+
+```bash
+# For development (default)
+ACCOUNT_ASSOCIATION_ID=dev
+
+# For production
+ACCOUNT_ASSOCIATION_ID=prod
+
+# For staging
+ACCOUNT_ASSOCIATION_ID=staging
+```
+
+If `ACCOUNT_ASSOCIATION_ID` is not set, it defaults to `dev`. If the specified ID doesn't exist in the `accountAssociations` object, the app will log a warning and return null (no account association).
+
+### Local Development
+
+For local development, add the environment variable to your `.env.local` file:
+
+```bash
+# .env.local
+ACCOUNT_ASSOCIATION_ID=dev
+```
+
+### Production Deployment
+
+When deploying to production platforms like Vercel, set the environment variable in your deployment configuration:
+- **Vercel**: Set `ACCOUNT_ASSOCIATION_ID=prod` in your project's environment variables
+- **Other platforms**: Follow the platform's documentation for setting environment variables
+
 ## Developing Script Locally
 
 This section is only for working on the script and template. If you simply want to create a mini app and _use_ the template, this section is not for you.
