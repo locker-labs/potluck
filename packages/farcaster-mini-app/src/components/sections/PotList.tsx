@@ -209,6 +209,8 @@ export function PotCard({
     } else {
       if (!hasJoinedRound) {
         if (joinedPotId === pot.id) {
+          pot.totalParticipants += 1;
+          pot.participants.push(address);
           setHasJoinedRound(true);
         } else {
           setHasJoinedRound(pot.participants.includes(address));
