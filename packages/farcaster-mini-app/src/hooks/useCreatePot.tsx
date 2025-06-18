@@ -11,6 +11,7 @@ import { type Address, toHex } from 'viem';
 
 let _potName: string;
 let _amount: bigint;
+let _maxParticipants: number;
 let _timePeriod: bigint;
 
 export function useCreatePot() {
@@ -31,15 +32,24 @@ export function useCreatePot() {
   const createPot = async (
     potName: string,
     amountBigInt: bigint,
+    maxParticipants: number,
     timePeriod: bigint,
-    isPublic: boolean = true,
+    isPublic = true,
   ): Promise<bigint> => {
     try {
-      const args = [toHex(potName), tokenAddress, amountBigInt, timePeriod, isPublic];
+      const args = [
+        toHex(potName),
+        tokenAddress,
+        amountBigInt,
+        maxParticipants,
+        timePeriod,
+        isPublic,
+      ];
       console.log('Creating pot with args:', {
         potName,
         tokenAddress,
         amount: amountBigInt.toString(),
+        maxParticipants,
         timePeriod: timePeriod.toString(),
         fee: toHex(0),
       });
@@ -83,9 +93,15 @@ export function useCreatePot() {
     }
   };
 
-  const handleCreatePot = async (potName: string, amount: bigint, timePeriod: bigint) => {
+  const handleCreatePot = async (
+    potName: string,
+    amount: bigint,
+    maxParticipants: number,
+    timePeriod: bigint,
+  ) => {
     _potName = potName;
     _amount = amount;
+    _maxParticipants = maxParticipants;
     _timePeriod = timePeriod;
 
     setPotId(null);
@@ -125,7 +141,7 @@ export function useCreatePot() {
         await refetchAllowance();
       }
 
-      await createPot(potName, amount, timePeriod);
+      await createPot(potName, amount, maxParticipants, timePeriod);
     } catch (error) {
       console.error('Error creating potluck:', error);
       toast.error('Error creating potluck', {
@@ -139,13 +155,15 @@ export function useCreatePot() {
     }
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     if (isPending && allowance !== undefined && tokenBalance !== undefined) {
-      handleCreatePot(_potName, _amount, _timePeriod).then().catch();
+      handleCreatePot(_potName, _amount, _maxParticipants, _timePeriod).then().catch();
       setIsPending(false);
     }
   }, [isPending, allowance, tokenBalance]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     refetchAllowance();
   }, [isCreatingPot]);

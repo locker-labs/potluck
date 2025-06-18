@@ -10,6 +10,7 @@ export type TPotObject = {
   entryAmount: bigint;
   period: bigint; // in seconds
   totalParticipants: number; // uint32
+  maxParticipants: number; // uint8
   participants: Address[]; // Array of Ethereum addresses
   participantsRoot: Address; // bytes32
   // derived properties
@@ -31,6 +32,7 @@ export const mockPotObject: TPotObject = {
   entryAmount: 1n,
   period: 1n,
   totalParticipants: 1,
+  maxParticipants: 10,
   participants: ['0x1234567890abcdef1234567890abcdef12345678'],
   participantsRoot: '0x1234567890abcdef1234567890abcdef12345678',
   periodString: 'daily',
@@ -51,6 +53,7 @@ export type TPot = [
   bigint, // entryAmount
   bigint, // period
   number, // totalParticipants
+  number, // maxParticipants
   Address, // participants
   Address, // participantsRoot
 ];

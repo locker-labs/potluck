@@ -37,10 +37,12 @@ export default function CreatePotPage() {
   const [name, setName] = useState<string>('');
   const [timePeriod, setTimePeriod] = useState<bigint>(timePeriods[0].value);
   const [amount, setAmount] = useState('');
+  const [maxParticipants, setMaxParticipants] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const potName = `${emoji} ${name.trim()}`;
   const amountBigInt = BigInt(parseUnits(amount, 6));
+  const maxParticipantsInt = maxParticipants ? Number.parseInt(maxParticipants, 10) : 0;
 
   const router = useRouter();
   const { potId, setPotId, handleCreatePot, isCreatingPot, isLoading, hash } = useCreatePot();
@@ -57,12 +59,19 @@ export default function CreatePotPage() {
   const feeUsdc = formatUnits(fee ?? 0n, 6);
   const totalAmountUsdc = formatUnits(amountBigInt + (fee ?? 0n), 6);
 
-  const disabled = isLoading || isCreatingPot || !amount || !name || Number.parseFloat(amount) <= 0;
+  const disabled =
+    isLoading ||
+    isCreatingPot ||
+    !amount ||
+    !name ||
+    Number.parseFloat(amount) <= 0 ||
+    !maxParticipants ||
+    maxParticipantsInt < 2;
 
   // FUNCTIONS
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    await handleCreatePot(potName, amountBigInt, timePeriod);
+    await handleCreatePot(potName, amountBigInt, maxParticipantsInt, timePeriod);
   };
 
   // EFFECTS
@@ -154,6 +163,35 @@ export default function CreatePotPage() {
                 }
               }}
               placeholder='0.00'
+              className='w-full'
+            />
+          </div>
+
+          {/* Max Participants */}
+          <div>
+            <label htmlFor='max-participants' className='block text-base font-bold mb-2.5'>
+              Max Participants
+            </label>
+            <Input
+              id='max-participants'
+              type='number'
+              min='1'
+              step='1'
+              value={maxParticipants}
+              onChange={(e) => {
+                // Only allow whole numbers >= 1
+                const value = e.target.value;
+                if (value === '' || (/^\d+$/.test(value) && Number.parseInt(value, 10) >= 1)) {
+                  setMaxParticipants(value);
+                }
+              }}
+              onKeyDown={(e) => {
+                // Prevent typing minus sign, decimal, or e
+                if (e.key === '-' || e.key === '.' || e.key === 'e') {
+                  e.preventDefault();
+                }
+              }}
+              placeholder='e.g. 10'
               className='w-full'
             />
           </div>

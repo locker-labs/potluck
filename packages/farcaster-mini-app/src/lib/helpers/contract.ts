@@ -50,9 +50,10 @@ export function potMapper(pot: TPot, creator: Address, participants: Address[]):
     entryAmount: pot[6], // in wei
     period: pot[7], // in seconds
     totalParticipants: pot[8], // uint32
+    maxParticipants: Number(pot[9]), // uint8
     // TODO: parse participants from bytes32
     participants: participants, // Array of Ethereum addresses
-    participantsRoot: pot[10], // bytes32
+    participantsRoot: pot[11], // bytes32
     // derived properties
     periodString: getPeriodInText(pot[7]),
     deadlineString: getDeadlineString(pot[3]),
