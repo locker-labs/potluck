@@ -191,7 +191,7 @@ contract Potluck is Ownable {
             p.totalParticipants++;
         } else {
             if (hasJoinedRound[keccak256(abi.encodePacked(potId, p.round - 1, msg.sender))]) {
-                revert NotAllowed( msg.sender, potId);
+                revert NotAllowed(msg.sender, potId);
             }
         }
 
