@@ -23,6 +23,7 @@ import { useCopyInviteLink } from '@/hooks/useCopyInviteLink';
 import { useCreateCast } from '@/hooks/useCreateCast';
 import { formatUnits } from 'viem';
 import { usePlatformFee } from '@/hooks/usePlatformFee';
+import { z } from 'zod';
 
 const emojis = ['🎯', '🏆', '🔥', '🚀', '💪', '⚡', '🎬', '🎓', '🍕', '☕'];
 
@@ -32,6 +33,31 @@ const timePeriods = [
   { value: BigInt(2592000), label: 'Monthly' },
 ];
 
+// Zod schema for form validation
+const createPotSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  amount: z
+    .string()
+    .refine((val) => val !== '' && !Number.isNaN(Number(val)) && Number(val) >= 0.01, {
+      message: 'Amount must be atleast 0.01',
+    })
+    .refine(
+      (val) => {
+        // Accept only up to two decimal places
+        if (val === '') return true;
+        return /^\d+(\.\d{1,2})?$/.test(val);
+      },
+      {
+        message: 'Only 2 decimal places allowed',
+      },
+    ),
+  maxParticipants: z.string().refine((val) => val !== '' && /^\d+$/.test(val) && Number(val) >= 2, {
+    message: 'Participants must be atleast 2',
+  }),
+  emoji: z.string().min(1, 'Emoji is required'),
+  timePeriod: z.bigint(),
+});
+
 export default function CreatePotPage() {
   const [emoji, setEmoji] = useState<string>(emojis[0]);
   const [name, setName] = useState<string>('');
@@ -39,6 +65,8 @@ export default function CreatePotPage() {
   const [amount, setAmount] = useState('');
   const [maxParticipants, setMaxParticipants] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [errors, setErrors] = useState<{ [k: string]: string }>({});
+  const [touched, setTouched] = useState<{ [k: string]: boolean }>({});
 
   const potName = `${emoji} ${name.trim()}`;
   const amountBigInt = BigInt(parseUnits(amount, 6));
@@ -59,23 +87,53 @@ export default function CreatePotPage() {
   const feeUsdc = formatUnits(fee ?? 0n, 6);
   const totalAmountUsdc = formatUnits(amountBigInt + (fee ?? 0n), 6);
 
-  const disabled =
-    isLoading ||
-    isCreatingPot ||
-    !amount ||
-    !name ||
-    Number.parseFloat(amount) <= 0 ||
-    !maxParticipants ||
-    maxParticipantsInt < 2;
+  const anyTouched = Object.values(touched).some(Boolean);
+  const hasErrors = Object.keys(errors).length > 0;
+
+  const disabled = isLoading || isCreatingPot || (anyTouched && hasErrors);
 
   // FUNCTIONS
+  // Accepts overrides for latest values
+  const validate = (
+    override?: Partial<{
+      name: string;
+      amount: string;
+      maxParticipants: string;
+      emoji: string;
+      timePeriod: bigint;
+    }>,
+  ) => {
+    const values = {
+      name,
+      amount,
+      maxParticipants,
+      emoji,
+      timePeriod,
+      ...override,
+    };
+    const result = createPotSchema.safeParse(values);
+    if (!result.success) {
+      const fieldErrors: { [k: string]: string } = {};
+      for (const err of result.error.errors) {
+        if (err.path[0]) fieldErrors[err.path[0]] = err.message;
+      }
+
+      setErrors(fieldErrors);
+      return false;
+    }
+    setErrors({});
+    return true;
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!validate()) return;
     await handleCreatePot(potName, amountBigInt, maxParticipantsInt, timePeriod);
   };
 
   // EFFECTS
   // Redirect to pot page when success modal is closed
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     if (!showSuccessModal && potId) {
       router.push(`/pot/${potId}`);
@@ -103,7 +161,7 @@ export default function CreatePotPage() {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className='space-y-6'>
+        <form onSubmit={handleSubmit} className='space-y-2.5'>
           {/* Name */}
           <div>
             <label htmlFor='pot-name' className='block text-base font-bold mb-2.5'>
@@ -114,9 +172,17 @@ export default function CreatePotPage() {
               name='pot-name'
               type='text'
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (touched.name && errors.name) validate({ name: e.target.value });
+                setTouched((prev) => ({ ...prev, name: true }));
+              }}
+              onBlur={() => setTouched((prev) => ({ ...prev, name: true }))}
               placeholder='DeFi Warriors'
             />
+            <p
+              className={`text-xs text-red-500 mt-1 ${errors.name ? 'visible' : 'invisible'}`}
+            >{`${errors.name}`}</p>
           </div>
 
           {/* Choose Emoji */}
@@ -146,16 +212,21 @@ export default function CreatePotPage() {
             <Input
               id='enrty-amount'
               type='number'
-              min='0.01'
-              step='1'
               value={amount}
               onChange={(e) => {
                 // Prevent negative values
                 const value = e.target.value;
-                if (value === '' || Number.parseFloat(value) >= 0) {
+                // Only allow up to two decimal places
+                if (
+                  value === '' ||
+                  (/^\d*(\.\d{0,2})?$/.test(value) && Number.parseFloat(value) >= 0)
+                ) {
                   setAmount(value);
+                  if (touched.amount && errors.amount) validate({ amount: value });
+                  setTouched((prev) => ({ ...prev, amount: true }));
                 }
               }}
+              onBlur={() => setTouched((prev) => ({ ...prev, amount: true }))}
               onKeyDown={(e) => {
                 // Prevent typing minus sign
                 if (e.key === '-' || e.key === 'e') {
@@ -165,6 +236,9 @@ export default function CreatePotPage() {
               placeholder='0.00'
               className='w-full'
             />
+            <p
+              className={`text-xs text-red-500 mt-1 ${errors.amount ? 'visible' : 'invisible'}`}
+            >{`${errors.amount}`}</p>
           </div>
 
           {/* Max Participants */}
@@ -183,8 +257,12 @@ export default function CreatePotPage() {
                 const value = e.target.value;
                 if (value === '' || (/^\d+$/.test(value) && Number.parseInt(value, 10) >= 1)) {
                   setMaxParticipants(value);
+                  if (touched.maxParticipants && errors.maxParticipants)
+                    validate({ maxParticipants: value });
+                  setTouched((prev) => ({ ...prev, maxParticipants: true }));
                 }
               }}
+              onBlur={() => setTouched((prev) => ({ ...prev, maxParticipants: true }))}
               onKeyDown={(e) => {
                 // Prevent typing minus sign, decimal, or e
                 if (e.key === '-' || e.key === '.' || e.key === 'e') {
@@ -194,6 +272,9 @@ export default function CreatePotPage() {
               placeholder='e.g. 10'
               className='w-full'
             />
+            <p
+              className={`text-xs text-red-500 mt-1 ${errors.maxParticipants ? 'visible' : 'invisible'}`}
+            >{`${errors.maxParticipants}`}</p>
           </div>
 
           {/* Choose Time Period */}
@@ -226,7 +307,7 @@ export default function CreatePotPage() {
 
               <div className='mb-2 w-full flex items-start justify-between'>
                 <p className='text-sm font-normal'>Platform Fee:</p>
-                <p className='text-sm font-normal'>{fee ? feeUsdc : '-'} USDC</p>
+                <p className='text-sm font-normal'>{feeUsdc} USDC</p>
               </div>
 
               <hr />
