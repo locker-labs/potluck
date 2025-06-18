@@ -33,8 +33,6 @@ contract Potluck is Ownable {
     //––––––––––––––––––––
     // STATE
     //––––––––––––––––––––
-
-    uint8 public constant MAX_PARTICIPANTS = 100;
     uint256 public potCount;
 
     /// @notice Fixed fee (in token-units) to create a pot
@@ -64,6 +62,7 @@ contract Potluck is Ownable {
         uint256 entryAmount;
         uint256 period;
         uint32 totalParticipants;
+        uint8 maxParticipants;
         address[] participants;
         bool isPublic;
     }
@@ -96,9 +95,14 @@ contract Potluck is Ownable {
     // CREATE
     //––––––––––––––––––––
 
-    function createPot(bytes memory name, address token, uint256 entryAmount, uint256 periodSeconds, bool isPublic)
-        external
-    {
+    function createPot(
+        bytes memory name,
+        address token,
+        uint256 entryAmount,
+        uint8 maxParticipants,
+        uint256 periodSeconds,
+        bool isPublic
+    ) external {
         if (entryAmount == 0) revert EntryAmountZero();
         if (periodSeconds < 1 hours) revert PeriodTooShort();
 
@@ -121,6 +125,7 @@ contract Potluck is Ownable {
         p.balance = entryAmount;
         p.participants.push(msg.sender);
         p.isPublic = isPublic;
+        p.maxParticipants = maxParticipants;
 
         if (!isPublic) {
             isAllowed[potId][msg.sender] = true;
@@ -175,7 +180,7 @@ contract Potluck is Ownable {
         Pot storage p = pots[potId];
         if (p.balance == 0) revert PotDoesNotExist(potId);
         if (block.timestamp >= p.deadline) revert RoundEnded(p.deadline, block.timestamp);
-        if (p.participants.length >= MAX_PARTICIPANTS) revert PotFull(MAX_PARTICIPANTS);
+        if (p.participants.length >= p.maxParticipants && p.maxParticipants != 0) revert PotFull(p.maxParticipants);
         if (!isAllowed[potId][msg.sender] && !p.isPublic) revert NotAllowed(msg.sender, potId);
 
         bytes32 key = keccak256(abi.encodePacked(potId, p.round, msg.sender));
@@ -184,6 +189,10 @@ contract Potluck is Ownable {
         // only increment totalParticipants in the first round
         if (p.round == 0) {
             p.totalParticipants++;
+        } else {
+            if (hasJoinedRound[keccak256(abi.encodePacked(potId, p.round - 1, msg.sender))]) {
+                revert NotAllowed( msg.sender, potId);
+            }
         }
 
         IERC20(p.token).safeTransferFrom(msg.sender, address(this), p.entryAmount);
