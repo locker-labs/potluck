@@ -65,8 +65,9 @@ export default function CreatePotPage() {
   const [amount, setAmount] = useState('');
   const [maxParticipants, setMaxParticipants] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+
   const [errors, setErrors] = useState<{ [k: string]: string }>({});
-  const [touched, setTouched] = useState<{ [k: string]: boolean }>({});
+  const [clickedSubmit, setClickedSubmit] = useState(false);
 
   const potName = `${emoji} ${name.trim()}`;
   const amountBigInt = BigInt(parseUnits(amount, 6));
@@ -87,10 +88,9 @@ export default function CreatePotPage() {
   const feeUsdc = formatUnits(fee ?? 0n, 6);
   const totalAmountUsdc = formatUnits(amountBigInt + (fee ?? 0n), 6);
 
-  const anyTouched = Object.values(touched).some(Boolean);
   const hasErrors = Object.keys(errors).length > 0;
 
-  const disabled = isLoading || isCreatingPot || (anyTouched && hasErrors);
+  const disabled = isLoading || isCreatingPot || (clickedSubmit && hasErrors);
 
   // FUNCTIONS
   // Accepts overrides for latest values
@@ -127,6 +127,7 @@ export default function CreatePotPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setClickedSubmit(true);
     if (!validate()) return;
     await handleCreatePot(potName, amountBigInt, maxParticipantsInt, timePeriod);
   };
@@ -174,10 +175,8 @@ export default function CreatePotPage() {
               value={name}
               onChange={(e) => {
                 setName(e.target.value);
-                if (touched.name && errors.name) validate({ name: e.target.value });
-                setTouched((prev) => ({ ...prev, name: true }));
+                if (clickedSubmit) validate({ name: e.target.value });
               }}
-              onBlur={() => setTouched((prev) => ({ ...prev, name: true }))}
               placeholder='DeFi Warriors'
             />
             <p
@@ -222,11 +221,9 @@ export default function CreatePotPage() {
                   (/^\d*(\.\d{0,2})?$/.test(value) && Number.parseFloat(value) >= 0)
                 ) {
                   setAmount(value);
-                  if (touched.amount && errors.amount) validate({ amount: value });
-                  setTouched((prev) => ({ ...prev, amount: true }));
+                  if (clickedSubmit) validate({ amount: value });
                 }
               }}
-              onBlur={() => setTouched((prev) => ({ ...prev, amount: true }))}
               onKeyDown={(e) => {
                 // Prevent typing minus sign
                 if (e.key === '-' || e.key === 'e') {
@@ -257,12 +254,9 @@ export default function CreatePotPage() {
                 const value = e.target.value;
                 if (value === '' || (/^\d+$/.test(value) && Number.parseInt(value, 10) >= 1)) {
                   setMaxParticipants(value);
-                  if (touched.maxParticipants && errors.maxParticipants)
-                    validate({ maxParticipants: value });
-                  setTouched((prev) => ({ ...prev, maxParticipants: true }));
+                  if (clickedSubmit) validate({ maxParticipants: value });
                 }
               }}
-              onBlur={() => setTouched((prev) => ({ ...prev, maxParticipants: true }))}
               onKeyDown={(e) => {
                 // Prevent typing minus sign, decimal, or e
                 if (e.key === '-' || e.key === '.' || e.key === 'e') {
