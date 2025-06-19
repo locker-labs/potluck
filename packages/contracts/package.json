@@ -20,7 +20,8 @@
     "typescript": "^5"
   },
   "scripts": {
-    "build": "forge fmt && forge build"
+    "build": "forge fmt && forge build",
+    "deploy": "forge script script/DeployPotluck.s.sol --rpc-url base-sepolia --broadcast"
   }
 }
 
