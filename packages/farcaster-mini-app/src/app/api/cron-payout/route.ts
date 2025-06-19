@@ -1,7 +1,7 @@
 // src/app/api/cron-payout/route.ts
 import { NextResponse } from 'next/server';
 import { createPublicClient, createWalletClient, http } from 'viem';
-import { readContract, waitForTransactionReceipt, writeContract } from 'viem/actions';
+import { readContract, waitForTransactionReceipt, writeContract,  } from 'viem/actions';
 import { baseSepolia } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
 import { contractAddress, abi as potluckAbi } from '@/config';
@@ -39,6 +39,23 @@ function potArrayToObject(potArray: any): PotObject {
     totalParticipants: potArray[8],
     isPublic: potArray[9],
   };
+}
+
+async function toEndPot(potId: number) {
+  try {
+    await publicClient.simulateContract({
+      address: contractAddress,
+      abi: potluckAbi,
+      functionName: 'triggerPotPayout',
+      args: [BigInt(potId)],
+      account:  privateKeyToAccount(env.PAYOUT_PRIVATE_KEY as `0x${string}`), // or a valid account, if needed
+    }); 
+    console.log(`Pot #${potId} is eligible for payout`);
+    return false;
+  } catch (error) {
+    console.log(`Pot #${potId} is eligible for end`);
+    return true;
+  }
 }
 
 // Cache to store pot state
@@ -80,21 +97,13 @@ export async function GET() {
       if (potStateCache.has(i)) {
         const potState = potStateCache.get(i);
         if (potState && now >= potState.deadline) {
-          const currentParticipants: Address[] = 
-            await readContract(publicClient, {
-              address: contractAddress,
-              abi: potluckAbi,
-              functionName: 'getParticipants',
-              args: [BigInt(i)],
-            }) as Address[];
-          if(currentParticipants.length > 1) {
-            eligiblePayoutPots.push(BigInt(i));
-            console.log(`Pot #${i} is eligible for payout`);
-          } else if(currentParticipants.length === 1) {
+          const toEnd = await toEndPot(i);
+          if(toEnd) {
             eligibleEndPots.push(BigInt(i));
-            console.log(`Pot #${i} is eligible for end`);
+          } else {
+            eligiblePayoutPots.push(BigInt(i));
           }
-        }
+        } 
         continue;
       }
 
@@ -107,23 +116,14 @@ export async function GET() {
       
       const pot = potArrayToObject(p);
       const currentDeadline = pot.deadline;
-      const currentParticipants: Address[] = 
-        await readContract(publicClient, {
-          address: contractAddress,
-          abi: potluckAbi,
-          functionName: 'getParticipants',
-          args: [BigInt(i)],
-        }) as Address[];
       if(now >= currentDeadline) {
-        if(currentParticipants.length > 1) {
-          eligiblePayoutPots.push(BigInt(i));
-          console.log(`Pot #${i} is eligible for payout`);
-        } else if(currentParticipants.length === 1) {
+        const toEnd = await toEndPot(i);
+        if(toEnd) {
           eligibleEndPots.push(BigInt(i));
-          console.log(`Pot #${i} is eligible for end`);
+        } else {
+          eligiblePayoutPots.push(BigInt(i));
         }
       }
-
     }
     // ToDo: Add batching for more than 10 pots
     if (eligiblePayoutPots.length > 0) {
