@@ -1,5 +1,5 @@
 import { publicClient } from '@/clients/viem';
-import { contractAddress, abi, tokenAddress, PotCreatedEventSignatureHash, fees } from '@/config';
+import { contractAddress, abi, tokenAddress, PotCreatedEventSignatureHash } from '@/config';
 import { useState, useEffect } from 'react';
 import { useAccount, useWriteContract } from 'wagmi';
 import { toast } from 'sonner';
@@ -7,6 +7,7 @@ import { useApproveTokens } from '@/hooks/useApproveTokens';
 import { useTokenBalance } from '@/hooks/useTokenBalance';
 import { getTransactionLink } from '@/lib/helpers/blockExplorer';
 import { useConnection } from '@/hooks/useConnection';
+import { usePlatformFee } from '@/hooks/usePlatformFee';
 import { type Address, toHex } from 'viem';
 
 let _potName: string;
@@ -22,12 +23,13 @@ export function useCreatePot() {
 
   const { ensureConnection } = useConnection();
   const { data: tokenBalance, isLoading: isLoadingBalance } = useTokenBalance();
+  const { fee, feeUsdc, isLoading: isLoadingFee } = usePlatformFee();
   const { allowance, isLoadingAllowance, approveTokensAsync, refetchAllowance } =
     useApproveTokens();
   const { address } = useAccount();
   const { writeContractAsync } = useWriteContract();
 
-  const isLoading: boolean = isLoadingBalance || isLoadingAllowance;
+  const isLoading: boolean = isLoadingBalance || isLoadingAllowance || isLoadingFee;
 
   const createPot = async (
     potName: string,
@@ -45,6 +47,7 @@ export function useCreatePot() {
         timePeriod,
         isPublic,
       ];
+      console.log('Creating pot with args:', args);
       console.log('Creating pot with args:', {
         potName,
         tokenAddress,
@@ -53,7 +56,7 @@ export function useCreatePot() {
         timePeriod: timePeriod.toString(),
         fee: toHex(0),
       });
-      console.log(contractAddress);
+      console.log('contractAddress', contractAddress);
       // broadcast transaction
       const txHash = await writeContractAsync({
         address: contractAddress,
@@ -118,6 +121,11 @@ export function useCreatePot() {
       return;
     }
 
+    if (fee === undefined) {
+      toast.error('Unable to fetch platform fee. Please try again.');
+      return;
+    }
+
     if (allowance === undefined) {
       toast.error('Unable to fetch token allowance. Please try again.');
       return;
@@ -136,8 +144,9 @@ export function useCreatePot() {
     setIsCreatingPot(true);
 
     try {
-      if (4n * amount + fees >= BigInt(allowance)) {
-        await approveTokensAsync(4n * amount + fees);
+      const payAmount = amount + fee;
+      if (payAmount >= BigInt(allowance)) {
+        await approveTokensAsync(payAmount);
         await refetchAllowance();
       }
 
@@ -157,11 +166,11 @@ export function useCreatePot() {
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
-    if (isPending && allowance !== undefined && tokenBalance !== undefined) {
+    if (isPending && allowance !== undefined && tokenBalance !== undefined && fee !== undefined) {
       handleCreatePot(_potName, _amount, _maxParticipants, _timePeriod).then().catch();
       setIsPending(false);
     }
-  }, [isPending, allowance, tokenBalance]);
+  }, [isPending, allowance, tokenBalance, fee]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
@@ -178,5 +187,7 @@ export function useCreatePot() {
     isLoading,
     tokenBalance,
     refetchAllowance,
+    fee,
+    feeUsdc,
   };
 }

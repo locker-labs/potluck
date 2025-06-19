@@ -15,7 +15,6 @@ import { useAccount } from 'wagmi';
 const periodSecondsMap = {
   daily: BigInt(86400),
   weekly: BigInt(604800),
-  biweekly: BigInt(1209600),
   monthly: BigInt(2592000),
 };
 
@@ -32,9 +31,9 @@ export default function PotList() {
 
   const [loading, setLoading] = useState(true);
   const [pots, setPots] = useState<TPotObject[]>([]);
-  const [selectedPeriod, setSelectedPeriod] = useState<
-    'all' | 'daily' | 'weekly' | 'biweekly' | 'monthly'
-  >('all');
+  const [selectedPeriod, setSelectedPeriod] = useState<'all' | 'daily' | 'weekly' | 'monthly'>(
+    'all',
+  );
 
   // -------
   // EFFECTS
@@ -135,7 +134,8 @@ export default function PotList() {
                 if (selectedPeriod !== tab) setSelectedPeriod(tab as typeof selectedPeriod);
               }}
               isActive={selectedPeriod === tab}
-              className={`${tab === 'all' ? 'px-[20px]' : ''} h-[40px] font-bold flex items-center text-[12px] rounded-full`}
+              className={`${selectedPeriod === tab ? (tab === 'all' ? 'px-[21px]' : 'px-[17px]') : tab === 'all' ? 'px-[20px]' : 'px-[16px]'}
+              h-[40px] font-bold flex items-center text-[12px] rounded-full`}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
             </GradientButton2>
@@ -261,8 +261,8 @@ export function PotCard({
   return (
     <GradientCard key={pot.id}>
       <Link href={`/pot/${pot.id}`} className='block'>
-        <p className='text-[24px] font-normal'>{pot.name}</p>
-        <div className='grid grid-cols-3'>
+        <p className='text-[24px] font-normal line-clamp-1'>{pot.name}</p>
+        <div className='mt-2 grid grid-cols-3'>
           <div className='col-start-3 text-start'>
             <p className='text-cyan-400 font-bold text-[28px] leading-none'>${pot.totalPool}</p>
             <p className='text-[13px] font-light leading-relaxed'>Total Pool</p>
@@ -274,7 +274,7 @@ export function PotCard({
             <div className='flex items-center justify-start gap-1'>
               <UsersRound strokeWidth='1.25px' size={18} color='#14b6d3' />
               <span className='font-base text-[14px]'>
-                {`${String(pot.participants.length)}/${String(pot.totalParticipants)}`}
+                {`${String(pot.participants.length)}/${isRoundZero ? String(pot.maxParticipants) : String(pot.totalParticipants)}`}
               </span>
             </div>
             <p className='font-base text-[14px]'>

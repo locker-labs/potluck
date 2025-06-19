@@ -5,14 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { parseUnits } from 'viem';
-import { MoveLeft, Copy, MessageSquarePlus, Check, Loader2 } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
+import { MoveLeft, Copy, MessageSquarePlus, Check, Loader2, ExternalLink } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Link from 'next/link';
 import Image from 'next/image';
 import { formatAddress } from '@/lib/address';
@@ -22,8 +16,8 @@ import { useCreatePot } from '@/hooks/useCreatePot';
 import { useCopyInviteLink } from '@/hooks/useCopyInviteLink';
 import { useCreateCast } from '@/hooks/useCreateCast';
 import { formatUnits } from 'viem';
-import { usePlatformFee } from '@/hooks/usePlatformFee';
 import { z } from 'zod';
+import { MAX_PARTICIPANTS } from '@/config';
 
 const emojis = ['🎯', '🏆', '🔥', '🚀', '💪', '⚡', '🎬', '🎓', '🍕', '☕'];
 
@@ -51,9 +45,14 @@ const createPotSchema = z.object({
         message: 'Only 2 decimal places allowed',
       },
     ),
-  maxParticipants: z.string().refine((val) => val !== '' && /^\d+$/.test(val) && Number(val) >= 2, {
-    message: 'Participants must be atleast 2',
-  }),
+  maxParticipants: z
+    .string()
+    .refine((val) => val !== '' && !Number.isNaN(Number(val)) && Number(val) <= MAX_PARTICIPANTS, {
+      message: `Participants must be less than ${MAX_PARTICIPANTS + 1}`,
+    })
+    .refine((val) => val !== '' && /^\d+$/.test(val) && Number(val) >= 2, {
+      message: 'Participants must be atleast 2',
+    }),
   emoji: z.string().min(1, 'Emoji is required'),
   timePeriod: z.bigint(),
 });
@@ -74,7 +73,8 @@ export default function CreatePotPage() {
   const maxParticipantsInt = maxParticipants ? Number.parseInt(maxParticipants, 10) : 0;
 
   const router = useRouter();
-  const { potId, setPotId, handleCreatePot, isCreatingPot, isLoading, hash } = useCreatePot();
+  const { potId, setPotId, handleCreatePot, isCreatingPot, isLoading, hash, fee, feeUsdc } =
+    useCreatePot();
   const { handleCopyLink } = useCopyInviteLink({ potId: potId });
   const { handleCastOnFarcaster } = useCreateCast({
     potId,
@@ -82,10 +82,7 @@ export default function CreatePotPage() {
     period: timePeriod,
   });
 
-  const { fee } = usePlatformFee();
-
   const amountUsdc = formatUnits(amountBigInt, 6);
-  const feeUsdc = formatUnits(fee ?? 0n, 6);
   const totalAmountUsdc = formatUnits(amountBigInt + (fee ?? 0n), 6);
 
   const hasErrors = Object.keys(errors).length > 0;
@@ -339,24 +336,29 @@ export default function CreatePotPage() {
             <DialogTitle className='text-center text-2xl font-bold'>
               Congratulations! 🎉
             </DialogTitle>
-            <DialogDescription className='text-center'>
+            <div className='text-center'>
               <div className='py-4'>
                 <div className='w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4'>
                   <Check className='h-8 w-8 text-green-500' />
                 </div>
-                <h3 className='text-xl font-bold mb-2'>Your potluck has been created!</h3>
+                <h3 className='text-xl font-bold mb-2'>Your pot has been created!</h3>
                 <p className='mb-6'>
                   Share with friends to start saving together. The more people that join, the more
                   everyone saves!
                 </p>
                 {hash && (
-                  <div>
-                    Transaction Hash:{' '}
-                    <Link href={getTransactionLink(hash)}>{formatAddress(hash)}</Link>
+                  <div className='flex w-full items-center justify-center gap-2'>
+                    <p>Transaction Hash: </p>
+                    <Link href={getTransactionLink(hash)} target='_blank'>
+                      <div className='flex items-center justify-center gap-2'>
+                        <p>{formatAddress(hash)}</p>
+                        <ExternalLink size={16} color='#ffffff' />
+                      </div>
+                    </Link>
                   </div>
                 )}
               </div>
-            </DialogDescription>
+            </div>
           </DialogHeader>
 
           <div className='space-y-4 mt-2'>
