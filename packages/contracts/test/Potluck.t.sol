@@ -52,7 +52,7 @@ contract PotluckGasTest is Test {
         vm.startPrank(alice);
         // Alice calls createPot(token, entryAmount, periodSeconds, merkleRoot)
         // Here, merkleRoot = SINGLE_ALICE_ROOT, so only `alice` is allowlisted.
-        potluck.createPot(unicode"testPot😊", address(token), entryAmount, periodSeconds, true);
+        potluck.createPot(unicode"testPot😊", address(token), entryAmount, 2, periodSeconds, true);
         vm.stopPrank();
     }
 
@@ -60,7 +60,7 @@ contract PotluckGasTest is Test {
     function testJoinPot_gas() public {
         // (1) Alice creates a pot so that potId == 0 exists
         vm.startPrank(alice);
-        potluck.createPot(unicode"testPot😊", address(token), entryAmount, periodSeconds, true);
+        potluck.createPot(unicode"testPot😊", address(token), entryAmount, 2, periodSeconds, true);
         vm.stopPrank();
 
         // (2) Fast‐forward to 5 minutes later, still before deadline
@@ -80,7 +80,7 @@ contract PotluckGasTest is Test {
     function testTriggerPotPayout_singleParticipant_gas() public {
         // (1) Alice creates the pot (potId == 0)
         vm.startPrank(alice);
-        potluck.createPot(unicode"testPot😊", address(token), entryAmount, periodSeconds, true);
+        potluck.createPot(unicode"testPot😊", address(token), entryAmount, 2, periodSeconds, true);
         vm.stopPrank();
 
         // (2) Bob joins before the deadline
@@ -101,7 +101,7 @@ contract PotluckGasTest is Test {
     function testJoinRevert_NotAllowlisted() public {
         // (1) Alice creates a pot with only herself in the allowlist
         vm.prank(alice);
-        potluck.createPot(unicode"testPot😊", address(token), entryAmount, periodSeconds, true);
+        potluck.createPot(unicode"testPot😊", address(token), entryAmount, 2, periodSeconds, true);
 
         // (2) Bob attempts to join immediately (proof = []), before deadline
         vm.prank(bob);
