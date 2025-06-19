@@ -33,7 +33,7 @@ const createPotSchema = z.object({
   amount: z
     .string()
     .refine((val) => val !== '' && !Number.isNaN(Number(val)) && Number(val) >= 0.01, {
-      message: 'Amount must be atleast 0.01',
+      message: 'Amount must be at least 0.01',
     })
     .refine(
       (val) => {
