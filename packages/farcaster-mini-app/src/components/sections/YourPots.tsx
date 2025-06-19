@@ -148,7 +148,7 @@ export default function YourPots() {
           </GradientButton4>
           <p className={'text-sm text-cyan-400 mt-2'}>Connect your wallet to see your pots</p>
         </div>
-      ) : filteredPots.length !== 0 ? (
+      ) : filteredPots.length === 0 ? (
         loading ? (
           // ---------------------
           // INITIAL LOADING STATE
