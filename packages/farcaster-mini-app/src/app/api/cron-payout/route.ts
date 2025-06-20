@@ -52,7 +52,7 @@ async function toEndPot(potId: number) {
     }); 
     console.log(`Pot #${potId} is eligible for payout`);
     return false;
-  } catch (error) {
+  } catch {
     console.log(`Pot #${potId} is eligible for end`);
     return true;
   }
