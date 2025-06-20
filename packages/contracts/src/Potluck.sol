@@ -29,6 +29,7 @@ contract Potluck is Ownable {
     error NoEligibleParticipants();
     error NotPotCreator(address sender, uint256 potId);
     error NotAllowed(address user, uint256 potId);
+    error NotAllParticipantsWon(uint256 potId);
 
     //––––––––––––––––––––
     // STATE
@@ -81,6 +82,7 @@ contract Potluck is Ownable {
     event PotPayout(uint256 indexed potId, address indexed winner, uint256 amount, uint32 round);
     event PotAllowRequested(uint256 indexed potId, address indexed requestor);
     event AllowedParticipantAdded(uint256 indexed potId, address indexed user);
+    event PotEnded(uint256 indexed potId);
 
     //––––––––––––––––––––
     // CONSTRUCTOR
@@ -260,9 +262,32 @@ contract Potluck is Ownable {
         p.deadline = block.timestamp + p.period;
     }
 
+    function endPot(uint256 potId) public {
+        Pot storage p = pots[potId];
+        if (p.balance == 0) revert PotDoesNotExist(potId);
+        if (block.timestamp < p.deadline) revert RoundNotReady(p.deadline, block.timestamp);
+        for (uint256 i = 0; i < p.participants.length; i++) {
+            if (!hasWon[keccak256(abi.encodePacked(potId, p.participants[i]))]) {
+                revert NotAllParticipantsWon(potId);
+            }
+        }
+        p.balance = 0;
+        for (uint256 i = 0; i < p.participants.length; i++) {
+            IERC20(p.token).safeTransfer(p.participants[i], p.entryAmount);
+        }
+        delete p.participants;
+        emit PotEnded(potId);
+    }
+
     function triggerBatchPayout(uint256[] calldata potIds) external {
         for (uint256 i = 0; i < potIds.length; i++) {
             triggerPotPayout(potIds[i]);
+        }
+    }
+
+    function endBatch(uint256[] calldata potIds) external {
+        for (uint256 i = 0; i < potIds.length; i++) {
+            endPot(potIds[i]);
         }
     }
 
