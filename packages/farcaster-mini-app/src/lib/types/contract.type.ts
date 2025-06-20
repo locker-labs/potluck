@@ -6,14 +6,15 @@ export type TPotObject = {
   round: number; // uint32
   deadline: bigint; // in seconds
   balance: bigint;
-  token: Address; // Ethereum address
+  token: Address; // ERC20 token address
   entryAmount: bigint;
   period: bigint; // in seconds
   totalParticipants: number; // uint32
+  maxParticipants: number; // uint8
   participants: Address[]; // Array of Ethereum addresses
-  participantsRoot: Address; // bytes32
+  isPublic: boolean; // bool
   // derived properties
-  periodString: string; // e.g., "daily", "weekly", "biweekly", "monthly"
+  periodString: string; // e.g., "daily", "weekly", "monthly"
   deadlineString: string; // e.g., "5h", "2d", "1w"
   totalPool: string; // total pool = number of participants * entry amount
   creator: Address;
@@ -31,8 +32,9 @@ export const mockPotObject: TPotObject = {
   entryAmount: 1n,
   period: 1n,
   totalParticipants: 1,
+  maxParticipants: 10,
   participants: ['0x1234567890abcdef1234567890abcdef12345678'],
-  participantsRoot: '0x1234567890abcdef1234567890abcdef12345678',
+  isPublic: true,
   periodString: 'daily',
   deadlineString: '5h',
   creator: '0x1234567890abcdef1234567890abcdef12345678',
@@ -51,6 +53,6 @@ export type TPot = [
   bigint, // entryAmount
   bigint, // period
   number, // totalParticipants
-  Address, // participants
-  Address, // participantsRoot
+  number, // maxParticipants
+  boolean, // isPublic
 ];

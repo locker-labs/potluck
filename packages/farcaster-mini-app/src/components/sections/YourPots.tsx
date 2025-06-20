@@ -11,7 +11,6 @@ import { useJoinPot } from '@/hooks/useJoinPot';
 import { useAccount } from 'wagmi';
 import { timeFromNow } from '@/lib/helpers/time';
 import { DurationPill } from '@/components/ui/Pill';
-import { MAX_PARTICIPANTS } from '@/config';
 
 // let _loadPotsEffectFlag = true;
 let _fetchPotsEffectFlag = true; // prevent multiple fetches
@@ -154,15 +153,17 @@ export default function YourPots() {
           // ---------------------
           // INITIAL LOADING STATE
           // ---------------------
-          <div className={'w-full h-[213px] flex flex-col items-center justify-center'}>
+          <div className={'w-full h-[220px] flex flex-col items-center justify-center'}>
             <Loader2 className='my-auto animate-spin' color='#7C65C1' size={32} />
           </div>
         ) : (
           // -----------------------
           // NO POTS AVAILABLE STATE
           // -----------------------
-          <div className={'w-full h-[213px] flex flex-col items-center justify-center'}>
-            <p className={'text-sm text-cyan-400 mt-2'}>No pots available</p>
+          <div className={'w-full h-[220px] flex flex-col items-center justify-center'}>
+            <span className={'text-md font-medium text-cyan-400 mt-2'}>Oops!</span>
+            <span className={'text-md text-cyan-400 mt-2'}>No pots = No savings</span>
+            <span className={'text-md text-cyan-400'}>Start saving 👇 today</span>
           </div>
         )
       ) : (
@@ -274,7 +275,7 @@ export function YourPotCard({
           className={'text-[15px]'}
         />
       </div>
-      <p className='text-[18px] font-bold leading-none'>{pot.name}</p>
+      <p className='text-[18px] font-bold leading-[1.2] line-clamp-1'>{pot.name}</p>
       <div className='mt-1 grid grid-cols-3'>
         <div className='col-start-3 text-end'>
           <p className='text-cyan-400 font-bold text-[20px] leading-none'>${pot.totalPool}</p>
@@ -288,11 +289,11 @@ export function YourPotCard({
             <UsersRound strokeWidth='1.25px' size={18} color='#14b6d3' />
             <span className='font-base text-[14px]'>
               {isRoundZero
-                ? `${String(pot.participants.length)}/${String(MAX_PARTICIPANTS)}`
+                ? `${String(pot.participants.length)}/${String(pot.maxParticipants)}`
                 : `${String(pot.participants.length)}/${String(pot.totalParticipants)}`}
             </span>
           </div>
-          <p className='font-base text-[14px]'>
+          <p className='font-base text-[14px] whitespace-nowrap'>
             ${formatUnits(pot.entryAmount, 6)} {pot.periodString}
           </p>
         </div>

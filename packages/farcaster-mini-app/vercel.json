@@ -1,8 +1,10 @@
 {
   "buildCommand": "next build",
   "framework": "nextjs",
-  "crons": [{
-    "path": "/api/cron-payout",
-    "schedule": "*/10 * * * *"
-  }]
+  "crons": [
+    {
+      "path": "/api/cron-payout",
+      "schedule": "*/10 * * * *"
+    }
+  ]
 }
