@@ -1,15 +1,13 @@
 // src/app/api/cron-payout/route.ts
 import { NextResponse } from 'next/server';
 import { createPublicClient, createWalletClient, http } from 'viem';
-import { readContract, waitForTransactionReceipt, writeContract,  } from 'viem/actions';
+import { readContract, waitForTransactionReceipt, writeContract } from 'viem/actions';
 import { baseSepolia } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
 import { contractAddress, abi as potluckAbi } from '@/config';
 import { RPC_URL } from '@/lib/constants';
 import { env } from '@/app/api/env';
 import type { Address } from 'viem';
-
-
 
 // Object interface for easier access
 interface PotObject {
@@ -48,8 +46,8 @@ async function toEndPot(potId: number) {
       abi: potluckAbi,
       functionName: 'triggerPotPayout',
       args: [BigInt(potId)],
-      account:  privateKeyToAccount(env.PAYOUT_PRIVATE_KEY as `0x${string}`), // or a valid account, if needed
-    }); 
+      account: privateKeyToAccount(env.PAYOUT_PRIVATE_KEY as `0x${string}`), // or a valid account, if needed
+    });
     console.log(`Pot #${potId} is eligible for payout`);
     return false;
   } catch {
@@ -98,27 +96,27 @@ export async function GET() {
         const potState = potStateCache.get(i);
         if (potState && now >= potState.deadline) {
           const toEnd = await toEndPot(i);
-          if(toEnd) {
+          if (toEnd) {
             eligibleEndPots.push(BigInt(i));
           } else {
             eligiblePayoutPots.push(BigInt(i));
           }
-        } 
+        }
         continue;
       }
 
-      const p = (await readContract(publicClient, {
+      const p = await readContract(publicClient, {
         address: contractAddress,
         abi: potluckAbi,
         functionName: 'pots',
         args: [BigInt(i)],
-      }));
-      
+      });
+
       const pot = potArrayToObject(p);
       const currentDeadline = pot.deadline;
-      if(now >= currentDeadline) {
+      if (now >= currentDeadline) {
         const toEnd = await toEndPot(i);
-        if(toEnd) {
+        if (toEnd) {
           eligibleEndPots.push(BigInt(i));
         } else {
           eligiblePayoutPots.push(BigInt(i));
@@ -148,7 +146,11 @@ export async function GET() {
       // await waitForTransactionReceipt(publicClient, { hash: txHash });
     }
 
-    return NextResponse.json({ triggered: eligiblePayoutPots.length, success: true, checked: potCount });
+    return NextResponse.json({
+      triggered: eligiblePayoutPots.length,
+      success: true,
+      checked: potCount,
+    });
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   } catch (err: any) {
     console.error('Cron error:', err);
