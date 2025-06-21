@@ -150,7 +150,7 @@ export default function PotList() {
           Be the first to create one!
         </div>
       ) : (
-        <div className='grid gap-[22px] md:grid-cols-2 lg:grid-cols-3'>
+        <div className='grid gap-[22px] md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 4xl:grid-cols-5 6xl:grid-cols-6 7xl:grid-cols-7'>
           {filteredPots.map((pot: TPotObject) => (
             <PotCard
               key={pot.id}
@@ -264,48 +264,54 @@ export function PotCard({
 
   return (
     <GradientCard key={pot.id}>
-      <Link href={`/pot/${pot.id}`} className='block'>
-        <p className='text-[24px] font-normal line-clamp-1'>{pot.name}</p>
-        <div className='mt-2 grid grid-cols-3'>
-          <div className='col-start-3 text-start'>
-            <p className='text-cyan-400 font-bold text-[28px] leading-none'>${pot.totalPool}</p>
-            <p className='text-[13px] font-light leading-relaxed'>Total Pool</p>
-          </div>
-        </div>
-
-        <div className='mt-3 mb-2 grid grid-cols-5'>
-          <div className='col-span-3 grid grid-cols-2'>
-            <div className='flex items-center justify-start gap-1'>
-              <UsersRound strokeWidth='1.25px' size={18} color='#14b6d3' />
-              <span className='font-base text-[14px]'>
-                {`${String(pot.participants.length)}/${isRoundZero ? String(pot.maxParticipants) : String(pot.totalParticipants)}`}
-              </span>
-            </div>
-            <p className='font-base text-[14px]'>
-              ${formatUnits(pot.entryAmount, 6)} {pot.periodString}
-            </p>
-          </div>
-          <div className='col-start-4 col-span-2'>
-            <div className=' flex items-center justify-center gap-1'>
-              <Clock5 size={14} color='#14b6d3' />
-              <span className='font-bold text-[14px]'>
-                {deadlinePassed ? 'Awaiting Payout' : `Closes in ${pot.deadlineString}`}
-              </span>
+      <Link href={`/pot/${pot.id}`} className='h-full flex flex-col justify-between'>
+        {/* top section */}
+        <div>
+          <p className='text-[24px] font-normal line-clamp-1'>{pot.name}</p>
+          <div className='mt-2 grid grid-cols-3'>
+            <div className='col-start-3 text-start'>
+              <p className='text-cyan-400 font-bold text-[28px] leading-none'>${pot.totalPool}</p>
+              <p className='text-[13px] font-light leading-relaxed'>Total Pool</p>
             </div>
           </div>
         </div>
 
-        <GradientButton
-          onClick={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            handleJoinPot(pot);
-          }}
-          disabled={disabled}
-          className='w-full'
-        >
-          {joinButtonText}
-        </GradientButton>
+        {/* bottom section */}
+        <div>
+          <div className='mt-3 mb-2 grid grid-cols-5'>
+            <div className='col-span-3 grid grid-cols-2'>
+              <div className='flex items-end justify-start gap-1'>
+                <UsersRound strokeWidth='1.25px' size={18} color='#14b6d3' />
+                <span className='font-base text-[14px]'>
+                  {`${String(pot.participants.length)}/${isRoundZero ? String(pot.maxParticipants) : String(pot.totalParticipants)}`}
+                </span>
+              </div>
+              <p className='font-base text-[14px]'>
+                ${formatUnits(pot.entryAmount, 6)} {pot.periodString}
+              </p>
+            </div>
+            <div className='col-start-4 col-span-2 self-end'>
+              <div className=' flex items-center justify-center gap-1'>
+                <Clock5 size={14} color='#14b6d3' />
+                <span className='font-bold text-[14px]'>
+                  {deadlinePassed ? 'Awaiting Payout' : `Closes in ${pot.deadlineString}`}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <GradientButton
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              handleJoinPot(pot);
+            }}
+            disabled={disabled}
+            className='w-full'
+          >
+            {joinButtonText}
+          </GradientButton>
+        </div>
       </Link>
     </GradientCard>
   );
