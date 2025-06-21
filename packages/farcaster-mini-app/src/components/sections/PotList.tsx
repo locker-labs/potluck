@@ -150,7 +150,7 @@ export default function PotList() {
           Be the first to create one!
         </div>
       ) : (
-        <div className='grid gap-[22px] md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 3xl:grid-cols-4 4xl:grid-cols-5 5xl:grid-cols-5 6xl:grid-cols-6 7xl:grid-cols-7'>
+        <div className='grid gap-[22px] md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 4xl:grid-cols-5 6xl:grid-cols-6 7xl:grid-cols-7'>
           {filteredPots.map((pot: TPotObject) => (
             <PotCard
               key={pot.id}
