@@ -24,6 +24,7 @@ export function RecentActivity({
   const uniqueBlockNumbers = [...new Set(logsState.logs.map((l) => l.blockNumber.toString()))];
   const blockMap = new Map<bigint, bigint>(); // blockNumber -> timestamp
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     (async () => {
       for (const blockNumStr of uniqueBlockNumbers) {
@@ -102,7 +103,7 @@ export function RecentActivity({
                       {formatUnits(isWinner ? winnerPayout : entryAmount, 6)}
                     </span>
                   </div>
-                  <Link href={getTransactionLink(log.transactionHash)}>
+                  <Link href={getTransactionLink(log.transactionHash)} target='_blank'>
                     <div className={'flex items-center gap-1'}>
                       <p className='text-xs leading-none'>{formattedAddress}</p>
                       <ExternalLink size={12} />

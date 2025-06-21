@@ -1,5 +1,5 @@
 import { publicClient } from '@/clients/viem';
-import { contractAddress, abi, tokenAddress, PotCreatedEventSignatureHash, fees } from '@/config';
+import { contractAddress, abi, tokenAddress, PotCreatedEventSignatureHash } from '@/config';
 import { useState, useEffect } from 'react';
 import { useAccount, useWriteContract } from 'wagmi';
 import { toast } from 'sonner';
@@ -7,10 +7,12 @@ import { useApproveTokens } from '@/hooks/useApproveTokens';
 import { useTokenBalance } from '@/hooks/useTokenBalance';
 import { getTransactionLink } from '@/lib/helpers/blockExplorer';
 import { useConnection } from '@/hooks/useConnection';
+import { usePlatformFee } from '@/hooks/usePlatformFee';
 import { type Address, toHex } from 'viem';
 
 let _potName: string;
 let _amount: bigint;
+let _maxParticipants: number;
 let _timePeriod: bigint;
 
 export function useCreatePot() {
@@ -21,29 +23,40 @@ export function useCreatePot() {
 
   const { ensureConnection } = useConnection();
   const { data: tokenBalance, isLoading: isLoadingBalance } = useTokenBalance();
+  const { fee, feeUsdc, isLoading: isLoadingFee } = usePlatformFee();
   const { allowance, isLoadingAllowance, approveTokensAsync, refetchAllowance } =
     useApproveTokens();
   const { address } = useAccount();
   const { writeContractAsync } = useWriteContract();
 
-  const isLoading: boolean = isLoadingBalance || isLoadingAllowance;
+  const isLoading: boolean = isLoadingBalance || isLoadingAllowance || isLoadingFee;
 
   const createPot = async (
     potName: string,
     amountBigInt: bigint,
+    maxParticipants: number,
     timePeriod: bigint,
-    isPublic: boolean = true,
+    isPublic = true,
   ): Promise<bigint> => {
     try {
-      const args = [toHex(potName), tokenAddress, amountBigInt, timePeriod, isPublic];
+      const args = [
+        toHex(potName),
+        tokenAddress,
+        amountBigInt,
+        maxParticipants,
+        timePeriod,
+        isPublic,
+      ];
+      console.log('Creating pot with args:', args);
       console.log('Creating pot with args:', {
         potName,
         tokenAddress,
         amount: amountBigInt.toString(),
+        maxParticipants,
         timePeriod: timePeriod.toString(),
         fee: toHex(0),
       });
-      console.log(contractAddress);
+      console.log('contractAddress', contractAddress);
       // broadcast transaction
       const txHash = await writeContractAsync({
         address: contractAddress,
@@ -83,9 +96,15 @@ export function useCreatePot() {
     }
   };
 
-  const handleCreatePot = async (potName: string, amount: bigint, timePeriod: bigint) => {
+  const handleCreatePot = async (
+    potName: string,
+    amount: bigint,
+    maxParticipants: number,
+    timePeriod: bigint,
+  ) => {
     _potName = potName;
     _amount = amount;
+    _maxParticipants = maxParticipants;
     _timePeriod = timePeriod;
 
     setPotId(null);
@@ -99,6 +118,11 @@ export function useCreatePot() {
         return;
       }
       setIsPending(true);
+      return;
+    }
+
+    if (fee === undefined) {
+      toast.error('Unable to fetch platform fee. Please try again.');
       return;
     }
 
@@ -120,12 +144,13 @@ export function useCreatePot() {
     setIsCreatingPot(true);
 
     try {
-      if (4n * amount + fees >= BigInt(allowance)) {
-        await approveTokensAsync(4n * amount + fees);
+      const payAmount = amount + fee;
+      if (payAmount >= BigInt(allowance)) {
+        await approveTokensAsync(payAmount);
         await refetchAllowance();
       }
 
-      await createPot(potName, amount, timePeriod);
+      await createPot(potName, amount, maxParticipants, timePeriod);
     } catch (error) {
       console.error('Error creating potluck:', error);
       toast.error('Error creating potluck', {
@@ -139,13 +164,15 @@ export function useCreatePot() {
     }
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
-    if (isPending && allowance !== undefined && tokenBalance !== undefined) {
-      handleCreatePot(_potName, _amount, _timePeriod).then().catch();
+    if (isPending && allowance !== undefined && tokenBalance !== undefined && fee !== undefined) {
+      handleCreatePot(_potName, _amount, _maxParticipants, _timePeriod).then().catch();
       setIsPending(false);
     }
-  }, [isPending, allowance, tokenBalance]);
+  }, [isPending, allowance, tokenBalance, fee]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     refetchAllowance();
   }, [isCreatingPot]);
@@ -160,5 +187,7 @@ export function useCreatePot() {
     isLoading,
     tokenBalance,
     refetchAllowance,
+    fee,
+    feeUsdc,
   };
 }
