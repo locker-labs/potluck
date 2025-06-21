@@ -139,6 +139,7 @@ export default function PotPage({ id }: { id: string }) {
   const isJoiningPot: boolean = joiningPotId !== null;
   const initialLoading: boolean = isLoadingJoinPot || loadingPot;
   const cannotJoinPot: boolean = !isRoundZero && hasJoinedBefore !== null && !hasJoinedBefore;
+  const potFull: boolean = isRoundZero && pot.participants.length === pot.maxParticipants;
   const insufficientBalance: boolean = tokenBalance !== undefined && tokenBalance < pot.entryAmount;
   const deadlinePassed: boolean = pot.deadline < BigInt(Math.floor(Date.now() / 1000));
   const completedContributions: number = hasJoinedRound ? 1 + pot.round : pot.round;
@@ -148,6 +149,7 @@ export default function PotPage({ id }: { id: string }) {
     hasJoinedRound ||
     initialLoading ||
     cannotJoinPot ||
+    potFull ||
     insufficientBalance ||
     deadlinePassed;
   const joinButtonText = initialLoading ? (
@@ -158,17 +160,19 @@ export default function PotPage({ id }: { id: string }) {
     'Joining'
   ) : deadlinePassed ? (
     'Expired ⌛'
+  ) : potFull ? (
+    'Pot Full 📦'
   ) : insufficientBalance ? (
     'Insufficient Balance 💰'
   ) : isRoundZero ? (
     'Join Pot'
   ) : hasJoinedBefore ? (
-    <span className={'flex items-center'}>
-      <span className={'leading-none'}>Pay This Round (</span>
+    <span className={'flex items-center justify-center'}>
+      <span>Pay This Round (</span>
       <span className={'mr-1'}>
         <Image src={'/usdc.png'} alt={'usdc'} width={16} height={16} />
       </span>
-      <span className={'leading-none'}>{formatUnits(pot.entryAmount, 6)})</span>
+      <span>{formatUnits(pot.entryAmount, 6)})</span>
     </span>
   ) : (
     'Cannot Join 😔'
