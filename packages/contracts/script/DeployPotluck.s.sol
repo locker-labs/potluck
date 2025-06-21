@@ -17,7 +17,6 @@ contract DeployPotluck is Script {
         Potluck potluck = new Potluck(platformFee, treasury);
 
         console.log("=== Deployment Info ===");
-        console.log("Network: %s", vm.envString("NETWORK"));
         console.log("Potluck deployed to: %s", address(potluck));
         console.log("Platform fee: 1 USDC");
         console.log("Treasury address: %s", treasury);
