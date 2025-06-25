@@ -281,18 +281,18 @@ export function PotCard({
           <div className='mt-3 mb-2 grid grid-cols-5'>
             <div className='col-span-3 grid grid-cols-2'>
               <div className='flex items-end justify-start gap-1'>
-                <UsersRound strokeWidth='1.25px' size={18} color='#14b6d3' />
+                <UsersRound strokeWidth='1.25px' size={18} color='#14b6d3' className='shrink-0' />
                 <span className='font-base text-[14px]'>
                   {`${String(pot.participants.length)}/${isRoundZero ? String(pot.maxParticipants) : String(pot.totalParticipants)}`}
                 </span>
               </div>
-              <p className='font-base text-[14px]'>
+              <p className='font-base text-[14px] self-end'>
                 ${formatUnits(pot.entryAmount, 6)} {pot.periodString}
               </p>
             </div>
             <div className='col-start-4 col-span-2 self-end'>
               <div className=' flex items-center justify-center gap-1'>
-                <Clock5 size={14} color='#14b6d3' />
+                <Clock5 size={14} color='#14b6d3' className='shrink-0' />
                 <span className='font-bold text-[14px]'>
                   {deadlinePassed ? 'Awaiting Payout' : `Closes in ${pot.deadlineString}`}
                 </span>

@@ -215,23 +215,27 @@ export default function PotPage({ id }: { id: string }) {
           </div>
         </div>
 
-        <div className='grid grid-cols-3'>
-          <div className='col-start-3 text-end'>
-            <p className='text-cyan-400 font-bold text-[28px] leading-none'>${pot.totalPool}</p>
-            <p className='text-[13px] font-light leading-relaxed'>Total Pool</p>
+        {/* Total Pool amount, Participants, Entry amount, Total pool text */}
+        <div className='mt-2 grid grid-cols-5'>
+          <div className='col-span-5'>
+            <p className='w-full text-end text-cyan-400 font-bold text-[38px] leading-none'>
+              ${pot.totalPool}
+            </p>
           </div>
-        </div>
-
-        <div className='mt-2 grid grid-cols-3'>
-          <div className='flex items-center justify-start gap-1'>
-            <UsersRound strokeWidth='1.25px' size={18} color='#14b6d3' />
-            <span className='font-base text-[14px]'>
-              {`${String(pot.participants.length)}/${isRoundZero ? String(pot.maxParticipants) : String(pot.totalParticipants)}`}
-            </span>
+          <div className='col-span-3 grid grid-cols-2'>
+            <div className='flex items-center justify-start gap-1'>
+              <UsersRound strokeWidth='1.25px' size={18} color='#14b6d3' />
+              <span className='font-base text-[14px]'>
+                {isRoundZero
+                  ? `${String(pot.participants.length)}/${String(pot.maxParticipants)}`
+                  : `${String(pot.participants.length)}/${String(pot.totalParticipants)}`}
+              </span>
+            </div>
+            <p className='font-base text-[14px] whitespace-nowrap text-left'>
+              ${formatUnits(pot.entryAmount, 6)} {pot.periodString}
+            </p>
           </div>
-          <p className='font-base text-[14px]'>
-            ${formatUnits(pot.entryAmount, 6)} {pot.periodString}
-          </p>
+          <p className='col-span-2 font-base text-[14px] text-right'>Total Pool</p>
         </div>
 
         {/* User contribution progress bar */}

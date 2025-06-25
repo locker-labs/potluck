@@ -153,14 +153,14 @@ export default function YourPots() {
           // ---------------------
           // INITIAL LOADING STATE
           // ---------------------
-          <div className={'w-full h-[220px] flex flex-col items-center justify-center'}>
+          <div className={'w-full h-[223px] flex flex-col items-center justify-center'}>
             <Loader2 className='my-auto animate-spin' color='#7C65C1' size={32} />
           </div>
         ) : (
           // -----------------------
           // NO POTS AVAILABLE STATE
           // -----------------------
-          <div className={'w-full h-[220px] flex flex-col items-center justify-center'}>
+          <div className={'w-full h-[223px] flex flex-col items-center justify-center'}>
             <span className={'text-md font-medium text-cyan-400 mt-2'}>Oops!</span>
             <span className={'text-md text-cyan-400 mt-2'}>No pots = No savings</span>
             <span className={'text-md text-cyan-400'}>Start saving 👇 today</span>
@@ -276,14 +276,15 @@ export function YourPotCard({
         />
       </div>
       <p className='text-[18px] font-bold leading-[1.2] line-clamp-1'>{pot.name}</p>
-      <div className='mt-1 grid grid-cols-3'>
-        <div className='col-start-3 text-end'>
-          <p className='text-cyan-400 font-bold text-[20px] leading-none'>${pot.totalPool}</p>
-          <p className='text-xs font-light leading-relaxed'>Total Pool</p>
-        </div>
-      </div>
 
-      <div className='mt-0 grid grid-cols-5'>
+      <div className='mt-2 grid grid-cols-5'>
+        {/* Total Pool amount */}
+        <div className='col-span-5'>
+          <p className='w-full text-end text-cyan-400 font-bold text-[38px] leading-none'>
+            ${pot.totalPool}
+          </p>
+        </div>
+        {/* Participants, Entry amount, Total pool text */}
         <div className='col-span-3 grid grid-cols-2'>
           <div className='flex items-center justify-start gap-1'>
             <UsersRound strokeWidth='1.25px' size={18} color='#14b6d3' />
@@ -293,10 +294,11 @@ export function YourPotCard({
                 : `${String(pot.participants.length)}/${String(pot.totalParticipants)}`}
             </span>
           </div>
-          <p className='font-base text-[14px] whitespace-nowrap'>
+          <p className='font-base text-[14px] whitespace-nowrap text-left'>
             ${formatUnits(pot.entryAmount, 6)} {pot.periodString}
           </p>
         </div>
+        <p className='col-span-2 font-base text-[14px] text-right'>Total Pool</p>
       </div>
 
       {/* User contribution progress bar */}
