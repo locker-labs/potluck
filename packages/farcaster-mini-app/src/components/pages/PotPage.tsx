@@ -270,7 +270,7 @@ export default function PotPage({ id }: { id: string }) {
         </GradientButton2>
       </GradientCard2>
 
-      <div className='mt-4 grid grid-cols-3 gap-4'>
+      <div className='mt-4 grid grid-cols-2 gap-4'>
         <div
           className={`
           max-w-full mx-auto py-3 transition-colors
@@ -294,18 +294,6 @@ export default function PotPage({ id }: { id: string }) {
         >
           <p className='font-bold text-2xl'>${Number(pot.totalPool) * pot.round}</p>
           <p className='text-sm'>Total Won</p>
-        </div>
-        <div
-          className={`
-          max-w-full mx-auto py-3 transition-colors
-          rounded-[12px] bg-app-cyan/20 border border-app-cyan
-          disabled:text-gray-100
-          text-gray-400 shadow-md
-          w-full flex flex-col items-center justify-center
-          `}
-        >
-          <p className='font-bold text-2xl'>-</p>
-          <p className='text-sm'>Reputation</p>
         </div>
       </div>
 
