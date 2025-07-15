@@ -16,6 +16,7 @@ import {
   APP_CHAIN_LIST,
   APP_REQUIRED_CAPABILITIES,
   APP_VERSION,
+  NEYNAR_WEBHOOK_URL,
 } from './constants';
 import { APP_SPLASH_URL } from './constants';
 import { accountAssociations, type IAccountAssociation } from './accountAssociations';
@@ -185,6 +186,7 @@ export async function getFarcasterMetadata(): Promise<FrameManifest> {
       ogImageUrl: APP_OG_IMAGE_URL,
       requiredChains: APP_CHAIN_LIST,
       requiredCapabilities: APP_REQUIRED_CAPABILITIES,
+      webhookUrl: NEYNAR_WEBHOOK_URL,
     },
   };
 }
