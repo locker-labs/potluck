@@ -18,6 +18,7 @@ import { useCreateCast } from '@/hooks/useCreateCast';
 import { formatUnits } from 'viem';
 import { z } from 'zod';
 import { MAX_PARTICIPANTS } from '@/config';
+import { useFrame } from '../providers/FrameProvider';
 
 const emojis = ['🎯', '🏆', '🔥', '🚀', '💪', '⚡', '🎬', '🎓', '🍕', '☕'];
 
@@ -85,6 +86,8 @@ export default function CreatePotPage() {
   const amountUsdc = formatUnits(amountBigInt, 6);
   const totalAmountUsdc = formatUnits(amountBigInt + (fee ?? 0n), 6);
 
+  const { checkAndAddMiniApp } = useFrame();
+
   const hasErrors = Object.keys(errors).length > 0;
 
   const disabled = isLoading || isCreatingPot || (clickedSubmit && hasErrors);
@@ -126,6 +129,7 @@ export default function CreatePotPage() {
     e.preventDefault();
     setClickedSubmit(true);
     if (!validate()) return;
+    await checkAndAddMiniApp();
     await handleCreatePot(potName, amountBigInt, maxParticipantsInt, timePeriod);
   };
 
@@ -308,7 +312,7 @@ export default function CreatePotPage() {
                 <p className='text-sm font-bold'>{totalAmountUsdc} USDC</p>
               </div>
 
-              <div className='mt-2 mb-3 w-full flex items-start justify-between border border-[1px] border-[#FFB300] rounded-[8px] bg-[#45412E] py-2 px-4'>
+              <div className='mt-2 mb-3 w-full flex items-start justify-between border border-[#FFB300] rounded-[8px] bg-[#45412E] py-2 px-4'>
                 <Image className='mr-3' src='/warning.png' alt='warning' width={32} height={32} />
                 <p className='w-full text-left text-xs font-normal text-[#FFB300]'>
                   You will be asked to confirm a wallet transaction. Please ensure you have enough
