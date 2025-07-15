@@ -129,7 +129,7 @@ export default function CreatePotPage() {
     e.preventDefault();
     setClickedSubmit(true);
     if (!validate()) return;
-    checkAndAddMiniApp();
+    await checkAndAddMiniApp();
     await handleCreatePot(potName, amountBigInt, maxParticipantsInt, timePeriod);
   };
 
