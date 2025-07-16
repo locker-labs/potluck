@@ -274,7 +274,7 @@ contract Potluck is Ownable {
         if (p.balance == 0) revert PotDoesNotExist(potId);
         if (block.timestamp >= p.deadline) revert RoundEnded(p.deadline, block.timestamp);
         if (!isAllowed[potId][participant] && !p.isPublic) revert NotAllowed(participant, potId);
-         if (p.round == 0) {
+        if (p.round == 0) {
             revert NotAllowed(msg.sender, potId);
         }
         if (!hasJoinedRound[keccak256(abi.encodePacked(potId, p.round - 1, participant))]) {
