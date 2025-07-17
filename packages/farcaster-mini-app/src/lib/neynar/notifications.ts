@@ -1,19 +1,23 @@
 import { neynarClient as client } from "./client";
-import { MINI_APP_URL } from "@/lib/constants";
+import { APP_URL } from "@/lib/constants";
 
 type TNotification = { title: string; body: string; target_url: string };
 
 // Reminder to deposit tokens in next round/join round, with winner announcement
 export async function sendDepositReminderNotification({ potId, targetFids, winnerName }: { potId: number; targetFids: number[]; winnerName?: string }) {
-  let body = "Reminder: Deposit tokens to join the next round!";
+  let body = "Deposit tokens to join the next round!";
   if (winnerName) {
     body += `\nWinner: ${winnerName}`;
   }
   const notification: TNotification = {
-    title: "Pot Round Reminder",
+    title: "New round started",
     body,
-    target_url: `${MINI_APP_URL}/pot/${potId}`,
+    target_url: `${APP_URL}/pot/${potId}`,
   };
+
+  // TODO: remove this console log in production
+  console.log(`targetFids: ${targetFids}\nnotification: ${JSON.stringify(notification)}`);
+
   try {
     const response = await client.publishFrameNotifications({
       targetFids,
@@ -32,7 +36,7 @@ export async function sendApprovalNotification({ potId, targetFids }: { potId: n
   const notification: TNotification = {
     title: "Pot Approval",
     body: "You have been approved! Join the pot now.",
-    target_url: `${MINI_APP_URL}/pot/${potId}`,
+    target_url: `${APP_URL}/pot/${potId}`,
   };
   try {
     const response = await client.publishFrameNotifications({
@@ -52,7 +56,7 @@ export async function sendPotCreationNotification({ potId, targetFids }: { potId
   const notification: TNotification = {
     title: "Pot Created",
     body: `Your pot has been created! Pot ID: ${potId}`,
-    target_url: `${MINI_APP_URL}/pot/${potId}`,
+    target_url: `${APP_URL}/pot/${potId}`,
   };
   try {
     const response = await client.publishFrameNotifications({
@@ -71,7 +75,7 @@ export async function sendInviteNotification({ potId, targetFids }: { potId: num
     const notification: TNotification = {
         title: "Pot Invitation",
         body: "You have been invited to join a Pot. Click to participate!",
-        target_url: `${MINI_APP_URL}/pot/${potId}`,
+        target_url: `${APP_URL}/pot/${potId}`,
     };
 
     try {

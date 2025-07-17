@@ -8,6 +8,7 @@ import { contractAddress, abi as potluckAbi } from '@/config';
 import { RPC_URL } from '@/lib/constants';
 import { env } from '@/app/api/env';
 import type { Address } from 'viem';
+import { sendReminderNotificationForPot } from '@/lib/helpers/notifications';
 
 // Object interface for easier access
 interface PotObject {
@@ -62,6 +63,7 @@ interface PotState {
   balance: bigint;
 }
 
+// pot id to state mapping
 const potStateCache = new Map<number, PotState>();
 
 // clients
@@ -92,6 +94,7 @@ export async function GET() {
 
     // 1) Find all eligible pots
     for (let i = 0; i < potCount; i++) {
+      // i is pot id
       if (potStateCache.has(i)) {
         const potState = potStateCache.get(i);
         if (potState && now >= potState.deadline) {
@@ -123,6 +126,7 @@ export async function GET() {
         }
       }
     }
+
     // ToDo: Add batching for more than 10 pots
     if (eligiblePayoutPots.length > 0) {
       const txHash = await writeContract(walletClient, {
@@ -133,6 +137,11 @@ export async function GET() {
       });
       console.log(`🔔 triggering batch payout for ${eligiblePayoutPots.length} pots`);
       await waitForTransactionReceipt(publicClient, { hash: txHash });
+
+      // send new round reminder + winner announcement notifications to pot participants
+      for (const potId of eligiblePayoutPots) {
+        await sendReminderNotificationForPot(potId);
+      }
     }
     if (eligibleEndPots.length > 0) {
       // ADD with latest contract update
