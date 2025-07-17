@@ -46,7 +46,7 @@ export async function sendReminderNotificationForPot(potId: bigint) {
     }
 
     if (fids.length === 0) {
-        console.log(`No FIDs found for pot #${potId}. Skipping payout.`);
+        console.log(`No FIDs found for pot #${potId}. Skipping reminder notification.`);
         return;
     }
 
@@ -108,7 +108,7 @@ export async function sendApproveNotificationForPot(potId: bigint, addresses: Ad
     console.log(`Processing pot #${potId} for approve notification`);
 
     if (!addresses || addresses.length === 0) {
-        console.log(`No addresses provided for pot #${potId}. Skipping invite notification.`);
+        console.log(`No addresses provided for pot #${potId}. Skipping approve notification.`);
         return;
     }
 
@@ -131,7 +131,7 @@ export async function sendApproveNotificationForPot(potId: bigint, addresses: Ad
     try {
         console.log('Sending approve notification...');
         await sendApprovalNotification({ potId: Number(potId), targetFids: fids });
-        console.log('Apprive notification sent successfully');
+        console.log('Approve notification sent successfully');
     } catch (error) {
         console.error(`Failed to send approve notification for pot #${potId}:`, error);
     }
