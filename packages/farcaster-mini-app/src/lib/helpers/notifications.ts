@@ -2,7 +2,7 @@ import { contractAddress, abi as potluckAbi } from '@/config';
 import { publicClient } from '@/clients/viem';
 import { readContract } from 'viem/actions';
 import type { Address } from 'viem';
-import { getUserFidsByAddressesAndWinner, sendDepositReminderNotification } from '@/lib/neynar';
+import { getUserFidsByAddresses, getUserFidsByAddressesAndWinner, sendDepositReminderNotification, sendInviteNotification } from '@/lib/neynar';
 
 export async function sendReminderNotificationForPot(potId: bigint) {
     console.log(`Processing pot #${potId} for reminder notification`);
@@ -46,4 +46,45 @@ export async function sendReminderNotificationForPot(potId: bigint) {
 
     console.log(`Sending deposit reminder notification for pot #${potId}`);
     await sendDepositReminderNotification({ potId: Number(potId), targetFids: fids, winnerName: winnerUsername });
+}
+
+/*
+ * Sends an invite notification for a pot to the specified addresses.
+ *
+ * @param potId - The ID of the pot to send the invite for
+ * @param addresses - Array of addresses to send the invite notification to
+ *
+ * @returns Promise<void>
+ */
+export async function sendInviteNotificationForPot(potId: bigint, addresses: Address[]): Promise<void> {
+    console.log(`Processing pot #${potId} for invite notification`);
+
+    if (!addresses || addresses.length === 0) {
+        console.log(`No addresses provided for pot #${potId}. Skipping invite notification.`);
+        return;
+    }
+
+    let fids: number[] = [];
+
+    try {
+        console.log('Fetching fids for addresses:', addresses);
+        fids = await getUserFidsByAddresses(addresses.map(addr => addr.toLowerCase()));
+        console.log('Fetched fids:', fids);
+    } catch (error) {
+        console.error(`Error fetching FIDs for pot #${potId}:`, error);
+        return;
+    }
+
+    if (fids.length === 0) {
+        console.log(`No FIDs found for pot #${potId}. Skipping invite notification.`);
+        return;
+    }
+
+    try {
+        console.log('Sending invite notification...');
+        await sendInviteNotification({ potId: Number(potId), targetFids: fids });
+        console.log('Invite notification sent successfully');
+    } catch (error) {
+        console.error(`Failed to send invite notification for pot #${potId}:`, error);
+    }
 }
