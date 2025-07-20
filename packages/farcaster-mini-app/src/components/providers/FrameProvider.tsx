@@ -70,7 +70,7 @@ export function useFrame() {
       return;
     }
 
-    addMiniApp();
+    await addMiniApp();
   }, [context, isSDKLoaded]);
 
   const addMiniApp = useCallback(async () => {
