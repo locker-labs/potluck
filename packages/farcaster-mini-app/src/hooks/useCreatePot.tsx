@@ -14,6 +14,7 @@ let _potName: string;
 let _amount: bigint;
 let _maxParticipants: number;
 let _timePeriod: bigint;
+let _isPublic: boolean;
 
 export function useCreatePot() {
   const [isCreatingPot, setIsCreatingPot] = useState(false);
@@ -24,19 +25,24 @@ export function useCreatePot() {
   const { ensureConnection } = useConnection();
   const { data: tokenBalance, isLoading: isLoadingBalance } = useTokenBalance();
   const { fee, feeUsdc, isLoading: isLoadingFee } = usePlatformFee();
-  const { allowance, isLoadingAllowance, approveTokensAsync, refetchAllowance } =
-    useApproveTokens();
+  const {
+    allowance,
+    isLoadingAllowance,
+    approveTokensAsync,
+    refetchAllowance,
+  } = useApproveTokens();
   const { address } = useAccount();
   const { writeContractAsync } = useWriteContract();
 
-  const isLoading: boolean = isLoadingBalance || isLoadingAllowance || isLoadingFee;
+  const isLoading: boolean =
+    isLoadingBalance || isLoadingAllowance || isLoadingFee;
 
   const createPot = async (
     potName: string,
     amountBigInt: bigint,
     maxParticipants: number,
     timePeriod: bigint,
-    isPublic = true,
+    isPublic: boolean
   ): Promise<bigint> => {
     try {
       const args = [
@@ -47,8 +53,8 @@ export function useCreatePot() {
         timePeriod,
         isPublic,
       ];
-      console.log('Creating pot with args:', args);
-      console.log('Creating pot with args:', {
+      console.log("Creating pot with args:", args);
+      console.log("Creating pot with args:", {
         potName,
         tokenAddress,
         amount: amountBigInt.toString(),
@@ -56,12 +62,12 @@ export function useCreatePot() {
         timePeriod: timePeriod.toString(),
         fee: toHex(0),
       });
-      console.log('contractAddress', contractAddress);
+      console.log("contractAddress", contractAddress);
       // broadcast transaction
       const txHash = await writeContractAsync({
         address: contractAddress,
         abi,
-        functionName: 'createPot',
+        functionName: "createPot",
         args,
       });
       console.log(txHash);
@@ -72,26 +78,30 @@ export function useCreatePot() {
         confirmations: 1,
       });
 
-      if (receipt.status === 'reverted') {
-        throw new Error(`Transaction reverted: ${getTransactionLink(receipt.transactionHash)}`);
+      if (receipt.status === "reverted") {
+        throw new Error(
+          `Transaction reverted: ${getTransactionLink(receipt.transactionHash)}`
+        );
       }
 
-      console.log(`Transaction confirmed: ${getTransactionLink(receipt.transactionHash)}`);
+      console.log(
+        `Transaction confirmed: ${getTransactionLink(receipt.transactionHash)}`
+      );
 
       // parse logs to get pot ID
       const potCreatedEvent = receipt.logs.find(
-        (log) => log.topics[0] === PotCreatedEventSignatureHash,
+        (log) => log.topics[0] === PotCreatedEventSignatureHash
       );
       if (!potCreatedEvent) {
-        throw new Error('PotCreated event not found in transaction logs');
+        throw new Error("PotCreated event not found in transaction logs");
       }
 
-      const id = BigInt(potCreatedEvent.topics[1] ?? '0');
+      const id = BigInt(potCreatedEvent.topics[1] ?? "0");
       setHash(txHash);
       setPotId(id);
       return id;
     } catch (error) {
-      console.error('Error creating potluck:', error);
+      console.error("Error creating potluck:", error);
       throw error;
     }
   };
@@ -101,11 +111,13 @@ export function useCreatePot() {
     amount: bigint,
     maxParticipants: number,
     timePeriod: bigint,
+    isPublic: boolean
   ) => {
     _potName = potName;
     _amount = amount;
     _maxParticipants = maxParticipants;
     _timePeriod = timePeriod;
+    _isPublic = isPublic;
 
     setPotId(null);
 
@@ -113,8 +125,8 @@ export function useCreatePot() {
       try {
         await ensureConnection();
       } catch {
-        console.error('Failed to connect wallet:');
-        toast.error('Failed to connect wallet');
+        console.error("Failed to connect wallet:");
+        toast.error("Failed to connect wallet");
         return;
       }
       setIsPending(true);
@@ -122,22 +134,22 @@ export function useCreatePot() {
     }
 
     if (fee === undefined) {
-      toast.error('Unable to fetch platform fee. Please try again.');
+      toast.error("Unable to fetch platform fee. Please try again.");
       return;
     }
 
     if (allowance === undefined) {
-      toast.error('Unable to fetch token allowance. Please try again.');
+      toast.error("Unable to fetch token allowance. Please try again.");
       return;
     }
 
     if (tokenBalance === undefined) {
-      toast.error('Unable to fetch token balance. Please try again.');
+      toast.error("Unable to fetch token balance. Please try again.");
       return;
     }
 
     if (amount > tokenBalance) {
-      toast.error('You do not have enough USDC.');
+      toast.error("You do not have enough USDC.");
       return;
     }
 
@@ -150,14 +162,14 @@ export function useCreatePot() {
         await refetchAllowance();
       }
 
-      await createPot(potName, amount, maxParticipants, timePeriod);
+      await createPot(potName, amount, maxParticipants, timePeriod, isPublic);
     } catch (error) {
-      console.error('Error creating potluck:', error);
-      toast.error('Error creating potluck', {
+      console.error("Error creating potluck:", error);
+      toast.error("Error creating potluck", {
         description:
           error instanceof Error
-            ? error.message?.split('.')?.[0]
-            : 'Something went wrong. Please try again.',
+            ? error.message?.split(".")?.[0]
+            : "Something went wrong. Please try again.",
       });
     } finally {
       setIsCreatingPot(false);
@@ -166,8 +178,21 @@ export function useCreatePot() {
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
-    if (isPending && allowance !== undefined && tokenBalance !== undefined && fee !== undefined) {
-      handleCreatePot(_potName, _amount, _maxParticipants, _timePeriod).then().catch();
+    if (
+      isPending &&
+      allowance !== undefined &&
+      tokenBalance !== undefined &&
+      fee !== undefined
+    ) {
+      handleCreatePot(
+        _potName,
+        _amount,
+        _maxParticipants,
+        _timePeriod,
+        _isPublic
+      )
+        .then()
+        .catch();
       setIsPending(false);
     }
   }, [isPending, allowance, tokenBalance, fee]);

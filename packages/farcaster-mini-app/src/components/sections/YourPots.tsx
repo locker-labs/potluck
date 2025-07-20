@@ -94,7 +94,7 @@ export default function YourPots() {
         }
 
         if (fetchedPot) {
-          const potObj: TPotObject = potMapper(fetchedPot, potCreator, potParticipants);
+          const potObj: TPotObject = potMapper(fetchedPot, potParticipants);
           potIdToPotMap[String(potId)] = potObj;
           // if (maxPotId === null) {
           //   maxPotId = potId;

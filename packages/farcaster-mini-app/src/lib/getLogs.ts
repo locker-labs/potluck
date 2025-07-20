@@ -136,3 +136,123 @@ export const getAllLogsForAPot = async (potId: bigint): Promise<GetFilterLogsRet
   );
   return sortedLogs.reverse();
 };
+
+export const getPotRequests = async (
+  potId: bigint
+): Promise<GetFilterLogsReturnType<Abi>> => {
+  let potRequestLogsFilter;
+  const key = `potRequestLogsFilter:${potId}`;
+
+  if (typeof localStorage !== "undefined") {
+    potRequestLogsFilter = JSON.parse(localStorage.getItem(key) || "null");
+  }
+
+  if (!potRequestLogsFilter) {
+    potRequestLogsFilter = await publicClient.createEventFilter({
+      address: contractAddress,
+      event: parseAbiItem(
+        "event PotAllowRequested(uint256 indexed potId, address indexed requester)"
+      ),
+      fromBlock: deploymentBlockBigInt,
+      args: { potId },
+    });
+  }
+
+  const logs = await publicClient.getFilterLogs({
+    filter: potRequestLogsFilter,
+  });
+  console.log(`PotRequest Logs for pot ${potId}:`, logs);
+  return logs as GetFilterLogsReturnType<Abi>;
+};
+
+export const hasRequestedPot = async (
+  potId: bigint,
+  address: Address
+): Promise<boolean> => {
+  let potRequestLogsFilter;
+  const key = `potRequestLogsFilter:${potId}:${address}`;
+  if (typeof localStorage !== "undefined") {
+    potRequestLogsFilter = JSON.parse(localStorage.getItem(key) || "null");
+  }
+
+  if (!potRequestLogsFilter) {
+    potRequestLogsFilter = await publicClient.createEventFilter({
+      address: contractAddress,
+      event: parseAbiItem(
+        "event PotAllowRequested(uint256 indexed potId, address indexed requester)"
+      ),
+      fromBlock: deploymentBlockBigInt,
+      args: { potId, requester: address },
+    });
+  }
+
+  const logs = await publicClient.getFilterLogs({
+    filter: potRequestLogsFilter,
+  });
+  console.log(`PotRequest Logs for pot ${potId}:`, logs);
+  if (logs.length > 0) {
+    return true;
+  }
+  return false;
+};
+
+export const getAllowedAddresses = async (
+  potId: bigint
+): Promise<Address[]> => {
+  let allowedAddressesFilter;
+  const key = `allowedAddressesFilter:${potId}`;
+
+  if (typeof localStorage !== "undefined") {
+    allowedAddressesFilter = JSON.parse(localStorage.getItem(key) || "null");
+  }
+
+  if (!allowedAddressesFilter) {
+    allowedAddressesFilter = await publicClient.createEventFilter({
+      address: contractAddress,
+      event: parseAbiItem(
+        "event AllowedParticipantAdded(uint256 indexed potId, address indexed user)"
+      ),
+      fromBlock: deploymentBlockBigInt,
+      args: { potId },
+    });
+  }
+
+  const logs = await publicClient.getFilterLogs({
+    filter: allowedAddressesFilter,
+  });
+  // @ts-ignore: decoded logs have `.args`
+  const addresses: Address[] = logs.map((log) => log.args.user);
+  console.log(`Allowed Addresses Logs for pot ${potId}:`, logs);
+  return addresses;
+};
+
+export const hasAllowedAddress = async (
+  potId: bigint,
+  address: Address
+): Promise<boolean> => {
+  let allowedAddressFilter;
+  const key = `allowedAddressesFilter:${potId}:${address}`;
+  if (typeof localStorage !== "undefined") {
+    allowedAddressFilter = JSON.parse(localStorage.getItem(key) || "null");
+  }
+
+  if (!allowedAddressFilter) {
+    allowedAddressFilter = await publicClient.createEventFilter({
+      address: contractAddress,
+      event: parseAbiItem(
+        "event AllowedParticipantAdded(uint256 indexed potId, address indexed user)"
+      ),
+      fromBlock: deploymentBlockBigInt,
+      args: { potId },
+    });
+  }
+
+  const logs = await publicClient.getFilterLogs({
+    filter: allowedAddressFilter,
+  });
+  console.log(`Allowed Addresses Logs for pot ${potId}:`, logs);
+  if (logs.length > 0) {
+    return true;
+  }
+  return false;
+};
