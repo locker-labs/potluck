@@ -1,4 +1,5 @@
 import { chainId } from '@/config';
+import { env } from './env';
 
 if (!process.env.NEXT_PUBLIC_URL) {
   throw new Error('NEXT_PUBLIC_URL environment variable is not set.');
@@ -38,3 +39,5 @@ export const APP_REQUIRED_CAPABILITIES = [
 
 export const MINI_APP_URL = process.env.NEXT_PUBLIC_MINI_APP_URL;
 export const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL;
+
+export const NEYNAR_WEBHOOK_URL = env.NEYNAR_WEBHOOK_URL;
