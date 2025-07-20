@@ -14,7 +14,7 @@ export const revalidate = 300;
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const pot: TPot = await fetchPot(BigInt(id));
-  const potObject: TPotObject = potMapper(pot, '0x', []);
+  const potObject: TPotObject = potMapper(pot, []);
 
   return {
     title: `Save with me for a chance to win ${potObject.totalPool} USDC`,

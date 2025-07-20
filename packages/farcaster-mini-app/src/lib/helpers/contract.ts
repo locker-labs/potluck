@@ -38,26 +38,26 @@ function getDeadlineString(deadline: bigint): string {
   return `${months}m`;
 }
 
-export function potMapper(pot: TPot, creator: Address, participants: Address[]): TPotObject {
+export function potMapper(pot: TPot, participants: Address[]): TPotObject {
   return {
     id: pot[0],
-    name: hexToString(pot[1]), // Decoded from bytes
-    round: pot[2], // uint32
-    deadline: pot[3], // in seconds
-    balance: pot[4],
-    token: pot[5], // Ethereum address
-    entryAmount: pot[6], // in wei
-    period: pot[7], // in seconds
-    totalParticipants: pot[8], // uint32
-    maxParticipants: Number(pot[9]), // uint8
-    isPublic: pot[10],
+    creator: pot[1],
+    name: hexToString(pot[2]), // Decoded from bytes
+    round: pot[3], // uint32
+    deadline: pot[4], // in seconds
+    balance: pot[5],
+    token: pot[6], // Ethereum address
+    entryAmount: pot[7], // in wei
+    period: pot[8], // in seconds
+    totalParticipants: pot[9], // uint32
+    maxParticipants: Number(pot[10]), // uint8
+    isPublic: pot[11],
     participants: participants, // Array of Ethereum addresses
     // derived properties
-    periodString: getPeriodInText(pot[7]),
-    deadlineString: getDeadlineString(pot[3]),
-    totalPool: formatUnits(BigInt(pot[8]) * pot[6], 6), // total pool = number of participants * entry amount
-    creator: creator,
-    nextDrawAt: new Date(Number(pot[3]) * 1000), // Convert seconds to milliseconds
+    periodString: getPeriodInText(pot[8]),
+    deadlineString: getDeadlineString(pot[4]),
+    totalPool: formatUnits(BigInt(pot[9]) * pot[7], 6), // total pool = number of participants * entry amount
+    nextDrawAt: new Date(Number(pot[4]) * 1000), // Convert seconds to milliseconds
     createdAt: new Date(),
   };
 }

@@ -1,4 +1,4 @@
-import type { Address } from 'viem';
+import type { Address, Hex } from "viem";
 
 export type TPotObject = {
   id: bigint;
@@ -24,28 +24,29 @@ export type TPotObject = {
 
 export const mockPotObject: TPotObject = {
   id: 1n,
-  name: '🎯 Pot Name',
+  name: "🎯 Pot Name",
   round: 1,
   deadline: 1n,
   balance: 1n,
-  token: '0x1234567890abcdef1234567890abcdef12345678' as Address,
+  token: "0x1234567890abcdef1234567890abcdef12345678" as Address,
   entryAmount: 1n,
   period: 1n,
   totalParticipants: 1,
   maxParticipants: 10,
-  participants: ['0x1234567890abcdef1234567890abcdef12345678'],
+  participants: ["0x1234567890abcdef1234567890abcdef12345678"],
   isPublic: true,
-  periodString: 'daily',
-  deadlineString: '5h',
-  creator: '0x1234567890abcdef1234567890abcdef12345678',
-  totalPool: '1',
+  periodString: "daily",
+  deadlineString: "5h",
+  creator: "0x1234567890abcdef1234567890abcdef12345678",
+  totalPool: "1",
   nextDrawAt: new Date(),
   createdAt: new Date(),
 };
 
 export type TPot = [
   bigint, // id
-  Address, // name
+  Address, // creator
+  Hex, // name
   number, // round
   bigint, // deadline
   bigint, // balance
@@ -54,5 +55,5 @@ export type TPot = [
   bigint, // period
   number, // totalParticipants
   number, // maxParticipants
-  boolean, // isPublic
+  boolean // isPublic
 ];
