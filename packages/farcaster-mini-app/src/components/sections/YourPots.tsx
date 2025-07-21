@@ -11,6 +11,7 @@ import { useJoinPot } from '@/hooks/useJoinPot';
 import { useAccount } from 'wagmi';
 import { timeFromNow } from '@/lib/helpers/time';
 import { DurationPill } from '@/components/ui/Pill';
+import { motion } from 'motion/react';
 
 // let _loadPotsEffectFlag = true;
 let _fetchPotsEffectFlag = true; // prevent multiple fetches
@@ -116,62 +117,28 @@ export default function YourPots() {
   // RENDERING
   // ---------
 
-  // Filtered pots based on selected tab
-  const filteredPots: TPotObject[] = pots;
+  if (!address || !isConnected) {
+    return null;
+  }
+
+  if (pots.length === 0) {
+    return null; // No pots to display
+  }
+
+  // Not showing loading state right now
 
   return (
-    <div>
+    <motion.div
+      initial={{ opacity: 0, y: -40, height: 0 }}
+      animate={{ opacity: 1, y: 0, height: 270 }}
+      exit={{ opacity: 0, y: -40, height: 0 }}
+      transition={{ duration: 0.4, ease: 'easeIn' }}
+      style={{ overflow: 'hidden' }}
+      key="your-pots">
+  <div>
       <h2 className='text-2xl font-bold mb-3'>Your Pots</h2>
-
-      {!isConnected || !address ? (
-        // ----------------------
-        // CONNECT WALLET SECTION
-        // ----------------------
-        <div className={'w-full h-[213px] flex flex-col items-center justify-center'}>
-          <GradientButton4
-            isActive={true}
-            onClick={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              // ensureConnection()
-              //   .then(() => {
-              //     toast.success('Wallet connected');
-              //   })
-              //   .catch(() => {
-              //     toast.error('Failed to connect wallet');
-              //   });
-            }}
-            disabled={isConnecting}
-            className='h-[30px] max-w-min min-w-[120px] whitespace-nowrap flex items-center justify-center justify-self-end'
-          >
-            {isConnecting ? 'Connecting' : !isConnected || !address ? 'Connect wallet' : null}
-          </GradientButton4>
-          <p className={'text-sm text-cyan-400 mt-2'}>Connect your wallet to see your pots</p>
-        </div>
-      ) : filteredPots.length === 0 ? (
-        loading ? (
-          // ---------------------
-          // INITIAL LOADING STATE
-          // ---------------------
-          <div className={'w-full h-[223px] flex flex-col items-center justify-center'}>
-            <Loader2 className='my-auto animate-spin' color='#7C65C1' size={32} />
-          </div>
-        ) : (
-          // -----------------------
-          // NO POTS AVAILABLE STATE
-          // -----------------------
-          <div className={'w-full h-[223px] flex flex-col items-center justify-center'}>
-            <span className={'text-md font-medium text-cyan-400 mt-2'}>Oops!</span>
-            <span className={'text-md text-cyan-400 mt-2'}>No pots = No savings</span>
-            <span className={'text-md text-cyan-400'}>Start saving 👇 today</span>
-          </div>
-        )
-      ) : (
-        // --------------------
-        // DISPLAY POTS SECTION
-        // --------------------
-        <div className='flex flex-row overflow-x-scroll gap-[12px] md:grid-cols-2 lg:grid-cols-3'>
-          {filteredPots.map((pot: TPotObject) => (
+      <div className='flex flex-row overflow-x-scroll gap-[12px] md:grid-cols-2 lg:grid-cols-3'>
+          {pots.map((pot: TPotObject) => (
             <YourPotCard
               key={pot.id}
               pot={pot}
@@ -179,7 +146,7 @@ export default function YourPots() {
               joinedPotId={joinedPotId}
               handleJoinPot={handleJoinPot}
               address={address}
-              className={filteredPots.length === 1 ? 'w-full' : ''}
+              className={pots.length === 1 ? 'w-full' : ''}
               tokenBalance={tokenBalance}
             />
           ))}
@@ -193,9 +160,9 @@ export default function YourPots() {
             </div>
           ) : null}
         </div>
-      )}
     </div>
-  );
+  </motion.div>
+    );
 }
 
 export function YourPotCard({
