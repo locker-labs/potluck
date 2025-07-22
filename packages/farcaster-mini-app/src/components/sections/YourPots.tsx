@@ -132,7 +132,7 @@ export default function YourPots() {
       initial={{ opacity: 0, y: -40, height: 0 }}
       animate={{ opacity: 1, y: 0, height: 270 }}
       exit={{ opacity: 0, y: -40, height: 0 }}
-      transition={{ duration: 0.4, ease: 'easeIn' }}
+      transition={{ duration: 0.4, ease: ['easeOut', 'easeIn'] }}
       style={{ overflow: 'hidden' }}
       key="your-pots">
   <div>
