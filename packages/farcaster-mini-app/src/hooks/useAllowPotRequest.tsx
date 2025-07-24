@@ -6,6 +6,8 @@ import { toast } from 'sonner';
 import { getTransactionLink } from '@/lib/helpers/blockExplorer';
 import { useConnection } from '@/hooks/useConnection';
 import type { Address } from 'viem';
+import { sendNotification } from "@/lib/api/sendNotification";
+import { ENotificationType } from "@/enums/notification";
 
 export function useAllowPotRequest() {
   const { address, ensureConnection } = useConnection();
@@ -33,6 +35,11 @@ export function useAllowPotRequest() {
       }
 
       console.log(`Transaction confirmed: ${getTransactionLink(receipt.transactionHash)}`);
+          await sendNotification({
+            addresses,
+            potId: String(id),
+            type: ENotificationType.APPROVE,
+          });
     } catch (error) {
       console.error('Error requesting pot approval:', error);
       throw error;
