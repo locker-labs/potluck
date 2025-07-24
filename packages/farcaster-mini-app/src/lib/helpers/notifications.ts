@@ -1,5 +1,6 @@
 import { contractAddress, abi as potluckAbi } from '@/config';
 import { publicClient } from '@/clients/viem';
+import { ENotificationType } from '@/enums/notification';
 import { readContract } from 'viem/actions';
 import type { Address } from 'viem';
 import {
@@ -135,4 +136,21 @@ export async function sendApproveNotificationForPot(potId: bigint, addresses: Ad
     } catch (error) {
         console.error(`Failed to send approve notification for pot #${potId}:`, error);
     }
+}
+
+export async function sendNotificationForPot(
+  potId: bigint,
+  addresses: Address[],
+  type: ENotificationType
+): Promise<void> {
+  switch (type) {
+    case ENotificationType.INVITE:
+      await sendInviteNotificationForPot(potId, addresses);
+      break;
+    case ENotificationType.APPROVE:
+      await sendApproveNotificationForPot(potId, addresses);
+      break;
+    default:
+      console.error(`Unsupported notification type: ${type}`);
+  }
 }

@@ -5,6 +5,7 @@ const clientEnv: Record<string, string> = {};
 const serverEnv: Record<string, string> = {
 	NEYNAR_API_KEY: process.env.NEYNAR_API_KEY ?? "",
 	NEYNAR_WEBHOOK_URL: process.env.NEYNAR_WEBHOOK_URL ?? "",
+	ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS ?? "",
 };
 
 // Validate client-side variables
