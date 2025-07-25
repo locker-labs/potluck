@@ -56,11 +56,6 @@ export function useRequestPot() {
       return;
     }
     setPendingRequest(potId);
-    const hasRequestedPot: boolean = false; // Replace with subgraph query
-    if (hasRequestedPot) {
-      toast.error("You have already requested this pot.");
-      return;
-    }
     try {
       await requestPotAllow(potId);
       toast.success(`Successfully requested pot #${potId}`);

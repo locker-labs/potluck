@@ -17,6 +17,8 @@ export function JoinRequests({ potId }: JoinRequestsProps) {
   const [loading, setLoading] = useState(false);
   const { handleAllow, pendingApproval } = useAllowPotRequest();
   useEffect(() => {
+    setLoading(pendingApproval !== null);
+    if (pendingApproval !== null) return;
     const fetchRequests = async () => {
       try {
         const logs = await getPotRequests(potId);
@@ -26,7 +28,8 @@ export function JoinRequests({ potId }: JoinRequestsProps) {
               log.args &&
               typeof log.args === "object" &&
               "requester" in log.args &&
-              typeof (log.args as Record<string, unknown>).requester === "string"
+              typeof (log.args as Record<string, unknown>).requester ===
+                "string"
             ) {
               return (log.args as Record<string, unknown>).requester as string;
             }
@@ -43,11 +46,8 @@ export function JoinRequests({ potId }: JoinRequestsProps) {
       }
     };
     fetchRequests();
-  }, [potId]);
+  }, [potId, pendingApproval]);
 
-  useEffect(() => {
-    setLoading(pendingApproval !== null);
-  }, [pendingApproval]);
 
   const toggleSelect = (addr: string) => {
     setSelected((prev) => {

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import { getPotCreatedLogs } from '@/lib/getLogs';
-import type { TPot, TPotObject } from '@/lib/types';
-import { getPotParticipants, fetchPot, potMapper, getHasJoinedRound } from '@/lib/helpers/contract';
+import type { TPotObject } from "@/lib/types";
+import { getHasJoinedRound } from "@/lib/helpers/contract";
 import { formatUnits, type Address } from 'viem';
 import { Loader2, Clock5, UsersRound } from 'lucide-react';
 import { GradientButton, GradientButton2 } from '../ui/Buttons';
@@ -10,6 +9,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useJoinPot } from '@/hooks/useJoinPot';
 import { useAccount } from 'wagmi';
+import { getAllPotObjects } from "@/lib/graphQueries";
 
 // Helper to map period to seconds
 const periodSecondsMap = {
@@ -64,55 +64,8 @@ export default function PotList() {
     _fetchPotsEffectFlag = false;
 
     (async () => {
-      const _logs = (await getPotCreatedLogs()) as unknown as Array<{
-        address: Address;
-        args: { potId: bigint; creator: Address };
-        blockNumber: number;
-        transactionHash: string;
-      }>;
-
-      for (const log of _logs.reverse()) {
-        const potId = log.args.potId;
-        const potCreator = log.args.creator as Address;
-
-        // if (maxPotId !== null && potId <= maxPotId) {
-        //   console.log(`Pot with ID ${potId} already exists as Max pot ID is ${maxPotId}.`);
-        //   continue;
-        // }
-
-        // if (potIdToPotMap[String(potId)]) {
-        //   console.log(`Pot with ID ${potId} already exists in potIdToPotMap.`);
-        //   continue;
-        // }
-
-        let fetchedPot: TPot | null = null;
-        let potParticipants: Address[] = [];
-
-        try {
-          const res = await Promise.all([
-            fetchPot(potId),
-            getPotParticipants(potId),
-          ]);
-          fetchedPot = res[0];
-          potParticipants = res[1];
-        } catch (err) {
-          console.error(`Failed to fetch pot with ID ${potId}:`, err);
-        }
-
-        if (fetchedPot) {
-          const potObj: TPotObject = potMapper(fetchedPot, potParticipants);
-          potIdToPotMap[String(potId)] = potObj;
-          // if (maxPotId === null) {
-          //   maxPotId = potId;
-          // } else {
-          //   maxPotId = BigInt(Math.max(Number(maxPotId), Number(potId)));
-          // }
-          setPots((prevPots) => [...prevPots, potObj]);
-        }
-      }
-      // TODO: convert bigint to string before storing in localStorage
-      // localStorage.setItem('pots', JSON.stringify(potIdToPotMap));
-
+      const potObjs = await getAllPotObjects();
+      setPots((prevPots) => [...prevPots, ...potObjs]);
       setLoading(false);
       _fetchPotsEffectFlag = true;
     })();
@@ -220,7 +173,6 @@ export function PotCard({
   // Update hasJoinedRound when joinedPotId changes
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
-    console.log("PP", pot.participants);
     if (!address) {
       setHasJoinedRound(false);
     } else {
@@ -324,7 +276,7 @@ export function PotCard({
                 </span>
               </div>
               <p className="font-base text-[14px] self-end">
-                ${formatUnits(pot.entryAmount, 6)} {pot.periodString}
+                ${pot.entryAmount} {pot.periodString}
               </p>
             </div>
             <div className="col-start-4 col-span-2 self-end">
