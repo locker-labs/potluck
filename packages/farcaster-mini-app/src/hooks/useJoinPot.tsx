@@ -9,8 +9,10 @@ import { useTokenBalance } from '@/hooks/useTokenBalance';
 import { getTransactionLink } from '@/lib/helpers/blockExplorer';
 import { useConnection } from '@/hooks/useConnection';
 import { getHasJoinedRound } from '@/lib/helpers/contract';
+import { useFrame } from '@/components/providers/FrameProvider';
 
 export function useJoinPot() {
+  const { checkAndAddMiniApp } = useFrame();
   const { address, ensureConnection, isConnected } = useConnection();
   const { data: tokenBalance, isLoading: isLoadingBalance } = useTokenBalance();
   const { allowance, isLoadingAllowance, approveTokensAsync, refetchAllowance } =
@@ -120,6 +122,7 @@ export function useJoinPot() {
         await refetchAllowance();
       }
 
+      await checkAndAddMiniApp();
       await joinPot(potId);
       setJoinedPotId(potId);
 

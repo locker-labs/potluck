@@ -346,7 +346,7 @@ export default function PotPage({ id }: { id: string }) {
           <p className="text-sm">Total Won</p>
         </div>
       </div>
-      {pot.creator == address && pot.round == 0 && (
+      {pot.creator === address && pot.round === 0 && (
         <JoinRequests potId={pot.id} />
       )}
 

@@ -14,6 +14,7 @@ interface FrameContextType {
   added: boolean;
   notificationDetails: FrameNotificationDetails | null;
   lastEvent: string;
+  checkAndAddMiniApp: () => Promise<void>;
   addMiniApp: () => Promise<void>;
   addFrameResult: string;
 }
@@ -51,10 +52,33 @@ export function useFrame() {
     }
   }, [context]);
 
+  const checkAndAddMiniApp = useCallback(async () => {
+    if (!isSDKLoaded) {
+        return;
+    }
+
+    console.log('Checking if mini app is already added');
+    console.log('Current context:', context);
+    if (!context) {
+      return;
+    }
+
+    if (context.client.added) {
+      setAdded(true);
+      setNotificationDetails(context.client.notificationDetails ?? null);
+      setLastEvent('Frame already added');
+      return;
+    }
+
+    await addMiniApp();
+  }, [context, isSDKLoaded]);
+
   const addMiniApp = useCallback(async () => {
     try {
       setNotificationDetails(null);
+      console.log('Calling addMiniApp');
       const result = await sdk.actions.addMiniApp();
+      console.log('addMiniApp result:', result);
 
       if (result.notificationDetails) {
         setNotificationDetails(result.notificationDetails);
@@ -168,6 +192,7 @@ export function useFrame() {
     added,
     notificationDetails,
     lastEvent,
+    checkAndAddMiniApp,
     addMiniApp,
     addFrameResult,
     openUrl,
