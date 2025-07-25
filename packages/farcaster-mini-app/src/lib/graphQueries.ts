@@ -8,10 +8,6 @@ const SUBGRAPH_URL =
   "https://api.studio.thegraph.com/query/112614/potluck-subgraph/version/latest";
 const client = new GraphQLClient(SUBGRAPH_URL);
 
-// ——————————————————————————————————————————————————————————————
-// GraphQL documents (unchanged)
-// ——————————————————————————————————————————————————————————————
-
 const GET_ALL_POTS = gql`
   query GetAllPots($first: Int!, $skip: Int!) {
     pots(first: $first, skip: $skip, orderBy: createdAt, orderDirection: desc) {
@@ -295,10 +291,6 @@ async function mapRawPotToObject(rp: RawPot): Promise<TPotObject> {
   };
 }
 
-// ——————————————————————————————————————————————————————————————
-// getAllPotObjects (unchanged mapping)
-// ——————————————————————————————————————————————————————————————
-
 export async function getAllPotObjects(
   first = 1000,
   skip = 0
@@ -314,9 +306,6 @@ export async function getAllPotObjects(
   return Promise.all(pots.map(mapRawPotToObject));
 }
 
-// ——————————————————————————————————————————————————————————————
-// fetchPotFull now returns LogEntry[]
-// ——————————————————————————————————————————————————————————————
 
 export async function fetchPotFull(
   potId: bigint,
