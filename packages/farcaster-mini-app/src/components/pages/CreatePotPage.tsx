@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { parseUnits } from 'viem';
-import { MoveLeft, Copy, MessageSquarePlus, Check, Loader2, ExternalLink } from 'lucide-react';
+import { MoveLeft, Copy, Loader2, ExternalLink } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -19,6 +19,7 @@ import { formatUnits } from 'viem';
 import { z } from 'zod';
 import { MAX_PARTICIPANTS } from '@/config';
 import { useFrame } from '../providers/FrameProvider';
+import { AnimatePresence, motion } from 'motion/react';
 
 const emojis = ['🎯', '🏆', '🔥', '🚀', '💪', '⚡', '🎬', '🎓', '🍕', '☕'];
 
@@ -214,9 +215,9 @@ export default function CreatePotPage() {
                 <button
                   key={emojiOption}
                   type="button"
-                  className={`p-2 inline-flex items-center justify-center text-2xl rounded-2xl transition-colors ${
+                  className={`h-[50px] p-2 inline-flex items-center justify-center text-2xl rounded-2xl transition-all ease-out duration-350 ${
                     emoji === emojiOption
-                      ? "bg-app-cyan/20 border border-app-cyan outline outline-1 outline-app-cyan"
+                      ? "bg-app-cyan/20 border border-app-cyan outline outline-1 outline-app-cyan text-[33px]"
                       : "bg-app-dark border border-app-light"
                   }`}
                   onClick={() => setEmoji(emojiOption)}
@@ -269,14 +270,14 @@ export default function CreatePotPage() {
           {/* Participation Type */}
           <div>
             <div className="flex items-center justify-between">
-              <label className="block text-base font-bold">
-                Participation Type
-              </label>
+              <p className="block text-base font-bold">
+                Participation
+              </p>
               <div className="flex items-center gap-4">
                 {/* “Invite-Only” label */}
                 <span
-                  className={`text-sm font-medium ${
-                    isPublic ? "text-white" : "text-gray-400"
+                  className={`w-[40px] text-right leading-none transition-all duration-250 ${
+                    isPublic ? "text-white font-medium text-sm" : "text-gray-400 font-normal text-xs pr-[0.75px]"
                   }`}
                 >
                   Public
@@ -288,32 +289,49 @@ export default function CreatePotPage() {
                   <input
                     type="checkbox"
                     className="sr-only peer"
-                    checked={isPublic}
+                    checked={!isPublic}
                     onChange={() => setIsPublic(!isPublic)}
                   />
-
                   {/* track */}
                   <span className="absolute inset-0 bg-gray-700 rounded-full peer-checked:bg-app-cyan transition-colors" />
-
                   {/* knob */}
                   <span className="absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow transition-all peer-checked:left-8" />
                 </label>
 
                 {/* “Open” label */}
                 <span
-                  className={`text-sm font-medium ${
-                    !isPublic ? "text-white" : "text-gray-400"
+                  className={`w-[44px] leading-none transition-all duration-250 ${
+                    !isPublic ? "text-white font-medium text-sm" : "text-gray-400 font-normal text-xs"
                   }`}
                 >
                   Private
                 </span>
               </div>
             </div>
-            <p className="text-xs text-gray-500 pb-2.5">
-              {isPublic
-                ? "Anyone can join this pot."
-                : "Only approved participants can join this pot."}
-            </p>
+            <AnimatePresence mode='popLayout'>
+              {isPublic ?
+                <motion.p
+                key={"participation-public"}
+                className="text-xs text-gray-500 pb-2.5"
+                initial={{ x: 40, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: 40, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 400, damping: 30, duration: 0.1 }}
+                >
+                  Anyone can join this pot
+                </motion.p> :
+                <motion.p
+                key={"participation-private"}
+                className="text-xs text-gray-500 pb-2.5"
+                initial={{ x: -40, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: -40, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 400, damping: 30, duration: 0.1 }}
+                >
+                  Only approved participants can join this pot
+                </motion.p>
+              }
+            </AnimatePresence>
           </div>
           {/* Max Participants */}
           <div>
@@ -434,10 +452,15 @@ export default function CreatePotPage() {
               Congratulations! 🎉
             </DialogTitle>
             <div className="text-center">
-              <div className="py-4">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Check className="h-8 w-8 text-green-500" />
-                </div>
+                <div>
+                <Image
+                  src="/success.gif"
+                  alt="Success"
+                  width={150}
+                  height={150}
+                  className="mx-auto rounded-full"
+                  priority
+                />
                 <h3 className="text-xl font-bold mb-2">
                   Your pot has been created!
                 </h3>
@@ -462,11 +485,12 @@ export default function CreatePotPage() {
 
           <div className="space-y-4 mt-2">
             <GradientButton3
+              type='button'
               className="w-full flex items-center justify-center gap-2"
               onClick={handleCastOnFarcaster}
             >
-              <MessageSquarePlus size={18} />
-              Cast on Farcaster
+              <Image src="/farcaster-transparent-white.svg" alt="Farcaster" width={22} height={22} priority />
+              <span className='text-[20px] font-medium'>Cast on Farcaster</span>
             </GradientButton3>
 
             <GradientButton3
@@ -474,8 +498,14 @@ export default function CreatePotPage() {
               onClick={handleCopyLink}
             >
               <Copy size={18} />
-              Copy Invite Link
+              <span className='text-[20px] font-medium'>Copy Invite Link</span>
             </GradientButton3>
+
+            <Link href={`/pot/${potId}`} className="w-full" prefetch={showSuccessModal}>
+              <div className="w-full text-center rounded-xl py-3 mt-4 bg-white/80">
+                <span className='text-[20px] text-center font-medium text-black'>Go to Pot</span>
+              </div>
+            </Link>
           </div>
         </DialogContent>
       </Dialog>
