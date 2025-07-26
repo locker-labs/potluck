@@ -2,37 +2,30 @@
 
 import { TrendingUp, Loader2, UsersRound } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { fetchPot, getPotParticipants, potMapper, getHasJoinedRound } from '@/lib/helpers/contract';
-import type { TPotObject } from '@/lib/types/contract.type';
-import { type Abi, formatUnits, type GetFilterLogsReturnType } from 'viem';
-import { useJoinPot } from '@/hooks/useJoinPot';
-import { GradientButton2, GradientButton3 } from '../ui/Buttons';
-import { GradientCard2 } from '../ui/GradientCard';
-// import { useSearchParams } from 'next/navigation';
-import { useAccount } from 'wagmi';
-import { useRouter } from 'next/navigation';
-import { MoveLeft } from 'lucide-react';
-import { timeFromNow } from '@/lib/helpers/time';
-import { DurationPill } from '@/components/ui/Pill';
-import Image from 'next/image';
-import {
-  getAllLogsForAPot,
-  hasRequestedPot,
-  hasAllowedAddress,
-} from "@/lib/getLogs";
+import { getHasJoinedRound } from "@/lib/helpers/contract";
+import type { TPotObject } from "@/lib/types/contract.type";
+import { useJoinPot } from "@/hooks/useJoinPot";
+import { GradientButton2, GradientButton3 } from "../ui/Buttons";
+import { GradientCard2 } from "../ui/GradientCard";
+import { useAccount } from "wagmi";
+import { useRouter } from "next/navigation";
+import { MoveLeft } from "lucide-react";
+import { timeFromNow } from "@/lib/helpers/time";
+import { DurationPill } from "@/components/ui/Pill";
+import Image from "next/image";
 import { RecentActivity } from "@/components/sections/RecentActivity";
 import { ShareDropdown } from "@/components/ui/ShareDropdown";
 import { useRequestPot } from "@/hooks/useRequestPotAllow";
 import { JoinRequests } from "../sections/PotRequests";
+import { fetchPotInfo, fetchPotParticipationInfo, type LogEntry } from "@/lib/graphQueries";
+import type { Address } from 'viem';
 
 const defaultLogsState = { loading: true, error: null, logs: [] };
+const defaultParticipationState = { loading: false, error: null, data: null };
 
 export default function PotPage({ id }: { id: string }) {
   const router = useRouter();
   const potId = BigInt(id);
-  // const searchParams = useSearchParams();
-  // const joinSearchParam = searchParams.get('join');
-  // const autoJoin = joinSearchParam === '' || !!joinSearchParam;
 
   const { isConnected, address } = useAccount();
   const {
@@ -49,16 +42,20 @@ export default function PotPage({ id }: { id: string }) {
   const [loadingPot, setLoadingPot] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasJoinedBefore, setHasJoinedBefore] = useState<boolean | null>(null);
-  const [hasJoinedRound, setHasJoinedRound] = useState<boolean>(
-    isConnected && !!address && !!pot && pot.participants.includes(address)
-  );
-  const [isPotRequested, setIsPotRequested] = useState<boolean>(false);
-  const [isRequestApproved, setIsRequestApproved] = useState<boolean>(false);
+  const [hasJoinedRound, setHasJoinedRound] = useState<boolean>(false);
   const [logsState, setLogsState] = useState<{
     loading: boolean;
     error: string | null;
-    logs: GetFilterLogsReturnType<Abi>;
+    logs: LogEntry[];
   }>(defaultLogsState);
+  const [participationState, setParticipationState] = useState<{
+    loading: boolean;
+    error: string | null;
+    data: { isAllowed: boolean; hasRequested: boolean | null } | null;
+  }>(defaultParticipationState);
+
+  const isPotRequested = participationState.data?.hasRequested ?? null;
+  const isRequestApproved = participationState.data?.isAllowed ?? false;
 
   // EFFECTS
   // Load pot details on mount
@@ -66,13 +63,12 @@ export default function PotPage({ id }: { id: string }) {
     (async function loadPot() {
       setLoadingPot(true);
       setError(null);
+
       try {
-        const [potRaw, potParticipants] = await Promise.all([
-          fetchPot(potId),
-          getPotParticipants(potId),
-        ]);
-        console.log(`Pot details for ${potId}:`, potRaw);
-        setPot(potMapper(potRaw, potParticipants));
+        const potInfo = await fetchPotInfo(potId);
+        const { pot, logs } = potInfo;
+        setPot(pot);
+        setLogsState({ loading: false, error: null, logs });
       } catch {
         setError("Failed to load pot details");
       } finally {
@@ -81,51 +77,46 @@ export default function PotPage({ id }: { id: string }) {
     })();
   }, [potId]);
 
-  // Load pot logs on mount
+  // Load pot participation info when address is available
   useEffect(() => {
-    (async function loadPotLogs() {
-      setLogsState(defaultLogsState);
+    (async function loadPotParticipationInfo() {
+      if (!address) {
+        setParticipationState(defaultParticipationState);
+        return;
+      }
+
+      setParticipationState((prev) => ({ ...prev, loading: true }));
       try {
-        const allLogs: GetFilterLogsReturnType<Abi> = await getAllLogsForAPot(
-          potId
-        );
-        setLogsState((prev) => ({ ...prev, logs: allLogs }));
+        const info = await fetchPotParticipationInfo(potId, address);
+        setParticipationState((prev) => ({ ...prev, data: info }));
       } catch {
-        setLogsState((prev) => ({ ...prev, error: "Failed to load pot logs" }));
+        setParticipationState((prev) => ({ ...prev, error: "Failed to load pot participation info" }));
       } finally {
-        setLogsState((prev) => ({ ...prev, loading: false }));
+        setParticipationState((prev) => ({ ...prev, loading: false }));
       }
     })();
-  }, [potId]);
+  }, [potId, address]);
 
   useEffect(() => {
-    if (pot) {
-      (async function loadRequestState() {
-        const _isPotRequested = await hasRequestedPot(potId, address!);
-        const _isPotAllowed = await hasAllowedAddress(potId, address!);
-        setIsPotRequested(_isPotRequested);
-        setIsRequestApproved(_isPotAllowed);
-      })();
+    if (pot && pendingRequest == null) {
+      (async function loadRequestState() {})();
     }
-  }, [pot]);
-
-  // join pot from search param
-  // useEffect(() => {
-  //   if (!isLoadingJoinPot && autoJoin && !!pot && !!address) {
-  //     (async function handleAutoJoin() {
-  //       await handleJoinPot(pot);
-  //     })();
-  //   }
-  // }, [autoJoin, pot, isLoadingJoinPot, address]);
+  }, [pot, pendingRequest]);
 
   // Has user joined pot previously (requires wallet connection)
   useEffect(() => {
     if (isConnected && address && !!pot) {
       (async () => {
-        setHasJoinedBefore(await getHasJoinedRound(pot.id, 0, address));
+        if (address.toLowerCase() === pot.creator && pot.round === 0) {
+          setHasJoinedRound(true);
+          setHasJoinedBefore(true);
+        } else {
+          console.log("Checking if user has joined round 0");
+          setHasJoinedBefore(await getHasJoinedRound(pot.id, 0, address));
+        }
       })();
     }
-    console.log(pot?.creator);
+    console.log('pot?.creator', pot?.creator);
   }, [isConnected, address, pot]);
 
   // Update state when joinedPotId changes
@@ -137,7 +128,7 @@ export default function PotPage({ id }: { id: string }) {
         pot.participants.push(address);
         setHasJoinedRound(true);
       } else {
-        setHasJoinedRound(pot.participants.includes(address));
+        setHasJoinedRound(pot.participants.includes(address.toLowerCase() as Address));
       }
     }
   }, [pot, joinedPotId, address]);
@@ -175,15 +166,18 @@ export default function PotPage({ id }: { id: string }) {
     : pot.round;
 
   const disabled: boolean =
-    isJoiningPot ||
-    hasJoinedRound ||
     initialLoading ||
-    cannotJoinPot ||
     potFull ||
-    insufficientBalance ||
     deadlinePassed ||
-    (isPotRequested && !isRequestApproved) ||
-    pendingRequest !== null;
+    !!address && (
+      isJoiningPot ||
+      hasJoinedRound ||
+      cannotJoinPot ||
+      insufficientBalance ||
+      (isPotRequested && !isRequestApproved) ||
+      pendingRequest !== null ||
+      isPotRequested === null
+    );
 
   const joinButtonText = initialLoading ? (
     "Loading"
@@ -195,13 +189,17 @@ export default function PotPage({ id }: { id: string }) {
     "Expired ⌛"
   ) : potFull ? (
     "Pot Full 📦"
-  ) : insufficientBalance ? (
+  ) : !isConnected || !address ?
+    "Connect wallet to Join"
+    : insufficientBalance ? (
     "Insufficient Balance 💰"
   ) : isRoundZero ? (
     pendingRequest !== null ? (
-      "Requesting Pot Access"
+      "Requesting Access"
     ) : isPublic ? (
       "Join Pot"
+    ) : isPotRequested === null ? (
+      "Loading"
     ) : isPotRequested ? (
       isRequestApproved ? (
         "Join Pot"
@@ -209,7 +207,7 @@ export default function PotPage({ id }: { id: string }) {
         "Pending Approval"
       )
     ) : (
-      "Request Pot Access"
+      "Request Access"
     )
   ) : hasJoinedBefore ? (
     <span className={"flex items-center justify-center"}>
@@ -217,7 +215,7 @@ export default function PotPage({ id }: { id: string }) {
       <span className={"mr-1"}>
         <Image src={"/usdc.png"} alt={"usdc"} width={16} height={16} />
       </span>
-      <span>{formatUnits(pot.entryAmount, 6)})</span>
+      <span>{pot.entryAmount})</span>
     </span>
   ) : (
     "Cannot Join 😔"
@@ -230,12 +228,11 @@ export default function PotPage({ id }: { id: string }) {
     if (isPublic || isRequestApproved) {
       await handleJoinPot(pot).then().catch();
     } else if (!isPotRequested) {
-      console.log("ID", pot.id);
-      await handleRequest(pot.id)
-        .then(() => {
-          setIsPotRequested(true);
-        })
-        .catch();
+      await handleRequest(pot.id);
+      // .then(() => {
+      //   setIsPotRequested(true);
+      // })
+      // .catch();
     }
   };
 
@@ -297,7 +294,7 @@ export default function PotPage({ id }: { id: string }) {
               </span>
             </div>
             <p className="font-base text-[14px] whitespace-nowrap text-left">
-              ${formatUnits(pot.entryAmount, 6)} {pot.periodString}
+              ${pot.entryAmountFormatted} {pot.periodString}
             </p>
           </div>
           <p className="col-span-2 font-base text-[14px] text-right">

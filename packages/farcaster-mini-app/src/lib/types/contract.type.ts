@@ -8,6 +8,7 @@ export type TPotObject = {
   balance: bigint;
   token: Address; // ERC20 token address
   entryAmount: bigint;
+  entryAmountFormatted: string;
   period: bigint; // in seconds
   totalParticipants: number; // uint32
   maxParticipants: number; // uint8
@@ -30,6 +31,7 @@ export const mockPotObject: TPotObject = {
   balance: 1n,
   token: "0x1234567890abcdef1234567890abcdef12345678" as Address,
   entryAmount: 1n,
+  entryAmountFormatted: '0.000001',
   period: 1n,
   totalParticipants: 1,
   maxParticipants: 10,

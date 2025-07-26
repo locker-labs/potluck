@@ -55,11 +55,6 @@ export function useAllowPotRequest() {
       return;
     }
     setPendingApproval(potId);
-    const hasRequestedPot: boolean = false; // Replace with subgraph query
-    if (hasRequestedPot) {
-      toast.error("You have already requested this pot.");
-      return;
-    }
     try {
       await allowAddresses(potId, addresses);
       toast.success(`Successfully allowed addresses for pot #${potId}`);

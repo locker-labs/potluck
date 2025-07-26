@@ -1,118 +1,98 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { formatAddress } from '@/lib/address';
-import { Loader2, MoveUpRight, ExternalLink } from 'lucide-react';
-import { type Abi, formatUnits, type GetFilterLogsReturnType } from 'viem';
-import Link from 'next/link';
-import Image from 'next/image';
-import type { TPotObject } from '@/lib/types';
-import { useEffect } from 'react';
-import { publicClient } from '@/clients/viem';
-import { formatDateFromTimestamp } from '@/lib/date';
-import { getTransactionLink } from '@/lib/helpers/blockExplorer';
+import { useEffect } from "react";
+import { Loader2, MoveUpRight, ExternalLink } from "lucide-react";
+import Link from "next/link";
+import Image from "next/image";
+import { formatAddress } from "@/lib/address";
+import { formatDateFromTimestamp } from "@/lib/date";
+import { getTransactionLink } from "@/lib/helpers/blockExplorer";
+import type { TPotObject } from "@/lib/types";
+import type { LogEntry } from "@/lib/graphQueries";
 
 export function RecentActivity({
-  logsState,
   pot,
+  logsState,
 }: {
   pot: TPotObject;
-  logsState: { loading: boolean; error: string | null; logs: GetFilterLogsReturnType<Abi> };
+  logsState: { loading: boolean; error: string | null; logs: LogEntry[] };
 }) {
-  const [blockMapState, setBlockMapState] = useState<Map<bigint, bigint>>(new Map());
-
-  const uniqueBlockNumbers = [...new Set(logsState.logs.map((l) => l.blockNumber.toString()))];
-  const blockMap = new Map<bigint, bigint>(); // blockNumber -> timestamp
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-  useEffect(() => {
-    (async () => {
-      for (const blockNumStr of uniqueBlockNumbers) {
-        const blockNumber = BigInt(blockNumStr);
-        const block = await publicClient.getBlock({ blockNumber });
-        blockMap.set(blockNumber, block.timestamp);
-      }
-      setBlockMapState(blockMap);
-    })();
-  }, [logsState.logs.length]);
-
+  // 1️⃣ Loading / Error states
   if (logsState.loading) {
     return (
-      <div className={'py-4 flex items-center justify-center w-full h-[300px]'}>
-        {/* TODO: replace loader with skeleton */}
-        <Loader2 className='animate-spin' color='#7C65C1' size={32} />
+      <div className="py-4 flex items-center justify-center w-full h-[300px]">
+        <Loader2 className="animate-spin" color="#7C65C1" size={32} />
       </div>
     );
   }
-
   if (logsState.error) {
     return (
-      <div className={'py-4 flex items-center justify-center w-full h-[300px]'}>
-        <p className='text-red-500'>Error: {logsState.error}</p>
+      <div className="py-4 flex items-center justify-center w-full h-[300px]">
+        <p className="text-red-500">Error: {logsState.error}</p>
       </div>
     );
   }
 
+  // 2️⃣ Filter only deposits & payouts
+  const activities = logsState.logs.filter(
+    (log) => log.type === "joined" || log.type === "payout"
+  );
+
   return (
-    <div className='py-4 max-h-[300px] overflow-y-auto'>
-      <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
-        {logsState.logs
-          .filter((log) => log.eventName !== 'PotCreated')
-          .map((log, index) => {
-            const entryAmount: bigint = pot.entryAmount;
-            const totalParticipants = pot.totalParticipants;
-            const winnerPayout = BigInt(totalParticipants - 1) * entryAmount;
-            const isWinner = log.eventName === 'PotPayout';
-            const isCreator = log.eventName === 'PotCreated';
-            const formattedAddress = formatAddress(log.transactionHash);
+    <div className="py-4 max-h-[300px] overflow-y-auto">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {activities.map((log, idx) => {
+          const isWinner = log.type === "payout";
+          const action = isWinner ? "Winner Payout" : "Deposited";
+          const amount = log.data.amount;
+          const txHash = log.data.txHash as string;
 
-            return (
-              //   biome-ignore lint/suspicious/noArrayIndexKey: using index as key for simplicity
-              <div key={index} className='px-4 flex items-start justify-between'>
-                <div className='flex items-start gap-2'>
-                  {isWinner ? (
-                    '🎉'
-                  ) : (
-                    <MoveUpRight className='mt-0.5' strokeWidth='2px' size={20} color='#14b6d3' />
-                  )}
-                  <div>
-                    <p className={`text-base ${isWinner ? 'text-green-500' : 'text-app-cyan'}`}>
-                      {isWinner ? 'Winner Payout' : isCreator ? 'Created' : 'Deposited'}
-                    </p>
-                    <div className='text-xs'>
-                      {blockMapState.size ? (
-                        formatDateFromTimestamp(Number(blockMapState.get(log.blockNumber) ?? 0))
-                      ) : (
-                        <div
-                          className={
-                            'h-2.5 mt-1 mb-0.5 bg-white/30 w-[120px] animate-pulse rounded-xl shadow-sm'
-                          }
-                        />
-                      )}
-                    </div>
-                  </div>
-                </div>
-
+          return (
+            <div key={idx} className="px-4 flex items-start justify-between">
+              {/* Icon + Label */}
+              <div className="flex items-start gap-2">
+                {isWinner ? (
+                  "🎉"
+                ) : (
+                  <MoveUpRight
+                    className="mt-0.5"
+                    strokeWidth="2px"
+                    size={20}
+                    color="#14b6d3"
+                  />
+                )}
                 <div>
-                  <div className={'mb-1.5 flex items-center'}>
-                    <span className={'mr-1'}>
-                      <Image src={'/usdc.png'} alt={'usdc'} width={16} height={16} />
-                    </span>
-                    {/* TODO: add platform fee for creator */}
-                    <span className={'leading-none'}>
-                      {formatUnits(isWinner ? winnerPayout : entryAmount, 6)}
-                    </span>
+                  <p
+                    className={`text-base ${
+                      isWinner ? "text-green-500" : "text-app-cyan"
+                    }`}
+                  >
+                    {action}
+                  </p>
+                  <div className="text-xs">
+                    {formatDateFromTimestamp(Number(log.timestamp))}
                   </div>
-                  <Link href={getTransactionLink(log.transactionHash)} target='_blank'>
-                    <div className={'flex items-center gap-1'}>
-                      <p className='text-xs leading-none'>{formattedAddress}</p>
-                      <ExternalLink size={12} />
-                    </div>
-                  </Link>
                 </div>
               </div>
-            );
-          })}
+
+              {/* Amount + Link */}
+              <div>
+                <div className="mb-1.5 flex items-center">
+                  <Image src="/usdc.png" alt="usdc" width={16} height={16} />
+                  <span className="ml-1 leading-none">{amount}</span>
+                </div>
+                <Link href={getTransactionLink(txHash)} target="_blank">
+                  <div className="flex items-center gap-1">
+                    <p className="text-xs leading-none">
+                      {formatAddress(txHash as `0x${string}`)}
+                    </p>
+                    <ExternalLink size={12} />
+                  </div>
+                </Link>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
