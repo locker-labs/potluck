@@ -229,7 +229,7 @@ export function PotCard({
       <span className={"mr-1"}>
         <Image src={"/usdc.png"} alt={"usdc"} width={16} height={16} />
       </span>
-      <span>{formatUnits(pot.entryAmount, 6)})</span>
+      <span>{pot.entryAmountFormatted})</span>
     </span>
   ) : (
     "Cannot Join 😔"
@@ -276,7 +276,7 @@ export function PotCard({
                 </span>
               </div>
               <p className="font-base text-[14px] self-end">
-                ${pot.entryAmount} {pot.periodString}
+                ${pot.entryAmountFormatted} {pot.periodString}
               </p>
             </div>
             <div className="col-start-4 col-span-2 self-end">

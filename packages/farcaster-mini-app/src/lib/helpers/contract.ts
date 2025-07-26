@@ -48,6 +48,7 @@ export function potMapper(pot: TPot, participants: Address[]): TPotObject {
     balance: pot[5],
     token: pot[6], // Ethereum address
     entryAmount: pot[7], // in wei
+    entryAmountFormatted: formatUnits(pot[7], 6), // formatted to 6 decimal places
     period: pot[8], // in seconds
     totalParticipants: pot[9], // uint32
     maxParticipants: Number(pot[10]), // uint8

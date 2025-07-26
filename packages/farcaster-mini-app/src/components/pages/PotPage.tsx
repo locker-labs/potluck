@@ -17,7 +17,7 @@ import { RecentActivity } from "@/components/sections/RecentActivity";
 import { ShareDropdown } from "@/components/ui/ShareDropdown";
 import { useRequestPot } from "@/hooks/useRequestPotAllow";
 import { JoinRequests } from "../sections/PotRequests";
-import { fetchPotFull, LogEntry } from "@/lib/graphQueries";
+import { fetchPotFull, type LogEntry } from "@/lib/graphQueries";
 
 const defaultLogsState = { loading: true, error: null, logs: [] };
 
@@ -53,6 +53,9 @@ export default function PotPage({ id }: { id: string }) {
     error: string | null;
     logs: LogEntry[];
   }>(defaultLogsState);
+
+  // TODO: when address is not available, show pot details with join pot button
+  // clicking on join pot button will prompt user to connect wallet
 
   // EFFECTS
   // Load pot details on mount
@@ -277,7 +280,7 @@ export default function PotPage({ id }: { id: string }) {
               </span>
             </div>
             <p className="font-base text-[14px] whitespace-nowrap text-left">
-              ${pot.entryAmount} {pot.periodString}
+              ${pot.entryAmountFormatted} {pot.periodString}
             </p>
           </div>
           <p className="col-span-2 font-base text-[14px] text-right">

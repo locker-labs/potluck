@@ -1,7 +1,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import type { TPotObject } from "@/lib/types";
-import { type Address } from "viem";
+import type { Address } from "viem";
 import { Loader2, UsersRound } from 'lucide-react';
 import { BorderButton, GradientButton4 } from '../ui/Buttons';
 import { GradientCard2 } from '../ui/GradientCard';
@@ -240,7 +240,7 @@ export function YourPotCard({
             </span>
           </div>
           <p className="font-base text-[14px] whitespace-nowrap text-left">
-            ${pot.entryAmount} {pot.periodString}
+            ${pot.entryAmountFormatted} {pot.periodString}
           </p>
         </div>
         <p className="col-span-2 font-base text-[14px] text-right">

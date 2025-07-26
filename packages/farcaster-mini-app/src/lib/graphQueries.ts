@@ -1,7 +1,7 @@
 // pots.ts
 import { GraphQLClient, gql } from "graphql-request";
 import type { TPotObject } from "./types";
-import { Address, hexToString, formatUnits } from "viem";
+import { type Address, hexToString, formatUnits } from "viem";
 import { publicClient } from "@/clients/viem";
 
 const SUBGRAPH_URL =
@@ -196,6 +196,7 @@ export interface LogEntry {
 // ——————————————————————————————————————————————————————————————
 
 const td = new TextDecoder();
+const decimalsCache = new Map<Address, number>();
 
 function decodePotName(raw: string): string {
   if (/^0x[0-9a-fA-F]{64}$/.test(raw)) {
@@ -205,9 +206,10 @@ function decodePotName(raw: string): string {
   return td.decode(bytes).replace(/\0+$/, "");
 }
 
-const decimalsCache = new Map<Address, number>();
 async function getDecimals(token: Address): Promise<number> {
-  if (decimalsCache.has(token)) return decimalsCache.get(token)!;
+  if (decimalsCache.has(token)) {
+    return decimalsCache.get(token) as number;
+  }
   const dec = await publicClient.readContract({
     address: token,
     abi: [
@@ -233,12 +235,13 @@ async function mapRawPotToObject(rp: RawPot): Promise<TPotObject> {
   const period = BigInt(rp.period);
   const deadline = BigInt(rp.currentDeadline);
   const createdAt = BigInt(rp.createdAt);
-  const entryAmt = BigInt(rp.entryAmount);
+  const entryAmount = BigInt(rp.entryAmount);
   const balance = BigInt(rp.currentBalance);
-  const totalPart = Number(rp.totalParticipants);
-  const dec = await getDecimals(rp.tokenAddress);
+  const dec: number = await getDecimals(rp.tokenAddress);
 
   const participants = rp.participants.map((x) => x.user.id);
+  const totalParticipants = participants.length;
+  const totalPool: string = formatUnits(entryAmount * BigInt(totalParticipants), dec);
 
   const hrs = Number(period / 3600n);
   const periodString =
@@ -265,9 +268,6 @@ async function mapRawPotToObject(rp: RawPot): Promise<TPotObject> {
       ? `${Math.floor(secsLeft / 3600)}h`
       : `${Math.floor(secsLeft / 86400)}d`;
 
-  const totalPool = formatUnits(entryAmt * BigInt(totalPart), dec);
-  const entryAmount = BigInt(formatUnits(entryAmt, dec));
-
   return {
     id: BigInt(rp.id),
     name: decodePotName(rp.name),
@@ -276,8 +276,9 @@ async function mapRawPotToObject(rp: RawPot): Promise<TPotObject> {
     balance,
     token: rp.tokenAddress,
     entryAmount,
+    entryAmountFormatted: formatUnits(entryAmount, dec),
     period,
-    totalParticipants: totalPart,
+    totalParticipants,
     maxParticipants: Number(rp.maxParticipants),
     participants,
     isPublic: rp.isPublic,
