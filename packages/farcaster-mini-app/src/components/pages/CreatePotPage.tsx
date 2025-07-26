@@ -434,10 +434,15 @@ export default function CreatePotPage() {
               Congratulations! 🎉
             </DialogTitle>
             <div className="text-center">
-              <div className="py-4">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Check className="h-8 w-8 text-green-500" />
-                </div>
+                <div>
+                <Image
+                  src="/success.gif"
+                  alt="Success"
+                  width={150}
+                  height={150}
+                  className="mx-auto rounded-full"
+                  priority
+                />
                 <h3 className="text-xl font-bold mb-2">
                   Your pot has been created!
                 </h3>
@@ -462,11 +467,12 @@ export default function CreatePotPage() {
 
           <div className="space-y-4 mt-2">
             <GradientButton3
+              type='button'
               className="w-full flex items-center justify-center gap-2"
               onClick={handleCastOnFarcaster}
             >
-              <MessageSquarePlus size={18} />
-              Cast on Farcaster
+              <Image src="/farcaster-transparent-white.svg" alt="Farcaster" width={22} height={22} priority />
+              <span className='text-[20px] font-medium'>Cast on Farcaster</span>
             </GradientButton3>
 
             <GradientButton3
@@ -474,8 +480,14 @@ export default function CreatePotPage() {
               onClick={handleCopyLink}
             >
               <Copy size={18} />
-              Copy Invite Link
+              <span className='text-[20px] font-medium'>Copy Invite Link</span>
             </GradientButton3>
+
+            <Link href={`/pot/${potId}`} className="w-full" prefetch={showSuccessModal}>
+              <div className="w-full text-center rounded-xl py-3 mt-4 bg-white/80">
+                <span className='text-[20px] text-center font-medium text-black'>Go to Pot</span>
+              </div>
+            </Link>
           </div>
         </DialogContent>
       </Dialog>
