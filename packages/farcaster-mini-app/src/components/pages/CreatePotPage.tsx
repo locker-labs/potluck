@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { parseUnits } from 'viem';
-import { MoveLeft, Copy, MessageSquarePlus, Check, Loader2, ExternalLink } from 'lucide-react';
+import { MoveLeft, Copy, Loader2, ExternalLink } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -269,9 +269,9 @@ export default function CreatePotPage() {
           {/* Participation Type */}
           <div>
             <div className="flex items-center justify-between">
-              <label className="block text-base font-bold">
-                Participation Type
-              </label>
+              <p className="block text-base font-bold">
+                Participation
+              </p>
               <div className="flex items-center gap-4">
                 {/* “Invite-Only” label */}
                 <span
@@ -288,7 +288,7 @@ export default function CreatePotPage() {
                   <input
                     type="checkbox"
                     className="sr-only peer"
-                    checked={isPublic}
+                    checked={!isPublic}
                     onChange={() => setIsPublic(!isPublic)}
                   />
 
@@ -311,8 +311,8 @@ export default function CreatePotPage() {
             </div>
             <p className="text-xs text-gray-500 pb-2.5">
               {isPublic
-                ? "Anyone can join this pot."
-                : "Only approved participants can join this pot."}
+                ? "Anyone can join this pot"
+                : "Only approved participants can join this pot"}
             </p>
           </div>
           {/* Max Participants */}
