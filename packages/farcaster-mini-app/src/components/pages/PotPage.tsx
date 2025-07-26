@@ -17,16 +17,15 @@ import { RecentActivity } from "@/components/sections/RecentActivity";
 import { ShareDropdown } from "@/components/ui/ShareDropdown";
 import { useRequestPot } from "@/hooks/useRequestPotAllow";
 import { JoinRequests } from "../sections/PotRequests";
-import { fetchPotFull, type LogEntry } from "@/lib/graphQueries";
+import { fetchPotInfo, fetchPotParticipationInfo, type LogEntry } from "@/lib/graphQueries";
+import type { Address } from 'viem';
 
 const defaultLogsState = { loading: true, error: null, logs: [] };
+const defaultParticipationState = { loading: false, error: null, data: null };
 
 export default function PotPage({ id }: { id: string }) {
   const router = useRouter();
   const potId = BigInt(id);
-  // const searchParams = useSearchParams();
-  // const joinSearchParam = searchParams.get('join');
-  // const autoJoin = joinSearchParam === '' || !!joinSearchParam;
 
   const { isConnected, address } = useAccount();
   const {
@@ -43,38 +42,57 @@ export default function PotPage({ id }: { id: string }) {
   const [loadingPot, setLoadingPot] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasJoinedBefore, setHasJoinedBefore] = useState<boolean | null>(null);
-  const [hasJoinedRound, setHasJoinedRound] = useState<boolean>(
-    isConnected && !!address && !!pot && pot.participants.includes(address)
-  );
-  const [isPotRequested, setIsPotRequested] = useState<boolean | null>(null);
-  const [isRequestApproved, setIsRequestApproved] = useState<boolean>(false);
+  const [hasJoinedRound, setHasJoinedRound] = useState<boolean>(false);
   const [logsState, setLogsState] = useState<{
     loading: boolean;
     error: string | null;
     logs: LogEntry[];
   }>(defaultLogsState);
+  const [participationState, setParticipationState] = useState<{
+    loading: boolean;
+    error: string | null;
+    data: { isAllowed: boolean; hasRequested: boolean | null } | null;
+  }>(defaultParticipationState);
 
-  // TODO: when address is not available, show pot details with join pot button
-  // clicking on join pot button will prompt user to connect wallet
+  const isPotRequested = participationState.data?.hasRequested ?? null;
+  const isRequestApproved = participationState.data?.isAllowed ?? false;
 
   // EFFECTS
   // Load pot details on mount
   useEffect(() => {
     (async function loadPot() {
       setLoadingPot(true);
-
       setError(null);
+
       try {
-        const fullPot = await fetchPotFull(potId, address!);
-        const { pot, isAllowed, hasRequested, logs } = fullPot;
+        const potInfo = await fetchPotInfo(potId);
+        const { pot, logs } = potInfo;
         setPot(pot);
-        setIsPotRequested(hasRequested);
-        setIsRequestApproved(isAllowed);
         setLogsState({ loading: false, error: null, logs });
       } catch {
         setError("Failed to load pot details");
       } finally {
         setLoadingPot(false);
+      }
+    })();
+  }, [potId]);
+
+  // Load pot participation info when address is available
+  useEffect(() => {
+    (async function loadPotParticipationInfo() {
+      if (!address) {
+        setParticipationState(defaultParticipationState);
+        return;
+      }
+
+      setParticipationState((prev) => ({ ...prev, loading: true }));
+      try {
+        const info = await fetchPotParticipationInfo(potId, address);
+        setParticipationState((prev) => ({ ...prev, data: info }));
+      } catch {
+        setParticipationState((prev) => ({ ...prev, error: "Failed to load pot participation info" }));
+      } finally {
+        setParticipationState((prev) => ({ ...prev, loading: false }));
       }
     })();
   }, [potId, address]);
@@ -85,28 +103,20 @@ export default function PotPage({ id }: { id: string }) {
     }
   }, [pot, pendingRequest]);
 
-  // join pot from search param
-  // useEffect(() => {
-  //   if (!isLoadingJoinPot && autoJoin && !!pot && !!address) {
-  //     (async function handleAutoJoin() {
-  //       await handleJoinPot(pot);
-  //     })();
-  //   }
-  // }, [autoJoin, pot, isLoadingJoinPot, address]);
-
   // Has user joined pot previously (requires wallet connection)
   useEffect(() => {
     if (isConnected && address && !!pot) {
       (async () => {
-        const fetchedPot = await fetchPotFull(potId, address!);
-        if (address === fetchedPot.pot.creator && fetchedPot.pot.round === 0) {
+        if (address.toLowerCase() === pot.creator && pot.round === 0) {
           setHasJoinedRound(true);
+          setHasJoinedBefore(true);
         } else {
+          console.log("Checking if user has joined round 0");
           setHasJoinedBefore(await getHasJoinedRound(pot.id, 0, address));
         }
       })();
     }
-    console.log(pot?.creator);
+    console.log('pot?.creator', pot?.creator);
   }, [isConnected, address, pot]);
 
   // Update state when joinedPotId changes
@@ -118,7 +128,7 @@ export default function PotPage({ id }: { id: string }) {
         pot.participants.push(address);
         setHasJoinedRound(true);
       } else {
-        setHasJoinedRound(pot.participants.includes(address));
+        setHasJoinedRound(pot.participants.includes(address.toLowerCase() as Address));
       }
     }
   }, [pot, joinedPotId, address]);
@@ -156,16 +166,18 @@ export default function PotPage({ id }: { id: string }) {
     : pot.round;
 
   const disabled: boolean =
-    isJoiningPot ||
-    hasJoinedRound ||
     initialLoading ||
-    cannotJoinPot ||
     potFull ||
-    insufficientBalance ||
     deadlinePassed ||
-    (isPotRequested && !isRequestApproved) ||
-    pendingRequest !== null ||
-    isPotRequested === null;
+    !!address && (
+      isJoiningPot ||
+      hasJoinedRound ||
+      cannotJoinPot ||
+      insufficientBalance ||
+      (isPotRequested && !isRequestApproved) ||
+      pendingRequest !== null ||
+      isPotRequested === null
+    );
 
   const joinButtonText = initialLoading ? (
     "Loading"
@@ -177,11 +189,13 @@ export default function PotPage({ id }: { id: string }) {
     "Expired ⌛"
   ) : potFull ? (
     "Pot Full 📦"
-  ) : insufficientBalance ? (
+  ) : !isConnected || !address ?
+    "Connect wallet to Join"
+    : insufficientBalance ? (
     "Insufficient Balance 💰"
   ) : isRoundZero ? (
     pendingRequest !== null ? (
-      "Requesting Pot Access"
+      "Requesting Access"
     ) : isPublic ? (
       "Join Pot"
     ) : isPotRequested === null ? (
@@ -193,7 +207,7 @@ export default function PotPage({ id }: { id: string }) {
         "Pending Approval"
       )
     ) : (
-      "Request Pot Access"
+      "Request Access"
     )
   ) : hasJoinedBefore ? (
     <span className={"flex items-center justify-center"}>

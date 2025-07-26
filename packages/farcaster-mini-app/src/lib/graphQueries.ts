@@ -36,7 +36,7 @@ const GET_ALL_POTS = gql`
 `;
 
 const GET_POT_FULL = gql`
-  query GetPotFull($potId: ID!, $userAddress: ID!) {
+  query GetPotInfo($potId: ID!) {
     pot(id: $potId) {
       id
       name
@@ -86,6 +86,11 @@ const GET_POT_FULL = gql`
       timestamp
       transactionHash
     }
+  }
+`;
+
+const GET_POT_PARTICIPATION_INFO = gql`
+  query GetPotParticipationInfo($potId: ID!, $userAddress: ID!) {
     allowRequests(where: { pot: $potId, user: $userAddress }) {
       id
     }
@@ -164,10 +169,13 @@ type RawPayout = {
   transactionHash: string;
 };
 
-type PotFullResponse = {
+type GqlPotInfoResponse = {
   pot: RawPot;
   contributions: RawJoin[];
   payouts: RawPayout[];
+};
+
+type GqlPotParticipationInfoResponse = {
   allowRequests: { id: string }[];
   allowedUsers: { id: string }[];
 };
@@ -308,28 +316,21 @@ export async function getAllPotObjects(
 }
 
 
-export async function fetchPotFull(
-  potId: bigint,
-  userAddress: Address
-): Promise<{
+export async function fetchPotInfo(potId: bigint): Promise<{
   pot: TPotObject;
   logs: LogEntry[];
-  hasRequested: boolean;
-  isAllowed: boolean;
 }> {
   const vars = {
     potId: potId.toString(),
-    userAddress: userAddress.toLowerCase(),
   };
   const {
-    pot: rp,
+    pot: rp, // raw pot
     contributions,
     payouts,
-    allowRequests,
-    allowedUsers,
-  } = await client.request<PotFullResponse>(GET_POT_FULL, vars);
+  } = await client.request<GqlPotInfoResponse>(GET_POT_FULL, vars);
 
   const pot = await mapRawPotToObject(rp);
+  console.log("Pot fetched:", pot);
   const dec = await getDecimals(rp.tokenAddress);
 
   const logs: LogEntry[] = [];
@@ -378,7 +379,29 @@ export async function fetchPotFull(
 
   return {
     pot,
-    logs,
+    logs
+  };
+}
+
+export async function fetchPotParticipationInfo(
+  potId: bigint,
+  userAddress: Address
+): Promise<{
+  hasRequested: boolean;
+  isAllowed: boolean;
+}> {
+  const vars = {
+    potId: potId.toString(),
+    userAddress: userAddress.toLowerCase(),
+  };
+  const {
+    allowRequests,
+    allowedUsers,
+  } = await client.request<GqlPotParticipationInfoResponse>(GET_POT_PARTICIPATION_INFO, vars);
+
+  console.log({ allowRequests, allowedUsers });
+
+  return {
     hasRequested: allowRequests.length > 0,
     isAllowed: allowedUsers.length > 0,
   };
