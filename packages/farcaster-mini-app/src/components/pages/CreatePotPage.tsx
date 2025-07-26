@@ -19,6 +19,7 @@ import { formatUnits } from 'viem';
 import { z } from 'zod';
 import { MAX_PARTICIPANTS } from '@/config';
 import { useFrame } from '../providers/FrameProvider';
+import { AnimatePresence, motion } from 'motion/react';
 
 const emojis = ['🎯', '🏆', '🔥', '🚀', '💪', '⚡', '🎬', '🎓', '🍕', '☕'];
 
@@ -214,9 +215,9 @@ export default function CreatePotPage() {
                 <button
                   key={emojiOption}
                   type="button"
-                  className={`p-2 inline-flex items-center justify-center text-2xl rounded-2xl transition-colors ${
+                  className={`h-[50px] p-2 inline-flex items-center justify-center text-2xl rounded-2xl transition-all ease-out duration-350 ${
                     emoji === emojiOption
-                      ? "bg-app-cyan/20 border border-app-cyan outline outline-1 outline-app-cyan"
+                      ? "bg-app-cyan/20 border border-app-cyan outline outline-1 outline-app-cyan text-[33px]"
                       : "bg-app-dark border border-app-light"
                   }`}
                   onClick={() => setEmoji(emojiOption)}
@@ -275,8 +276,8 @@ export default function CreatePotPage() {
               <div className="flex items-center gap-4">
                 {/* “Invite-Only” label */}
                 <span
-                  className={`text-sm font-medium ${
-                    isPublic ? "text-white" : "text-gray-400"
+                  className={`w-[40px] text-right leading-none transition-all duration-250 ${
+                    isPublic ? "text-white font-medium text-sm" : "text-gray-400 font-normal text-xs pr-[0.75px]"
                   }`}
                 >
                   Public
@@ -291,29 +292,46 @@ export default function CreatePotPage() {
                     checked={!isPublic}
                     onChange={() => setIsPublic(!isPublic)}
                   />
-
                   {/* track */}
                   <span className="absolute inset-0 bg-gray-700 rounded-full peer-checked:bg-app-cyan transition-colors" />
-
                   {/* knob */}
                   <span className="absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow transition-all peer-checked:left-8" />
                 </label>
 
                 {/* “Open” label */}
                 <span
-                  className={`text-sm font-medium ${
-                    !isPublic ? "text-white" : "text-gray-400"
+                  className={`w-[44px] leading-none transition-all duration-250 ${
+                    !isPublic ? "text-white font-medium text-sm" : "text-gray-400 font-normal text-xs"
                   }`}
                 >
                   Private
                 </span>
               </div>
             </div>
-            <p className="text-xs text-gray-500 pb-2.5">
-              {isPublic
-                ? "Anyone can join this pot"
-                : "Only approved participants can join this pot"}
-            </p>
+            <AnimatePresence mode='popLayout'>
+              {isPublic ?
+                <motion.p
+                key={"participation-public"}
+                className="text-xs text-gray-500 pb-2.5"
+                initial={{ x: 40, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: 40, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 400, damping: 30, duration: 0.1 }}
+                >
+                  Anyone can join this pot
+                </motion.p> :
+                <motion.p
+                key={"participation-private"}
+                className="text-xs text-gray-500 pb-2.5"
+                initial={{ x: -40, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: -40, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 400, damping: 30, duration: 0.1 }}
+                >
+                  Only approved participants can join this pot
+                </motion.p>
+              }
+            </AnimatePresence>
           </div>
           {/* Max Participants */}
           <div>
