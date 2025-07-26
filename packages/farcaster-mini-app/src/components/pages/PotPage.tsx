@@ -68,8 +68,8 @@ export default function PotPage({ id }: { id: string }) {
         const fullPot = await fetchPotFull(potId, address!);
         const { pot, isAllowed, hasRequested, logs } = fullPot;
         setPot(pot);
-        setIsPotRequested(isAllowed);
-        setIsRequestApproved(hasRequested);
+        setIsPotRequested(hasRequested);
+        setIsRequestApproved(isAllowed);
         setLogsState({ loading: false, error: null, logs });
       } catch {
         setError("Failed to load pot details");

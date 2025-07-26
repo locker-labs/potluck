@@ -1,4 +1,4 @@
-// pots.ts
+// graphQueries.ts
 import { GraphQLClient, gql } from "graphql-request";
 import type { TPotObject } from "./types";
 import { type Address, hexToString, formatUnits } from "viem";
