@@ -154,7 +154,8 @@ export function PotCard({
   handleJoinPot: (pot: TPotObject) => void;
   tokenBalance: bigint | undefined;
 }) {
-  const { address, isConnected } = useAccount();
+  const { address: addressWithCheckSum, isConnected } = useAccount();
+  const address = addressWithCheckSum?.toLowerCase() as Address | undefined;
 
   const [hasJoinedBefore, setHasJoinedBefore] = useState<boolean | null>(null);
   const [hasJoinedRound, setHasJoinedRound] = useState<boolean>(

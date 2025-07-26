@@ -20,7 +20,8 @@ let potIdToPotMap: Record<string, TPotObject> = {};
 export default function YourPots() {
   const { handleJoinPot, joiningPotId, joinedPotId, tokenBalance } =
     useJoinPot();
-  const { isConnected, isConnecting, address } = useAccount();
+  const { isConnected, isConnecting, address: addressWithCheckSum } = useAccount();
+  const address = addressWithCheckSum?.toLowerCase() as Address | undefined;
 
   // ------
   // STATES
@@ -145,7 +146,7 @@ export function YourPotCard({
   tokenBalance: bigint | undefined;
 }) {
   const router = useRouter();
-  const isJoined = pot.participants.includes(address as Address);
+  const isJoined = pot.participants.includes(address);
 
   const [hasJoinedRound, setHasJoinedRound] = useState<boolean>(
     !!address && pot.participants.includes(address)
