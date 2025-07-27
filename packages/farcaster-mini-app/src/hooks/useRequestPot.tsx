@@ -1,16 +1,15 @@
 import { publicClient } from '@/clients/viem';
 import { contractAddress, abi } from '@/config';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useWriteContract } from 'wagmi';
 import { toast } from 'sonner';
-import type { TPotObject } from '@/lib/types';
 import { getTransactionLink } from '@/lib/helpers/blockExplorer';
 import { useConnection } from '@/hooks/useConnection';
 import { useFrame } from '@/components/providers/FrameProvider';
 
 export function useRequestPot() {
   const { checkAndAddMiniApp } = useFrame();
-  const { address, ensureConnection, isConnected } = useConnection();
+  const { address, ensureConnection } = useConnection();
   const { writeContractAsync } = useWriteContract();
   const [pendingRequest, setPendingRequest] = useState<bigint | null>(null);
 
@@ -46,8 +45,8 @@ export function useRequestPot() {
     await checkAndAddMiniApp();
 
     console.log('handleRequest called with potId:', potId);
-    if (potId==undefined) {
-      toast.error('Pot not found.');
+    if (potId === undefined) {
+      toast.error('Pot not found');
       return;
     }
     if (!address) {

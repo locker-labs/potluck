@@ -1,10 +1,10 @@
 'use client';
 
-import YourPots from '../sections/YourPots';
-import PotList from '../sections/PotList';
-import Hero from '../sections/Hero';
-import { useAccount } from 'wagmi';
 import { AnimatePresence } from 'motion/react';
+import { useAccount } from 'wagmi';
+import YourPots from '@/components/sections/YourPots';
+import AvailablePots from '@/components/sections/AvailablePots';
+import Hero from '@/components/sections/Hero';
 
 export default function HomePage() {
   const { isConnected, address } = useAccount();
@@ -14,7 +14,7 @@ export default function HomePage() {
         {isConnected && !!address ? <YourPots /> : null}
       </AnimatePresence>
       <Hero />
-      <PotList />
+      <AvailablePots />
     </div>
   );
 }

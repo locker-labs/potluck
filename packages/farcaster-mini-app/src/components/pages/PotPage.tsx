@@ -2,62 +2,63 @@
 
 import { TrendingUp, Loader2, UsersRound } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { getHasJoinedRound } from "@/lib/helpers/contract";
 import type { TPotObject } from "@/lib/types/contract.type";
-import { useJoinPot } from "@/hooks/useJoinPot";
-import { GradientButton2, GradientButton3 } from "../ui/Buttons";
-import { GradientCard2 } from "../ui/GradientCard";
+import { GradientButton3 } from "@/components/ui/Buttons";
+import { GradientCard2 } from "@/components/ui/GradientCard";
 import { useAccount } from "wagmi";
 import { useRouter } from "next/navigation";
 import { MoveLeft } from "lucide-react";
 import { timeFromNow } from "@/lib/helpers/time";
 import { DurationPill } from "@/components/ui/Pill";
-import Image from "next/image";
 import { RecentActivity } from "@/components/sections/RecentActivity";
 import { ShareDropdown } from "@/components/ui/ShareDropdown";
-import { useRequestPot } from "@/hooks/useRequestPotAllow";
-import { JoinRequests } from "../sections/PotRequests";
-import { fetchPotInfo, fetchPotParticipationInfo, type LogEntry } from "@/lib/graphQueries";
+import { JoinRequests } from "@/components/sections/PotRequests";
+import { fetchPotInfo, type LogEntry } from "@/lib/graphQueries";
+import { JoinPotButton } from '@/components/buttons/JoinPotButton';
+import { UserContributionProgressBar } from '@/components/subcomponents/UserContributionProgressBar';
+import { useJoinPot } from "@/hooks/useJoinPot";
+import { useRequestPot } from "@/hooks/useRequestPot";
+import { usePotParticipation } from '@/hooks/usePotParticipation';
+import { useUserPotJoinInfo } from '@/hooks/useUserPotJoinInfo';
 import type { Address } from 'viem';
 
 const defaultLogsState = { loading: true, error: null, logs: [] };
-const defaultParticipationState = { loading: false, error: null, data: null };
 
 export default function PotPage({ id }: { id: string }) {
   const router = useRouter();
   const potId = BigInt(id);
 
-  const { isConnected, address } = useAccount();
-  const {
-    handleJoinPot,
-    isLoading: isLoadingJoinPot,
-    joiningPotId,
-    joinedPotId,
-    tokenBalance,
-  } = useJoinPot();
-  const { handleRequest, pendingRequest } = useRequestPot();
+  const { isConnected, address: addressWithCheckSum } = useAccount();
+  const address = addressWithCheckSum?.toLowerCase() as Address | undefined;
 
   // STATES
   const [pot, setPot] = useState<TPotObject | null>(null);
   const [loadingPot, setLoadingPot] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [hasJoinedBefore, setHasJoinedBefore] = useState<boolean | null>(null);
-  const [hasJoinedRound, setHasJoinedRound] = useState<boolean>(false);
   const [logsState, setLogsState] = useState<{
     loading: boolean;
     error: string | null;
     logs: LogEntry[];
   }>(defaultLogsState);
-  const [participationState, setParticipationState] = useState<{
-    loading: boolean;
-    error: string | null;
-    data: { isAllowed: boolean; hasRequested: boolean | null } | null;
-  }>(defaultParticipationState);
 
-  const isPotRequested = participationState.data?.hasRequested ?? null;
-  const isRequestApproved = participationState.data?.isAllowed ?? false;
+  const isPrivatePot: boolean = pot ? !pot.isPublic : false;
+  const { isAllowed, hasRequested } = usePotParticipation(potId, address, isPrivatePot);
+  const { handleRequest, pendingRequest } = useRequestPot();
+  const {
+		handleJoinPot,
+		isLoading: isLoadingJoinPot,
+		joiningPotId,
+		joinedPotId,
+		tokenBalance,
+	} = useJoinPot();
+  const { hasJoinedBefore, hasJoinedRound } = useUserPotJoinInfo({
+    pot,
+    address,
+    joinedPotId,
+  });
 
-  // EFFECTS
+	// EFFECTS
+
   // Load pot details on mount
   useEffect(() => {
     (async function loadPot() {
@@ -77,62 +78,9 @@ export default function PotPage({ id }: { id: string }) {
     })();
   }, [potId]);
 
-  // Load pot participation info when address is available
-  useEffect(() => {
-    (async function loadPotParticipationInfo() {
-      if (!address) {
-        setParticipationState(defaultParticipationState);
-        return;
-      }
+  // RENDERING
 
-      setParticipationState((prev) => ({ ...prev, loading: true }));
-      try {
-        const info = await fetchPotParticipationInfo(potId, address);
-        setParticipationState((prev) => ({ ...prev, data: info }));
-      } catch {
-        setParticipationState((prev) => ({ ...prev, error: "Failed to load pot participation info" }));
-      } finally {
-        setParticipationState((prev) => ({ ...prev, loading: false }));
-      }
-    })();
-  }, [potId, address]);
-
-  useEffect(() => {
-    if (pot && pendingRequest == null) {
-      (async function loadRequestState() {})();
-    }
-  }, [pot, pendingRequest]);
-
-  // Has user joined pot previously (requires wallet connection)
-  useEffect(() => {
-    if (isConnected && address && !!pot) {
-      (async () => {
-        if (address.toLowerCase() === pot.creator && pot.round === 0) {
-          setHasJoinedRound(true);
-          setHasJoinedBefore(true);
-        } else {
-          console.log("Checking if user has joined round 0");
-          setHasJoinedBefore(await getHasJoinedRound(pot.id, 0, address));
-        }
-      })();
-    }
-    console.log('pot?.creator', pot?.creator);
-  }, [isConnected, address, pot]);
-
-  // Update state when joinedPotId changes
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-  useEffect(() => {
-    if (!!pot && !!address && !hasJoinedRound) {
-      if (joinedPotId === pot.id) {
-        pot.totalParticipants += 1;
-        pot.participants.push(address);
-        setHasJoinedRound(true);
-      } else {
-        setHasJoinedRound(pot.participants.includes(address.toLowerCase() as Address));
-      }
-    }
-  }, [pot, joinedPotId, address]);
-
+  // 1️⃣ Loading and error states
   if (loadingPot) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-96px)]">
@@ -148,94 +96,14 @@ export default function PotPage({ id }: { id: string }) {
     );
   }
 
+  
+
   // DERIVED STATE
-  const isPublic: boolean = pot.isPublic;
   const isRoundZero: boolean = pot.round === 0;
-  const isJoiningPot: boolean = joiningPotId !== null;
-  const initialLoading: boolean = isLoadingJoinPot || loadingPot;
-  const cannotJoinPot: boolean =
-    !isRoundZero && hasJoinedBefore !== null && !hasJoinedBefore;
-  const potFull: boolean =
-    isRoundZero && pot.participants.length === pot.maxParticipants;
-  const insufficientBalance: boolean =
-    tokenBalance !== undefined && tokenBalance < pot.entryAmount;
   const deadlinePassed: boolean =
     pot.deadline < BigInt(Math.floor(Date.now() / 1000));
-  const completedContributions: number = hasJoinedRound
-    ? 1 + pot.round
-    : pot.round;
 
-  const disabled: boolean =
-    initialLoading ||
-    potFull ||
-    deadlinePassed ||
-    !!address && (
-      isJoiningPot ||
-      hasJoinedRound ||
-      cannotJoinPot ||
-      insufficientBalance ||
-      (isPotRequested && !isRequestApproved) ||
-      pendingRequest !== null ||
-      isPotRequested === null
-    );
-
-  const joinButtonText = initialLoading ? (
-    "Loading"
-  ) : hasJoinedRound ? (
-    "Joined"
-  ) : isJoiningPot ? (
-    "Joining"
-  ) : deadlinePassed ? (
-    "Expired ⌛"
-  ) : potFull ? (
-    "Pot Full 📦"
-  ) : !isConnected || !address ?
-    "Connect wallet to Join"
-    : insufficientBalance ? (
-    "Insufficient Balance 💰"
-  ) : isRoundZero ? (
-    pendingRequest !== null ? (
-      "Requesting Access"
-    ) : isPublic ? (
-      "Join Pot"
-    ) : isPotRequested === null ? (
-      "Loading"
-    ) : isPotRequested ? (
-      isRequestApproved ? (
-        "Join Pot"
-      ) : (
-        "Pending Approval"
-      )
-    ) : (
-      "Request Access"
-    )
-  ) : hasJoinedBefore ? (
-    <span className={"flex items-center justify-center"}>
-      <span>Pay This Round (</span>
-      <span className={"mr-1"}>
-        <Image src={"/usdc.png"} alt={"usdc"} width={16} height={16} />
-      </span>
-      <span>{pot.entryAmount})</span>
-    </span>
-  ) : (
-    "Cannot Join 😔"
-  );
-
-  const handlePotButtonClick = async (
-    e: React.MouseEvent<HTMLButtonElement>
-  ) => {
-    e.preventDefault();
-    if (isPublic || isRequestApproved) {
-      await handleJoinPot(pot).then().catch();
-    } else if (!isPotRequested) {
-      await handleRequest(pot.id);
-      // .then(() => {
-      //   setIsPotRequested(true);
-      // })
-      // .catch();
-    }
-  };
-
+  // 2️⃣ Main content
   return (
     <div>
       <div className="w-full flex items-center justify-between gap-4 mb-8">
@@ -260,6 +128,7 @@ export default function PotPage({ id }: { id: string }) {
         ) : null}
       </div>
 
+     {/*  TODO: Create a reusable component  */}
       <GradientCard2 className="w-full mt-4 pb-4">
         <div>
           <div className="flex">
@@ -303,36 +172,23 @@ export default function PotPage({ id }: { id: string }) {
         </div>
 
         {/* User contribution progress bar */}
-        <p className={"mt-4 text-xs text-white/80 leading-none"}>
-          {completedContributions}/{pot.totalParticipants} contribution
-          {pot.totalParticipants > 1 ? "s" : ""} complete
-        </p>
-        <div className="mt-1 w-full h-2 bg-[#2d0046] rounded-full">
-          <div
-            style={{
-              width: `${Math.trunc(
-                (100 * completedContributions) / pot.totalParticipants
-              )}%`,
-            }}
-            className={"rounded-full h-2 bg-green-500"}
-          />
-        </div>
+        <UserContributionProgressBar pot={pot} hasJoinedRound={hasJoinedRound ?? false} />
 
-        <GradientButton2
-          isActive={true}
-          className="w-full h-[35px] flex items-center justify-center mt-3 mx-auto shadow-lg hover:shadow-xl transition-all duration-300 text-base font-bold rounded-xl"
-          onClick={(e) => {
-            handlePotButtonClick(e);
-          }}
-          disabled={disabled}
-        >
-          <span className={"flex items-center justify-center gap-2"}>
-            <span>{joinButtonText}</span>
-            {initialLoading ? (
-              <Loader2 className="animate-spin h-5 w-5 text-white" size={20} />
-            ) : null}
-          </span>
-        </GradientButton2>
+        <JoinPotButton
+          style='blue'
+          loadingPot={loadingPot}
+          pot={pot}
+          isLoadingJoinPot={isLoadingJoinPot}
+          joiningPotId={joiningPotId}
+          tokenBalance={tokenBalance}
+          hasJoinedBefore={hasJoinedBefore}
+          hasJoinedRound={hasJoinedRound}
+          pendingRequest={pendingRequest}
+          hasRequested={hasRequested}
+          isAllowed={isAllowed}
+          handleJoinPot={handleJoinPot}
+          handleRequest={handleRequest}
+        />
       </GradientCard2>
 
       <div className="mt-4 grid grid-cols-2 gap-4">
