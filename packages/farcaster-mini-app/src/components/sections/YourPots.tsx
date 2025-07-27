@@ -9,8 +9,8 @@ import { useJoinPot } from '@/hooks/useJoinPot';
 import { useAccount } from 'wagmi';
 import { timeFromNow } from '@/lib/helpers/time';
 import { DurationPill } from '@/components/ui/Pill';
-import { getPotsByCreator } from "@/lib/graphQueries";
-import { motion } from 'motion/react';
+import { getPotsByUser } from "@/lib/graphQueries";
+import { motion } from "motion/react";
 
 // let _loadPotsEffectFlag = true;
 let _fetchPotsEffectFlag = true; // prevent multiple fetches
@@ -20,7 +20,11 @@ let potIdToPotMap: Record<string, TPotObject> = {};
 export default function YourPots() {
   const { handleJoinPot, joiningPotId, joinedPotId, tokenBalance } =
     useJoinPot();
-  const { isConnected, isConnecting, address: addressWithCheckSum } = useAccount();
+  const {
+    isConnected,
+    isConnecting,
+    address: addressWithCheckSum,
+  } = useAccount();
   const address = addressWithCheckSum?.toLowerCase() as Address | undefined;
 
   // ------
@@ -65,7 +69,7 @@ export default function YourPots() {
     _fetchPotsEffectFlag = false;
 
     (async () => {
-      const pots = await getPotsByCreator(address as Address);
+      const pots = await getPotsByUser(address as Address);
       setPots((prevPots) => [...prevPots, ...pots]);
       setLoading(false);
       _fetchPotsEffectFlag = true;
@@ -91,12 +95,13 @@ export default function YourPots() {
       initial={{ opacity: 0, y: -40, height: 0 }}
       animate={{ opacity: 1, y: 0, height: 270 }}
       exit={{ opacity: 0, y: -40, height: 0 }}
-      transition={{ duration: 0.4, ease: ['easeOut', 'easeIn'] }}
-      style={{ overflow: 'hidden' }}
-      key="your-pots">
-  <div>
-      <h2 className='text-2xl font-bold mb-3'>Your Pots</h2>
-      <div className='flex flex-row overflow-x-scroll gap-[12px] md:grid-cols-2 lg:grid-cols-3'>
+      transition={{ duration: 0.4, ease: ["easeOut", "easeIn"] }}
+      style={{ overflow: "hidden" }}
+      key="your-pots"
+    >
+      <div>
+        <h2 className="text-2xl font-bold mb-3">Your Pots</h2>
+        <div className="flex flex-row overflow-x-scroll gap-[12px] md:grid-cols-2 lg:grid-cols-3">
           {pots.map((pot: TPotObject) => (
             <YourPotCard
               key={pot.id}
@@ -105,7 +110,7 @@ export default function YourPots() {
               joinedPotId={joinedPotId}
               handleJoinPot={handleJoinPot}
               address={address}
-              className={pots.length === 1 ? 'w-full' : ''}
+              className={pots.length === 1 ? "w-full" : ""}
               tokenBalance={tokenBalance}
             />
           ))}
@@ -123,9 +128,9 @@ export default function YourPots() {
             </div>
           ) : null}
         </div>
-    </div>
-  </motion.div>
-    );
+      </div>
+    </motion.div>
+  );
 }
 
 export function YourPotCard({
