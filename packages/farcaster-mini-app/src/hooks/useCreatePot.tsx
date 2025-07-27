@@ -9,6 +9,7 @@ import { getTransactionLink } from '@/lib/helpers/blockExplorer';
 import { useConnection } from '@/hooks/useConnection';
 import { usePlatformFee } from '@/hooks/usePlatformFee';
 import { type Address, toHex } from 'viem';
+import { useFrame } from '@/components/providers/FrameProvider';
 
 let _potName: string;
 let _amount: bigint;
@@ -22,6 +23,7 @@ export function useCreatePot() {
   const [hash, setHash] = useState<Address | null>(null);
   const [isPending, setIsPending] = useState<boolean>(false);
 
+  const { checkAndAddMiniApp } = useFrame();
   const { ensureConnection } = useConnection();
   const { data: tokenBalance, isLoading: isLoadingBalance } = useTokenBalance();
   const { fee, feeUsdc, isLoading: isLoadingFee } = usePlatformFee();
@@ -113,6 +115,8 @@ export function useCreatePot() {
     timePeriod: bigint,
     isPublic: boolean
   ) => {
+    await checkAndAddMiniApp();
+
     _potName = potName;
     _amount = amount;
     _maxParticipants = maxParticipants;

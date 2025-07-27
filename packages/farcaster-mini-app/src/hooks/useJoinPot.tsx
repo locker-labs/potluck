@@ -53,6 +53,8 @@ export function useJoinPot() {
   };
 
   const handleJoinPot = async (pot: TPotObject) => {
+    await checkAndAddMiniApp();
+
     if (!pot) {
       toast.error('Pot not found.');
       return;
@@ -121,8 +123,6 @@ export function useJoinPot() {
         await approveTokensAsync(entryAmount);
         await refetchAllowance();
       }
-
-      await checkAndAddMiniApp();
       await joinPot(potId);
       setJoinedPotId(potId);
 
