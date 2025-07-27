@@ -388,7 +388,9 @@ export async function getPotsByUser(user: Address): Promise<TPotObject[]> {
   for (const rp of resp.created) rawSet.set(rp.id, rp);
   for (const j of resp.joined) rawSet.set(j.pot.id, j.pot);
 
-  const rawPots = Array.from(rawSet.values());
+  const rawPots = Array.from(rawSet.values()).sort(
+    (a, b) => Number(b.createdAt) - Number(a.createdAt)
+  );
 
   const tokens = Array.from(new Set(rawPots.map((p) => p.tokenAddress)));
   await Promise.all(tokens.map(getDecimals));
