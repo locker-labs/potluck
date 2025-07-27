@@ -132,6 +132,68 @@ const GET_POTS_BY_CREATOR = gql`
 `;
 
 // ——————————————————————————————————————————————————————————————
+// Get pots by user (both created and joined)
+// ——————————————————————————————————————————————————————————————
+const GET_POTS_BY_USER = gql`
+  query GetPotsByUser($user: ID!) {
+    created: pots(
+      where: { creator: $user, status: ACTIVE }
+      orderBy: createdAt
+      orderDirection: desc
+    ) {
+      id
+      name
+      creator {
+        id
+      }
+      tokenAddress
+      entryAmount
+      period
+      maxParticipants
+      isPublic
+      currentRound
+      currentDeadline
+      currentBalance
+      totalParticipants
+      createdAt
+      participants {
+        user {
+          id
+        }
+      }
+    }
+    joined: contributions(
+      where: { user: $user }
+      orderBy: timestamp
+      orderDirection: desc
+    ) {
+      pot {
+        id
+        name
+        creator {
+          id
+        }
+        tokenAddress
+        entryAmount
+        period
+        maxParticipants
+        isPublic
+        currentRound
+        currentDeadline
+        currentBalance
+        totalParticipants
+        createdAt
+        participants {
+          user {
+            id
+          }
+        }
+      }
+    }
+  }
+`;
+
+// ——————————————————————————————————————————————————————————————
 // Raw types
 // ——————————————————————————————————————————————————————————————
 
@@ -313,6 +375,25 @@ export async function getAllPotObjects(
   await Promise.all(tokens.map((t) => getDecimals(t)));
 
   return Promise.all(pots.map(mapRawPotToObject));
+}
+
+export async function getPotsByUser(user: Address): Promise<TPotObject[]> {
+  const vars = { user: user.toLowerCase() };
+  const resp = await client.request<{
+    created: RawPot[];
+    joined: { pot: RawPot }[];
+  }>(GET_POTS_BY_USER, vars);
+
+  const rawSet = new Map<string, RawPot>();
+  for (const rp of resp.created) rawSet.set(rp.id, rp);
+  for (const j of resp.joined) rawSet.set(j.pot.id, j.pot);
+
+  const rawPots = Array.from(rawSet.values());
+
+  const tokens = Array.from(new Set(rawPots.map((p) => p.tokenAddress)));
+  await Promise.all(tokens.map(getDecimals));
+
+  return Promise.all(rawPots.map(mapRawPotToObject));
 }
 
 
