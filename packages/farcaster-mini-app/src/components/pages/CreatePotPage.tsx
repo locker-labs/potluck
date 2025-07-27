@@ -18,7 +18,6 @@ import { useCreateCast } from '@/hooks/useCreateCast';
 import { formatUnits } from 'viem';
 import { z } from 'zod';
 import { MAX_PARTICIPANTS } from '@/config';
-import { useFrame } from '../providers/FrameProvider';
 import { AnimatePresence, motion } from 'motion/react';
 
 const emojis = ['🎯', '🏆', '🔥', '🚀', '💪', '⚡', '🎬', '🎓', '🍕', '☕'];
@@ -97,8 +96,6 @@ export default function CreatePotPage() {
   const amountUsdc = formatUnits(amountBigInt, 6);
   const totalAmountUsdc = formatUnits(amountBigInt + (fee ?? 0n), 6);
 
-  const { checkAndAddMiniApp } = useFrame();
-
   const hasErrors = Object.keys(errors).length > 0;
 
   const disabled = isLoading || isCreatingPot || (clickedSubmit && hasErrors);
@@ -140,7 +137,6 @@ export default function CreatePotPage() {
     e.preventDefault();
     setClickedSubmit(true);
     if (!validate()) return;
-    await checkAndAddMiniApp();
     await handleCreatePot(potName, amountBigInt, maxParticipantsInt, timePeriod, isPublic);
   };
 

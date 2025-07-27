@@ -6,8 +6,10 @@ import { toast } from 'sonner';
 import type { TPotObject } from '@/lib/types';
 import { getTransactionLink } from '@/lib/helpers/blockExplorer';
 import { useConnection } from '@/hooks/useConnection';
+import { useFrame } from '@/components/providers/FrameProvider';
 
 export function useRequestPot() {
+  const { checkAndAddMiniApp } = useFrame();
   const { address, ensureConnection, isConnected } = useConnection();
   const { writeContractAsync } = useWriteContract();
   const [pendingRequest, setPendingRequest] = useState<bigint | null>(null);
@@ -41,6 +43,8 @@ export function useRequestPot() {
 
 
   const handleRequest = async (potId: bigint) => {
+    await checkAndAddMiniApp();
+
     console.log('handleRequest called with potId:', potId);
     if (potId==undefined) {
       toast.error('Pot not found.');
