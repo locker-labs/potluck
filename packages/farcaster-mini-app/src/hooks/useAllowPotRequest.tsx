@@ -1,11 +1,11 @@
 import { publicClient } from '@/clients/viem';
 import { contractAddress, abi } from '@/config';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useWriteContract } from 'wagmi';
 import { toast } from 'sonner';
 import { getTransactionLink } from '@/lib/helpers/blockExplorer';
 import { useConnection } from '@/hooks/useConnection';
-import { Address } from 'viem';
+import type { Address } from 'viem';
 
 export function useAllowPotRequest() {
   const { address, ensureConnection } = useConnection();

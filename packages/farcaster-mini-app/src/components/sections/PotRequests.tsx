@@ -3,7 +3,7 @@ import { Users as UsersIcon, ChevronDown, ChevronUp } from "lucide-react";
 import { getPotRequests } from "@/lib/getLogs";
 import { BorderButton, GradientButton3 } from "../ui/Buttons";
 import { useAllowPotRequest } from "@/hooks/useAllowPotRequest";
-import { Address } from "viem";
+import type { Address } from "viem";
 import { getAllowedAddresses } from "@/lib/getLogs";
 
 interface JoinRequestsProps {
