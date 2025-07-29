@@ -14,6 +14,13 @@ type UseUserPotJoinInfoReturnType = {
     hasJoinedRound: boolean | null;
 };
 
+/**
+ * Custom hook to determine if a user has joined a pot before or in the current round
+ * @param pot - The pot object
+ * @param address - The user's address
+ * @param joinedPotId - The ID of the pot the user joined
+ * @returns An object containing the join status
+ */
 export function useUserPotJoinInfo({
     pot,
     address,
@@ -27,42 +34,33 @@ export function useUserPotJoinInfo({
 
     // Fetch join status for round 0
     useEffect(() => {
+        if (!enabled) {
+            setHasJoinedBefore(null);
+            setHasJoinedRound(null);
+            return;
+        }
+
         if (enabled) {
             (async () => {
                 if (address === pot.creator && pot.round === 0) {
                     setHasJoinedRound(true);
                     setHasJoinedBefore(true);
                 } else {
+                    setHasJoinedRound(pot.participants.includes(address));
                     setHasJoinedBefore(await getHasJoinedRound(pot.id, 0, address));
                 }
             })();
         }
     }, [enabled, address, pot]);
 
-    // Update hasJoinedRound when joinedPotId changes
+    // Update hasJoinedRound when user joins a new round (one time change)
     useEffect(() => {
         if (enabled) {
-            if (!address) {
-            setHasJoinedRound(false);
-        } else {
-            if (!hasJoinedRound) {
-                if (joinedPotId === pot.id) {
-                    setHasJoinedRound(true);
-                } else {
-                    setHasJoinedRound(pot.participants.includes(address));
-                }
+            if (joinedPotId === pot.id && !hasJoinedRound) {
+                setHasJoinedRound(true);
             }
         }
-    }
-    }, [joinedPotId, hasJoinedRound, pot, address, enabled]);
-
-    // Reset hasJoinedRound if address changes
-    useEffect(() => {
-        if (!address) {
-            setHasJoinedBefore(null);
-            setHasJoinedRound(null);
-        }
-    }, [address])
+    }, [joinedPotId, hasJoinedRound, pot, enabled]);
 
     return { hasJoinedBefore, hasJoinedRound };
 }

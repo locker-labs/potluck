@@ -5,7 +5,7 @@ import { GradientCard } from "@/components/ui/GradientCard";
 import Link from "next/link";
 import { useAccount } from "wagmi";
 import { JoinPotButton } from "@/components/buttons/JoinPotButton";
-import { usePotParticipation } from "@/hooks/usePotParticipation";
+import { useUserPotRequestInfo } from "@/hooks/useUserPotRequestInfo";
 import { useUserPotJoinInfo } from "@/hooks/useUserPotJoinInfo";
 
 export function AvailablePotsCard({
@@ -16,7 +16,8 @@ export function AvailablePotsCard({
 	handleJoinPot,
 	tokenBalance,
 	handleRequest,
-	pendingRequest,
+	requestingPotId,
+	requestedPotId,
 }: {
 	pot: TPotObject;
 	isLoadingJoinPot: boolean;
@@ -26,22 +27,26 @@ export function AvailablePotsCard({
 	tokenBalance: bigint | undefined;
 	loadingPot: boolean;
 	handleRequest: (potId: bigint) => Promise<void>;
-	pendingRequest: bigint | null;
+	requestingPotId: bigint | null;
+	requestedPotId: bigint | null;
 }) {
 	const { address: addressWithCheckSum } = useAccount();
 	const address = addressWithCheckSum?.toLowerCase() as Address | undefined;
 
-    const { hasJoinedBefore, hasJoinedRound } = useUserPotJoinInfo({
+	const isPrivatePot: boolean = pot ? !pot.isPublic : false;
+	const userPotRequestInfo = useUserPotRequestInfo({
+		potId: pot.id,
+		address,
+		requestingPotId,
+		requestedPotId,
+		enabled: isPrivatePot,
+	});
+
+	const { hasJoinedBefore, hasJoinedRound } = useUserPotJoinInfo({
 		pot,
 		address,
 		joinedPotId,
 	});
-	const isPrivatePot: boolean = pot ? !pot.isPublic : false;
-	const { isAllowed, hasRequested } = usePotParticipation(
-		pot.id,
-		address,
-		isPrivatePot,
-	);
 
 	// DERIVED STATE
 	const isRoundZero: boolean = pot.round === 0;
@@ -93,7 +98,7 @@ export function AvailablePotsCard({
 							</p>
 						</div>
 						<div className="col-start-4 col-span-2 self-end">
-                            {/*  TODO: Create a reusable component  */}
+							{/*  TODO: Create a reusable component  */}
 							<div className=" flex items-center justify-center gap-1">
 								<Clock5 size={14} color="#14b6d3" className="shrink-0" />
 								<span className="font-bold text-[14px]">
@@ -113,10 +118,8 @@ export function AvailablePotsCard({
 						tokenBalance={tokenBalance}
 						hasJoinedBefore={hasJoinedBefore}
 						hasJoinedRound={hasJoinedRound}
-						pendingRequest={pendingRequest}
-						hasRequested={hasRequested}
-						isAllowed={isAllowed}
 						handleJoinPot={handleJoinPot}
+						userPotRequestInfo={userPotRequestInfo}
 						handleRequest={handleRequest}
 					/>
 				</div>

@@ -7,6 +7,7 @@ import type React from "react";
 import Image from "next/image";
 import { useAccount } from "wagmi";
 import type { Address } from "viem";
+import type { UseUserPotRequestInfoReturnType } from "@/hooks/useUserPotRequestInfo";
 
 export interface JoinPotButtonProps {
 	style: "purple" | "blue";
@@ -17,9 +18,7 @@ export interface JoinPotButtonProps {
 	joiningPotId: bigint | null;
 	isLoadingJoinPot: boolean;
 	tokenBalance: bigint | undefined;
-	pendingRequest: bigint | null;
-	hasRequested: boolean | null;
-	isAllowed: boolean | null;
+	userPotRequestInfo: UseUserPotRequestInfoReturnType;
 	handleJoinPot: (pot: TPotObject) => Promise<void>;
 	handleRequest: (potId: bigint) => Promise<void>;
 }
@@ -33,12 +32,11 @@ export function JoinPotButton({
 	joiningPotId,
 	isLoadingJoinPot,
 	tokenBalance,
-	pendingRequest,
-	hasRequested,
-	isAllowed,
+	userPotRequestInfo,
 	handleJoinPot,
 	handleRequest,
 }: JoinPotButtonProps) {
+	const { isAllowed, hasRequested, isRequestingPot, isRequestingThisPot } = userPotRequestInfo;
 	const potId = pot.id;
 
 	// HOOKS
@@ -50,6 +48,7 @@ export function JoinPotButton({
 	const isPublic: boolean = pot.isPublic;
 	const isRoundZero: boolean = pot.round === 0;
 	const isJoiningPot: boolean = joiningPotId !== null;
+	const isJoiningThisPot: boolean = isJoiningPot && joiningPotId === potId;
 	const cannotJoinPot: boolean =
 		!isRoundZero && hasJoinedBefore !== null && !hasJoinedBefore;
 	const potFull: boolean =
@@ -59,7 +58,7 @@ export function JoinPotButton({
 	const deadlinePassed: boolean =
 		pot.deadline < BigInt(Math.floor(Date.now() / 1000));
 
-	const showLoader = initialLoading || isJoiningPot || pendingRequest !== null;
+	const showLoader = initialLoading || isJoiningThisPot || isRequestingThisPot;
 
 	const disabled: boolean =
 		initialLoading ||
@@ -67,17 +66,18 @@ export function JoinPotButton({
 		deadlinePassed ||
 		(!!address &&
 			(isJoiningPot ||
+				isRequestingPot ||
 				hasJoinedRound ||
 				cannotJoinPot ||
 				insufficientBalance ||
 				(hasRequested && !isAllowed) ||
-				(!pot.isPublic && (pendingRequest !== null || hasRequested === null))));
+				(!pot.isPublic && hasRequested === null)));
 
 	const buttonText = initialLoading ? (
 		"Loading"
 	) : hasJoinedRound ? (
 		"Joined"
-	) : isJoiningPot ? (
+	) : isJoiningThisPot ? (
 		"Joining"
 	) : deadlinePassed ? (
 		"Expired ⌛"
@@ -90,7 +90,7 @@ export function JoinPotButton({
 	) : isRoundZero ? (
 		isPublic ? (
 			"Join Pot"
-		) : pendingRequest !== null ? (
+		) : isRequestingThisPot ? (
 			"Requesting to Join"
 		) : hasRequested === null ? (
 			"Loading"

@@ -18,7 +18,7 @@ import { JoinPotButton } from '@/components/buttons/JoinPotButton';
 import { UserContributionProgressBar } from '@/components/subcomponents/UserContributionProgressBar';
 import { useJoinPot } from "@/hooks/useJoinPot";
 import { useRequestPot } from "@/hooks/useRequestPot";
-import { usePotParticipation } from '@/hooks/usePotParticipation';
+import { useUserPotRequestInfo } from '@/hooks/useUserPotRequestInfo';
 import { useUserPotJoinInfo } from '@/hooks/useUserPotJoinInfo';
 import type { Address } from 'viem';
 
@@ -28,7 +28,7 @@ export default function PotPage({ id }: { id: string }) {
   const router = useRouter();
   const potId = BigInt(id);
 
-  const { isConnected, address: addressWithCheckSum } = useAccount();
+  const { address: addressWithCheckSum } = useAccount();
   const address = addressWithCheckSum?.toLowerCase() as Address | undefined;
 
   // STATES
@@ -42,13 +42,6 @@ export default function PotPage({ id }: { id: string }) {
     logs: LogEntry[];
   }>(defaultLogsState);
 
-  const isPrivatePot: boolean = pot ? !pot.isPublic : false;
-  const { isAllowed, hasRequested } = usePotParticipation(
-    potId,
-    address,
-    isPrivatePot
-  );
-  const { handleRequest, pendingRequest } = useRequestPot();
   const {
     handleJoinPot,
     isLoading: isLoadingJoinPot,
@@ -60,6 +53,16 @@ export default function PotPage({ id }: { id: string }) {
     pot,
     address,
     joinedPotId,
+  });
+
+  const { handleRequest, requestingPotId, requestedPotId } = useRequestPot();
+  const isPrivatePot = pot ? !pot.isPublic : false;
+  const userPotRequestInfo = useUserPotRequestInfo({
+    potId,
+    address,
+    requestingPotId,
+    requestedPotId,
+    enabled: isPrivatePot,
   });
 
   // EFFECTS
@@ -84,7 +87,7 @@ export default function PotPage({ id }: { id: string }) {
         setLoadingPot(false);
       }
     })();
-  }, [potId]);
+  }, [potId, address]);
 
   // RENDERING
 
@@ -194,10 +197,8 @@ export default function PotPage({ id }: { id: string }) {
           tokenBalance={tokenBalance}
           hasJoinedBefore={hasJoinedBefore}
           hasJoinedRound={hasJoinedRound}
-          pendingRequest={pendingRequest}
-          hasRequested={hasRequested}
-          isAllowed={isAllowed}
           handleJoinPot={handleJoinPot}
+          userPotRequestInfo={userPotRequestInfo}
           handleRequest={handleRequest}
         />
       </GradientCard2>
