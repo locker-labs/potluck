@@ -19,51 +19,61 @@ import { formatUnits } from 'viem';
 import { z } from 'zod';
 import { MAX_PARTICIPANTS } from '@/config';
 import { AnimatePresence, motion } from 'motion/react';
+import { toast } from "sonner";
 
-const emojis = ['🎯', '🏆', '🔥', '🚀', '💪', '⚡', '🎬', '🎓', '🍕', '☕'];
+const emojis = ["🎯", "🏆", "🔥", "🚀", "💪", "⚡", "🎬", "🎓", "🍕", "☕"];
 
 const timePeriods = [
-  { value: BigInt(86400), label: 'Daily' },
-  { value: BigInt(604800), label: 'Weekly' },
-  { value: BigInt(2592000), label: 'Monthly' },
+  { value: BigInt(86400), label: "Daily" },
+  { value: BigInt(604800), label: "Weekly" },
+  { value: BigInt(2592000), label: "Monthly" },
 ];
 
 // Zod schema for form validation
 const createPotSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
+  name: z.string().min(1, "Name is required"),
   amount: z
     .string()
-    .refine((val) => val !== '' && !Number.isNaN(Number(val)) && Number(val) >= 0.01, {
-      message: 'Amount must be at least 0.01',
-    })
+    .refine(
+      (val) => val !== "" && !Number.isNaN(Number(val)) && Number(val) >= 0.01,
+      {
+        message: "Amount must be at least 0.01",
+      }
+    )
     .refine(
       (val) => {
         // Accept only up to two decimal places
-        if (val === '') return true;
+        if (val === "") return true;
         return /^\d+(\.\d{1,2})?$/.test(val);
       },
       {
-        message: 'Only 2 decimal places allowed',
-      },
+        message: "Only 2 decimal places allowed",
+      }
     ),
   maxParticipants: z
     .string()
-    .refine((val) => val !== '' && !Number.isNaN(Number(val)) && Number(val) <= MAX_PARTICIPANTS, {
-      message: `Participants must be less than ${MAX_PARTICIPANTS + 1}`,
-    })
-    .refine((val) => val !== '' && /^\d+$/.test(val) && Number(val) >= 2, {
-      message: 'Participants must be atleast 2',
+    .refine(
+      (val) =>
+        val !== "" &&
+        !Number.isNaN(Number(val)) &&
+        Number(val) <= MAX_PARTICIPANTS,
+      {
+        message: `Participants must be less than ${MAX_PARTICIPANTS + 1}`,
+      }
+    )
+    .refine((val) => val !== "" && /^\d+$/.test(val) && Number(val) >= 2, {
+      message: "Participants must be atleast 2",
     }),
-  emoji: z.string().min(1, 'Emoji is required'),
+  emoji: z.string().min(1, "Emoji is required"),
   timePeriod: z.bigint(),
 });
 
 export default function CreatePotPage() {
   const [emoji, setEmoji] = useState<string>(emojis[0]);
-  const [name, setName] = useState<string>('');
+  const [name, setName] = useState<string>("");
   const [timePeriod, setTimePeriod] = useState<bigint>(timePeriods[0].value);
-  const [amount, setAmount] = useState('');
-  const [maxParticipants, setMaxParticipants] = useState('');
+  const [amount, setAmount] = useState("");
+  const [maxParticipants, setMaxParticipants] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isPublic, setIsPublic] = useState(true);
   const [errors, setErrors] = useState<{ [k: string]: string }>({});
@@ -85,6 +95,7 @@ export default function CreatePotPage() {
     hash,
     fee,
     feeUsdc,
+    tokenBalance,
   } = useCreatePot();
   const { handleCopyLink } = useCopyInviteLink({ potId: potId });
   const { handleCastOnFarcaster } = useCreateCast({
@@ -125,11 +136,13 @@ export default function CreatePotPage() {
       for (const err of result.error.errors) {
         if (err.path[0]) fieldErrors[err.path[0]] = err.message;
       }
-
       setErrors(fieldErrors);
       return false;
     }
     setErrors({});
+    if (BigInt(totalAmountUsdc) > tokenBalance!) {
+      toast.error("Insufficient token balance");
+    }
     return true;
   };
 
@@ -137,7 +150,13 @@ export default function CreatePotPage() {
     e.preventDefault();
     setClickedSubmit(true);
     if (!validate()) return;
-    await handleCreatePot(potName, amountBigInt, maxParticipantsInt, timePeriod, isPublic);
+    await handleCreatePot(
+      potName,
+      amountBigInt,
+      maxParticipantsInt,
+      timePeriod,
+      isPublic
+    );
   };
 
   // EFFECTS
@@ -266,14 +285,14 @@ export default function CreatePotPage() {
           {/* Participation Type */}
           <div>
             <div className="flex items-center justify-between">
-              <p className="block text-base font-bold">
-                Participation
-              </p>
+              <p className="block text-base font-bold">Participation</p>
               <div className="flex items-center gap-4">
                 {/* “Invite-Only” label */}
                 <span
                   className={`w-[40px] text-right leading-none transition-all duration-250 ${
-                    isPublic ? "text-white font-medium text-sm" : "text-gray-400 font-normal text-xs pr-[0.75px]"
+                    isPublic
+                      ? "text-white font-medium text-sm"
+                      : "text-gray-400 font-normal text-xs pr-[0.75px]"
                   }`}
                 >
                   Public
@@ -297,36 +316,49 @@ export default function CreatePotPage() {
                 {/* “Open” label */}
                 <span
                   className={`w-[44px] leading-none transition-all duration-250 ${
-                    !isPublic ? "text-white font-medium text-sm" : "text-gray-400 font-normal text-xs"
+                    !isPublic
+                      ? "text-white font-medium text-sm"
+                      : "text-gray-400 font-normal text-xs"
                   }`}
                 >
                   Private
                 </span>
               </div>
             </div>
-            <AnimatePresence mode='popLayout'>
-              {isPublic ?
+            <AnimatePresence mode="popLayout">
+              {isPublic ? (
                 <motion.p
-                key={"participation-public"}
-                className="text-xs text-gray-500 pb-2.5"
-                initial={{ x: 40, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                exit={{ x: 40, opacity: 0 }}
-                transition={{ type: "spring", stiffness: 400, damping: 30, duration: 0.1 }}
+                  key={"participation-public"}
+                  className="text-xs text-gray-500 pb-2.5"
+                  initial={{ x: 40, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: 40, opacity: 0 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 400,
+                    damping: 30,
+                    duration: 0.1,
+                  }}
                 >
                   Anyone can join this pot
-                </motion.p> :
+                </motion.p>
+              ) : (
                 <motion.p
-                key={"participation-private"}
-                className="text-xs text-gray-500 pb-2.5"
-                initial={{ x: -40, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                exit={{ x: -40, opacity: 0 }}
-                transition={{ type: "spring", stiffness: 400, damping: 30, duration: 0.1 }}
+                  key={"participation-private"}
+                  className="text-xs text-gray-500 pb-2.5"
+                  initial={{ x: -40, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: -40, opacity: 0 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 400,
+                    damping: 30,
+                    duration: 0.1,
+                  }}
                 >
                   Only approved participants can join this pot
                 </motion.p>
-              }
+              )}
             </AnimatePresence>
           </div>
           {/* Max Participants */}
@@ -417,11 +449,17 @@ export default function CreatePotPage() {
                 <p className="text-sm font-bold">{totalAmountUsdc} USDC</p>
               </div>
 
-              <div className='mt-2 mb-3 w-full flex items-start justify-between border border-[#FFB300] rounded-[8px] bg-[#45412E] py-2 px-4'>
-                <Image className='mr-3' src='/warning.png' alt='warning' width={32} height={32} />
-                <p className='w-full text-left text-xs font-normal text-[#FFB300]'>
-                  You will be asked to confirm a wallet transaction. Please ensure you have enough
-                  funds available.
+              <div className="mt-2 mb-3 w-full flex items-start justify-between border border-[#FFB300] rounded-[8px] bg-[#45412E] py-2 px-4">
+                <Image
+                  className="mr-3"
+                  src="/warning.png"
+                  alt="warning"
+                  width={32}
+                  height={32}
+                />
+                <p className="w-full text-left text-xs font-normal text-[#FFB300]">
+                  You will be asked to confirm a wallet transaction. Please
+                  ensure you have enough funds available.
                 </p>
               </div>
             </div>
@@ -448,7 +486,7 @@ export default function CreatePotPage() {
               Congratulations! 🎉
             </DialogTitle>
             <div className="text-center">
-                <div>
+              <div>
                 <Image
                   src="/success.gif"
                   alt="Success"
@@ -481,12 +519,18 @@ export default function CreatePotPage() {
 
           <div className="space-y-4 mt-2">
             <GradientButton3
-              type='button'
+              type="button"
               className="w-full flex items-center justify-center gap-2"
               onClick={handleCastOnFarcaster}
             >
-              <Image src="/farcaster-transparent-white.svg" alt="Farcaster" width={22} height={22} priority />
-              <span className='text-[20px] font-medium'>Cast on Farcaster</span>
+              <Image
+                src="/farcaster-transparent-white.svg"
+                alt="Farcaster"
+                width={22}
+                height={22}
+                priority
+              />
+              <span className="text-[20px] font-medium">Cast on Farcaster</span>
             </GradientButton3>
 
             <GradientButton3
@@ -494,12 +538,18 @@ export default function CreatePotPage() {
               onClick={handleCopyLink}
             >
               <Copy size={18} />
-              <span className='text-[20px] font-medium'>Copy Invite Link</span>
+              <span className="text-[20px] font-medium">Copy Invite Link</span>
             </GradientButton3>
 
-            <Link href={`/pot/${potId}`} className="w-full" prefetch={showSuccessModal}>
+            <Link
+              href={`/pot/${potId}`}
+              className="w-full"
+              prefetch={showSuccessModal}
+            >
               <div className="w-full text-center rounded-xl py-3 mt-4 bg-white/80">
-                <span className='text-[20px] text-center font-medium text-black'>Go to Pot</span>
+                <span className="text-[20px] text-center font-medium text-black">
+                  Go to Pot
+                </span>
               </div>
             </Link>
           </div>
