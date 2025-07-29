@@ -482,8 +482,6 @@ export async function fetchPotParticipationInfo(
     allowedUsers,
   } = await client.request<GqlPotParticipationInfoResponse>(GET_POT_PARTICIPATION_INFO, vars);
 
-  console.log({ allowRequests, allowedUsers });
-
   return {
     hasRequested: allowRequests.length > 0,
     isAllowed: allowedUsers.length > 0,

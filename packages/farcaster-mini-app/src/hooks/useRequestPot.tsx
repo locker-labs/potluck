@@ -11,7 +11,8 @@ export function useRequestPot() {
   const { checkAndAddMiniApp } = useFrame();
   const { address, ensureConnection } = useConnection();
   const { writeContractAsync } = useWriteContract();
-  const [pendingRequest, setPendingRequest] = useState<bigint | null>(null);
+  const [requestingPotId, setRequestingPotId] = useState<bigint | null>(null);
+  const [requestedPotId, setRequestedPotId] = useState<bigint | null>(null);
 
   const requestPotAllow = async (id: bigint): Promise<void> => {
     if (!address) {
@@ -58,9 +59,12 @@ export function useRequestPot() {
       }
       return;
     }
-    setPendingRequest(potId);
+    
     try {
+      setRequestedPotId(null);
+      setRequestingPotId(potId);
       await requestPotAllow(potId);
+      setRequestedPotId(potId);
       toast.success(`Successfully requested pot #${potId}`);
     } catch (error: unknown) {
       console.error('Failed to request pot:', error);
@@ -71,9 +75,9 @@ export function useRequestPot() {
             : 'Something went wrong. Please try again.',
       });
     } finally {
-      setPendingRequest(null);
+      setRequestingPotId(null);
     }
   };
 
-  return { handleRequest, pendingRequest, requestPotAllow };
+  return { handleRequest, requestingPotId, requestedPotId, requestPotAllow };
 }

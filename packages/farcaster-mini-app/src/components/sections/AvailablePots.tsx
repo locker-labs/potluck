@@ -17,9 +17,14 @@ const periodSecondsMap = {
 };
 
 export default function AvailablePots() {
-	const {  isLoading: isLoadingJoinPot, joinedPotId, handleJoinPot, joiningPotId, tokenBalance } =
-		useJoinPot();
-    const { handleRequest, pendingRequest } = useRequestPot();
+	const {
+		isLoading: isLoadingJoinPot,
+		joinedPotId,
+		handleJoinPot,
+		joiningPotId,
+		tokenBalance,
+	} = useJoinPot();
+	const { handleRequest, requestingPotId, requestedPotId } = useRequestPot();
 
 	// ------
 	// STATES
@@ -104,14 +109,15 @@ export default function AvailablePots() {
 						<AvailablePotsCard
 							key={pot.id}
 							pot={pot}
-              loadingPot={loading}
-              isLoadingJoinPot={isLoadingJoinPot}
+                            loadingPot={loading}
+                            isLoadingJoinPot={isLoadingJoinPot}
 							joiningPotId={joiningPotId}
 							joinedPotId={joinedPotId}
 							handleJoinPot={handleJoinPot}
 							tokenBalance={tokenBalance}
-              handleRequest={handleRequest}
-              pendingRequest={pendingRequest}
+                            handleRequest={handleRequest}
+                            requestingPotId={requestingPotId}
+                            requestedPotId={requestedPotId}
 						/>
 					))}
 				</div>
