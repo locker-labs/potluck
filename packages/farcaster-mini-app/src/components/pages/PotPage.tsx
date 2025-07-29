@@ -33,6 +33,7 @@ export default function PotPage({ id }: { id: string }) {
 
   // STATES
   const [pot, setPot] = useState<TPotObject | null>(null);
+  const [showRequests, setShowRequests] = useState(false);
   const [loadingPot, setLoadingPot] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [logsState, setLogsState] = useState<{
@@ -42,22 +43,26 @@ export default function PotPage({ id }: { id: string }) {
   }>(defaultLogsState);
 
   const isPrivatePot: boolean = pot ? !pot.isPublic : false;
-  const { isAllowed, hasRequested } = usePotParticipation(potId, address, isPrivatePot);
+  const { isAllowed, hasRequested } = usePotParticipation(
+    potId,
+    address,
+    isPrivatePot
+  );
   const { handleRequest, pendingRequest } = useRequestPot();
   const {
-		handleJoinPot,
-		isLoading: isLoadingJoinPot,
-		joiningPotId,
-		joinedPotId,
-		tokenBalance,
-	} = useJoinPot();
+    handleJoinPot,
+    isLoading: isLoadingJoinPot,
+    joiningPotId,
+    joinedPotId,
+    tokenBalance,
+  } = useJoinPot();
   const { hasJoinedBefore, hasJoinedRound } = useUserPotJoinInfo({
     pot,
     address,
     joinedPotId,
   });
 
-	// EFFECTS
+  // EFFECTS
 
   // Load pot details on mount
   useEffect(() => {
@@ -70,6 +75,9 @@ export default function PotPage({ id }: { id: string }) {
         const { pot, logs } = potInfo;
         setPot(pot);
         setLogsState({ loading: false, error: null, logs });
+        if (pot.creator === address && pot.round === 0 && !pot.isPublic) {
+          setShowRequests(true);
+        }
       } catch {
         setError("Failed to load pot details");
       } finally {
@@ -128,7 +136,7 @@ export default function PotPage({ id }: { id: string }) {
         ) : null}
       </div>
 
-     {/*  TODO: Create a reusable component  */}
+      {/*  TODO: Create a reusable component  */}
       <GradientCard2 className="w-full mt-4 pb-4">
         <div>
           <div className="flex">
@@ -172,10 +180,13 @@ export default function PotPage({ id }: { id: string }) {
         </div>
 
         {/* User contribution progress bar */}
-        <UserContributionProgressBar pot={pot} hasJoinedRound={hasJoinedRound ?? false} />
+        <UserContributionProgressBar
+          pot={pot}
+          hasJoinedRound={hasJoinedRound ?? false}
+        />
 
         <JoinPotButton
-          style='blue'
+          style="blue"
           loadingPot={loadingPot}
           pot={pot}
           isLoadingJoinPot={isLoadingJoinPot}
@@ -219,9 +230,7 @@ export default function PotPage({ id }: { id: string }) {
           <p className="text-sm">Total Won</p>
         </div>
       </div>
-      {pot.creator === address && pot.round === 0 && (
-        <JoinRequests potId={pot.id} />
-      )}
+      {showRequests && <JoinRequests potId={pot.id} />}
 
       <div className="mt-4 border border-gray-500 pt-6 rounded-xl">
         <div className="flex items-center gap-2 px-4">
