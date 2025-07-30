@@ -35,11 +35,15 @@ export function useAllowPotRequest() {
       }
 
       console.log(`Transaction confirmed: ${getTransactionLink(receipt.transactionHash)}`);
+        try {
           await sendNotification({
             addresses,
             potId: String(id),
             type: ENotificationType.APPROVE,
           });
+        } catch (notificationError) {
+          console.error('Failed to send notification:', notificationError);
+        }
     } catch (error) {
       console.error('Error requesting pot approval:', error);
       throw error;
