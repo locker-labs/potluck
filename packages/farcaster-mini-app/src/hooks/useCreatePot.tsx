@@ -152,7 +152,7 @@ export function useCreatePot() {
       return;
     }
 
-    if (amount > tokenBalance) {
+    if (amount + fee > tokenBalance) {
       toast.error("You do not have enough USDC.");
       return;
     }
