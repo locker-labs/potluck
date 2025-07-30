@@ -19,7 +19,6 @@ import { formatUnits } from 'viem';
 import { z } from 'zod';
 import { MAX_PARTICIPANTS } from '@/config';
 import { AnimatePresence, motion } from 'motion/react';
-import { toast } from "sonner";
 
 const emojis = ["🎯", "🏆", "🔥", "🚀", "💪", "⚡", "🎬", "🎓", "🍕", "☕"];
 
@@ -104,15 +103,13 @@ export default function CreatePotPage() {
     period: timePeriod,
   });
 
-  const amountUsdc = formatUnits(amountBigInt, 6);
-  const totalAmountUsdc = formatUnits(amountBigInt + (fee ?? 0n), 6);
-
   const hasErrors = Object.keys(errors).length > 0;
 
   const disabled = isLoading || isCreatingPot || (clickedSubmit && hasErrors);
 
   // FUNCTIONS
   // Accepts overrides for latest values
+  // Only for input validation
   const validate = (
     override?: Partial<{
       name: string;
@@ -140,9 +137,6 @@ export default function CreatePotPage() {
       return false;
     }
     setErrors({});
-    if (BigInt(totalAmountUsdc) > tokenBalance!) {
-      toast.error("Insufficient token balance");
-    }
     return true;
   };
 
@@ -175,6 +169,10 @@ export default function CreatePotPage() {
       setShowSuccessModal(true);
     }
   }, [hash, potId]);
+
+  // These are only for rendering
+  const amountUsdc: string = formatUnits(amountBigInt, 6);
+  const totalAmountUsdc: string = formatUnits(amountBigInt + (fee ?? 0n), 6);
 
   return (
     <div>
