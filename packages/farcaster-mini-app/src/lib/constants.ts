@@ -42,4 +42,6 @@ export const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL;
 
 export const NEYNAR_WEBHOOK_URL = env.NEYNAR_WEBHOOK_URL;
 
-export const ALLOWED_ORIGINS = env.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim());
+export const ALLOWED_ORIGINS = env.ALLOWED_ORIGINS
+  ? env.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim())
+  : [];
