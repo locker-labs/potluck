@@ -3,6 +3,7 @@ import { GradientButton } from '../ui/Buttons';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { motion } from 'motion/react';
+import Link from 'next/link';
 
 export default function Hero() {
   const router = useRouter();
@@ -46,7 +47,7 @@ export default function Hero() {
           <p className='font-semibold text-[24px] leading-snug'>Create Pot</p>
           <p className='text-[14px]'>Chip in small. Cash out big.</p>
         </div>
-        <div className='w-full'>
+        <Link href='/create' prefetch={true}>
           <GradientButton
             className='mt-4 mx-auto font-medium text-lg py-[8px] shadow-lg hover:shadow-xl transition-all duration-300 text-[40px]'
             onClick={() => {
@@ -55,7 +56,7 @@ export default function Hero() {
           >
             <Plus />
           </GradientButton>
-        </div>
+        </Link>
       </div>
     </div>
   </motion.div>
