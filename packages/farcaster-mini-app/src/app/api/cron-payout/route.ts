@@ -168,6 +168,7 @@ export async function GET() {
      }
      return NextResponse.json({
        triggered: eligiblePayoutPots.length,
+       ended: eligibleEndPots.length,
        success: true,
        checked: potCount,
      });
