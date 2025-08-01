@@ -45,12 +45,14 @@ export function JoinRequests({ potId }: JoinRequestsProps) {
           (addr) => !allowedAddresses.includes(addr as Address)
         );
 
-        // fetch farcaster names for pending addresses
-        if (pending.length > 0) {
-          try {
-            const { data: users } = await fetchFarcasterUsers({ addresses: pending as Address[] });
+        // fetch farcaster names for newAddresses from addresses
+        const newAddresses = pending.map(addr => addr.toLowerCase()).filter(addr => !addressToFUserMap.has(addr));
 
-            for (const address of pending) {
+        if (newAddresses.length > 0) {
+          try {
+            const { data: users } = await fetchFarcasterUsers({ addresses: newAddresses as Address[] });
+
+            for (const address of newAddresses) {
               const addr = address.toLowerCase();
               if (users?.[addr]) {
                 addressToFUserMap.set(addr, users[addr]);
