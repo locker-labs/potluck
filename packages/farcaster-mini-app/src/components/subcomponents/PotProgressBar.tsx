@@ -16,20 +16,6 @@ export function PotProgressBar({ pot }: { pot: TPotObject }) {
 	const secondsSinceStart = totalPotDurationSeconds - secondsToEndPot;
 	const timeRemainingStr = timeRemaining(secondsNow + secondsToEndPot);
 
-	// console.log({
-	// 	name: pot.name,
-	// 	totalRounds,
-	// 	currentRound,
-	// 	pendingRounds,
-	// 	secondsNow,
-	// 	secondsToEndPendingRounds,
-	// 	secondsToEndCurrentRound,
-	// 	totalPotDurationSeconds,
-	// 	secondsToEndPot,
-	// 	secondsSinceStart,
-	// 	timeRemainingStr
-	// })
-
 	const timeRemainingText = timeRemainingStr ? `${timeRemainingStr} remaining` : "Completed";
 
 	const progressPercent = Math.trunc(100 * Math.min(1, Number((secondsSinceStart / totalPotDurationSeconds).toFixed(2))))

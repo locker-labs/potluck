@@ -59,8 +59,6 @@ export function JoinRequests({ potId }: JoinRequestsProps) {
           } catch (error) {
             console.error("Failed to fetch Farcaster users:", error);
           }
-
-          console.log("Set Address to FUser map:", addressToFUserMap);
         }
         setRequests(pending);
       } catch (error) {
