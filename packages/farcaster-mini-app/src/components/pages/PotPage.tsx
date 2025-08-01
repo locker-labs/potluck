@@ -15,12 +15,12 @@ import { ShareDropdown } from "@/components/ui/ShareDropdown";
 import { JoinRequests } from "@/components/sections/PotRequests";
 import { fetchPotInfo, type LogEntry } from "@/lib/graphQueries";
 import { JoinPotButton } from '@/components/buttons/JoinPotButton';
-import { UserContributionProgressBar } from '@/components/subcomponents/UserContributionProgressBar';
 import { useJoinPot } from "@/hooks/useJoinPot";
 import { useRequestPot } from "@/hooks/useRequestPot";
 import { useUserPotRequestInfo } from '@/hooks/useUserPotRequestInfo';
 import { useUserPotJoinInfo } from '@/hooks/useUserPotJoinInfo';
 import type { Address } from 'viem';
+import { PotProgressBar } from '../subcomponents/PotProgressBar';
 
 const defaultLogsState = { loading: true, error: null, logs: [] };
 
@@ -182,11 +182,8 @@ export default function PotPage({ id }: { id: string }) {
           </p>
         </div>
 
-        {/* User contribution progress bar */}
-        <UserContributionProgressBar
-          pot={pot}
-          hasJoinedRound={hasJoinedRound ?? false}
-        />
+        {/* Pot progress bar */}
+        <PotProgressBar pot={pot} />
 
         <JoinPotButton
           style="blue"

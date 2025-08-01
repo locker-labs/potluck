@@ -7,7 +7,7 @@ import { BorderButton, GradientButton4 } from "../ui/Buttons";
 import { GradientCard2 } from "../ui/GradientCard";
 import { timeFromNow } from "@/lib/helpers/time";
 import { DurationPill } from "@/components/ui/Pill";
-import { UserContributionProgressBar } from "./UserContributionProgressBar";
+import { PotProgressBar } from "./PotProgressBar";
 
 export function YourPotCard({
 	pot,
@@ -139,8 +139,8 @@ export function YourPotCard({
 				</p>
 			</div>
 
-			{/* User contribution progress bar */}
-			<UserContributionProgressBar pot={pot} hasJoinedRound={hasJoinedRound} />
+			{/* Pot progress bar */}
+			<PotProgressBar pot={pot} />
 
 			{/* Buttons */}
 			<div className={"w-full mt-[14px] grid grid-cols-2 gap-4"}>
