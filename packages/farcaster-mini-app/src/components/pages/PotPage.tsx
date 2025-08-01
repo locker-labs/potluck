@@ -232,7 +232,7 @@ export default function PotPage({ id }: { id: string }) {
           <p>Recent Activities</p>
         </div>
         <hr className="mt-2 border-gray-500" />
-        <RecentActivity logsState={logsState} pot={pot} />
+        <RecentActivity logsState={logsState} />
       </div>
     </div>
   );

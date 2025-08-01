@@ -1,20 +1,16 @@
 "use client";
 
-import { useEffect } from "react";
 import { Loader2, MoveUpRight, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { formatAddress } from "@/lib/address";
 import { formatDateFromTimestamp } from "@/lib/date";
 import { getTransactionLink } from "@/lib/helpers/blockExplorer";
-import type { TPotObject } from "@/lib/types";
 import type { LogEntry } from "@/lib/graphQueries";
 
 export function RecentActivity({
-  pot,
   logsState,
 }: {
-  pot: TPotObject;
   logsState: { loading: boolean; error: string | null; logs: LogEntry[] };
 }) {
   // 1️⃣ Loading / Error states

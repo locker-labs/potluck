@@ -5,10 +5,14 @@ import { BorderButton, GradientButton3 } from "../ui/Buttons";
 import { useAllowPotRequest } from "@/hooks/useAllowPotRequest";
 import type { Address } from "viem";
 import { getAllowedAddresses } from "@/lib/getLogs";
+import type { FUser } from "@/types/neynar";
+import { fetchFarcasterUsers } from "@/lib/api/fetchFarcasterUsers";
 
 interface JoinRequestsProps {
   potId: bigint;
 }
+
+const addressToFUserMap = new Map<string, Pick<FUser, 'fid' | 'username' | 'display_name'>>();
 
 export function JoinRequests({ potId }: JoinRequestsProps) {
   const [requests, setRequests] = useState<string[]>([]);
@@ -40,6 +44,24 @@ export function JoinRequests({ potId }: JoinRequestsProps) {
         const pending = addresses.filter(
           (addr) => !allowedAddresses.includes(addr as Address)
         );
+
+        // fetch farcaster names for pending addresses
+        if (pending.length > 0) {
+          try {
+            const { data: users } = await fetchFarcasterUsers({ addresses: pending as Address[] });
+
+            for (const address of pending) {
+              const addr = address.toLowerCase();
+              if (users?.[addr]) {
+                addressToFUserMap.set(addr, users[addr]);
+              }
+            }
+          } catch (error) {
+            console.error("Failed to fetch Farcaster users:", error);
+          }
+
+          console.log("Set Address to FUser map:", addressToFUserMap);
+        }
         setRequests(pending);
       } catch (error) {
         console.error("Failed to fetch pot requests:", error);
@@ -91,8 +113,12 @@ export function JoinRequests({ potId }: JoinRequestsProps) {
             style={{ maxHeight: "12.5rem" }}
           >
             {requests.length > 0 ? (
-              requests.map((addr) => (
-                <label
+              requests.map((addr) => {
+                const formattedAddress = `${addr.slice(0, 6)}…${addr.slice(-4)}`;
+                const farcasterUsername = addressToFUserMap.get(addr.toLowerCase())?.username;
+                const nameOrAddress = farcasterUsername ?? formattedAddress;
+
+                return <label
                   key={addr}
                   className="flex items-center justify-between px-4 py-2 hover:bg-gray-700 transition"
                 >
@@ -104,11 +130,11 @@ export function JoinRequests({ potId }: JoinRequestsProps) {
                       className="h-4 w-4 text-app-cyan bg-gray-600 border-gray-500 rounded focus:ring-app-cyan"
                     />
                     <span className="text-sm text-gray-200">
-                      {addr.slice(0, 6)}…{addr.slice(-4)}
+                      {nameOrAddress}
                     </span>
                   </div>
                 </label>
-              ))
+              })
             ) : (
               <div className="px-4 py-3 text-sm text-gray-400">
                 No pending requests
