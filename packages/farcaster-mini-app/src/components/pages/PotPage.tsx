@@ -8,8 +8,6 @@ import { GradientCard2 } from "@/components/ui/GradientCard";
 import { useAccount } from "wagmi";
 import { useRouter } from "next/navigation";
 import { MoveLeft } from "lucide-react";
-import { timeFromNow } from "@/lib/helpers/time";
-import { DurationPill } from "@/components/ui/Pill";
 import { RecentActivity } from "@/components/sections/RecentActivity";
 import { ShareDropdown } from "@/components/ui/ShareDropdown";
 import { JoinRequests } from "@/components/sections/PotRequests";
@@ -21,6 +19,7 @@ import { useUserPotRequestInfo } from '@/hooks/useUserPotRequestInfo';
 import { useUserPotJoinInfo } from '@/hooks/useUserPotJoinInfo';
 import type { Address } from 'viem';
 import { PotProgressBar } from '../subcomponents/PotProgressBar';
+import { NextDrawPill } from '../subcomponents/NextDrawPill';
 
 const defaultLogsState = { loading: true, error: null, logs: [] };
 
@@ -143,12 +142,9 @@ export default function PotPage({ id }: { id: string }) {
       <GradientCard2 className="w-full mt-4 pb-4">
         <div>
           <div className="flex">
-            <DurationPill
-              text={
-                deadlinePassed
-                  ? "Awaiting payout"
-                  : `Next draw in: ${timeFromNow(Number(pot.deadline))}`
-              }
+            <NextDrawPill
+              deadlinePassed={deadlinePassed}
+              deadline={pot.deadline}
             />
           </div>
         </div>

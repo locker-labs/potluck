@@ -5,8 +5,7 @@ import type { Address } from "viem";
 import { Loader2, UsersRound } from "lucide-react";
 import { BorderButton, GradientButton4 } from "../ui/Buttons";
 import { GradientCard2 } from "../ui/GradientCard";
-import { timeFromNow } from "@/lib/helpers/time";
-import { DurationPill } from "@/components/ui/Pill";
+import { NextDrawPill } from "./NextDrawPill";
 import { PotProgressBar } from "./PotProgressBar";
 
 export function YourPotCard({
@@ -95,12 +94,9 @@ export function YourPotCard({
 			className={`min-w-[315px] max-w-full pt-[12px] px-[12px] pb-[12px] ${className}`}
 		>
 			<div className={"flex justify-end"}>
-				<DurationPill
-					text={
-						deadlinePassed
-							? "Awaiting payout"
-							: `${timeFromNow(Number(pot.deadline))}`
-					}
+				<NextDrawPill
+					deadline={pot.deadline}
+					deadlinePassed={deadlinePassed}
 					className={"text-[15px]"}
 				/>
 			</div>
