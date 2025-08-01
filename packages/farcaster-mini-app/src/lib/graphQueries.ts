@@ -8,9 +8,15 @@ const SUBGRAPH_URL =
   "https://api.studio.thegraph.com/query/112614/potluck-subgraph/version/latest";
 const client = new GraphQLClient(SUBGRAPH_URL);
 
-const GET_ALL_POTS = gql`
-  query GetAllPots($first: Int!, $skip: Int!) {
-    pots(first: $first, skip: $skip, orderBy: createdAt, orderDirection: desc) {
+const GET_ALL_ROUND_ZERO_POTS = gql`
+  query GetAllRoundZeroPots($first: Int!, $skip: Int!) {
+    pots(
+      first: $first,
+      skip: $skip,
+      where: { currentRound: 0 },
+      orderBy: createdAt,
+      orderDirection: desc
+    ) {
       id
       name
       creator {
@@ -366,7 +372,7 @@ export async function getAllPotObjects(
   first = 1000,
   skip = 0
 ): Promise<TPotObject[]> {
-  const { pots } = await client.request<{ pots: RawPot[] }>(GET_ALL_POTS, {
+  const { pots } = await client.request<{ pots: RawPot[] }>(GET_ALL_ROUND_ZERO_POTS, {
     first,
     skip,
   });
