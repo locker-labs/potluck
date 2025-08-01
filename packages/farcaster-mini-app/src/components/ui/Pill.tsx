@@ -8,12 +8,3 @@ export function Pill({ children }: { children: ReactNode }) {
     </div>
   );
 }
-
-export function DurationPill({ text, className }: { text: string; className?: string }) {
-  return (
-    <Pill>
-      <Clock5 size={14} className='text-cyan-400' />
-      <p className={`text-xs font-bold text-cyan-400 ${className}`}>{text}</p>
-    </Pill>
-  );
-}

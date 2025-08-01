@@ -8,19 +8,18 @@ import { GradientCard2 } from "@/components/ui/GradientCard";
 import { useAccount } from "wagmi";
 import { useRouter } from "next/navigation";
 import { MoveLeft } from "lucide-react";
-import { timeFromNow } from "@/lib/helpers/time";
-import { DurationPill } from "@/components/ui/Pill";
 import { RecentActivity } from "@/components/sections/RecentActivity";
 import { ShareDropdown } from "@/components/ui/ShareDropdown";
 import { JoinRequests } from "@/components/sections/PotRequests";
 import { fetchPotInfo, type LogEntry } from "@/lib/graphQueries";
 import { JoinPotButton } from '@/components/buttons/JoinPotButton';
-import { UserContributionProgressBar } from '@/components/subcomponents/UserContributionProgressBar';
 import { useJoinPot } from "@/hooks/useJoinPot";
 import { useRequestPot } from "@/hooks/useRequestPot";
 import { useUserPotRequestInfo } from '@/hooks/useUserPotRequestInfo';
 import { useUserPotJoinInfo } from '@/hooks/useUserPotJoinInfo';
 import type { Address } from 'viem';
+import { PotProgressBar } from '../subcomponents/PotProgressBar';
+import { NextDrawPill } from '../subcomponents/NextDrawPill';
 
 const defaultLogsState = { loading: true, error: null, logs: [] };
 
@@ -143,12 +142,9 @@ export default function PotPage({ id }: { id: string }) {
       <GradientCard2 className="w-full mt-4 pb-4">
         <div>
           <div className="flex">
-            <DurationPill
-              text={
-                deadlinePassed
-                  ? "Awaiting payout"
-                  : `Next draw in: ${timeFromNow(Number(pot.deadline))}`
-              }
+            <NextDrawPill
+              deadlinePassed={deadlinePassed}
+              deadline={pot.deadline}
             />
           </div>
         </div>
@@ -182,11 +178,8 @@ export default function PotPage({ id }: { id: string }) {
           </p>
         </div>
 
-        {/* User contribution progress bar */}
-        <UserContributionProgressBar
-          pot={pot}
-          hasJoinedRound={hasJoinedRound ?? false}
-        />
+        {/* Pot progress bar */}
+        <PotProgressBar pot={pot} />
 
         <JoinPotButton
           style="blue"
@@ -239,7 +232,7 @@ export default function PotPage({ id }: { id: string }) {
           <p>Recent Activities</p>
         </div>
         <hr className="mt-2 border-gray-500" />
-        <RecentActivity logsState={logsState} pot={pot} />
+        <RecentActivity logsState={logsState} />
       </div>
     </div>
   );
