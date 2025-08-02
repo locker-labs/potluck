@@ -1,7 +1,9 @@
+// Dead code: This function is not used in the current codebase, but it can be useful as a fallback for future implementations.
+
 import { abi, contractAddress } from '@/config';
 import { publicClient } from '@/clients/viem';
 import type { TPot, TPotObject } from '../types';
-import { pad, formatUnits, hexToString, type Address } from 'viem';
+import { formatUnits, hexToString, type Address } from 'viem';
 import { keccak256, encodePacked } from 'viem';
 
 const periodSecondsMap = {
@@ -38,6 +40,7 @@ function getDeadlineString(deadline: bigint): string {
   return `${months}m`;
 }
 
+// Dead code
 export function potMapper(pot: TPot, participants: Address[]): TPotObject {
   return {
     id: pot[0],
@@ -63,6 +66,7 @@ export function potMapper(pot: TPot, participants: Address[]): TPotObject {
   };
 }
 
+// Dead code
 export async function fetchPot(potIdBigInt: bigint): Promise<TPot> {
   return (await publicClient.readContract({
     address: contractAddress,
@@ -72,6 +76,7 @@ export async function fetchPot(potIdBigInt: bigint): Promise<TPot> {
   })) as TPot;
 }
 
+// Dead code
 export async function getPotParticipants(potIdBigInt: bigint): Promise<Address[]> {
   return (await publicClient.readContract({
     address: contractAddress,
@@ -81,8 +86,7 @@ export async function getPotParticipants(potIdBigInt: bigint): Promise<Address[]
   })) as Address[];
 }
 
-export const emptyBytes32 = pad('0x', { size: 32 });
-
+// TODO: create a subgraph query to replace its usage
 export async function getHasJoinedRound(
   potIdBigInt: bigint,
   round: number,
@@ -98,6 +102,7 @@ export async function getHasJoinedRound(
   })) as boolean;
 }
 
+// TODO: create a subgraph query to replace its usage
 export async function getPlatformFee(): Promise<bigint> {
   return (await publicClient.readContract({
     address: contractAddress,
