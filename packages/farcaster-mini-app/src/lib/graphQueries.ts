@@ -101,6 +101,9 @@ const GET_POT_INFO_MINI = gql`
     pot(id: $potId) {
       id
       name
+      creator {
+        id
+      }
       entryAmount
       tokenAddress
       participants {
@@ -237,7 +240,7 @@ type RawPot = {
   participants: { user: { id: Address } }[];
 };
 
-type RawPotMini = Pick<RawPot, 'id' | 'name' | 'entryAmount' | 'tokenAddress' | 'participants'>;
+type RawPotMini = Pick<RawPot, 'id' | 'name' | 'creator' | 'entryAmount' | 'tokenAddress' | 'participants'>;
 
 type RawJoin = {
   round: { roundNumber: string };
@@ -337,6 +340,7 @@ async function mapRawPotToObjectMini(rp: RawPotMini): Promise<TPotObjectMini> {
   return {
     id: BigInt(rp.id),
     name: decodePotName(rp.name),
+    creator: rp.creator.id,
     totalPool,
   }
 }

@@ -23,7 +23,7 @@ export type TPotObject = {
   createdAt: Date;
 };
 
-export type TPotObjectMini = Pick<TPotObject, "id" | "name" | "totalPool">;
+export type TPotObjectMini = Pick<TPotObject, "id" | "name" | "creator" | "totalPool">;
 
 export const mockPotObject: TPotObject = {
   id: 1n,

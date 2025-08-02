@@ -4,12 +4,17 @@ import { ENotificationType } from '@/enums/notification';
 import { readContract } from 'viem/actions';
 import type { Address } from 'viem';
 import {
+    getFarcasterUsersByAddresses,
     getUserFidsByAddresses,
     getUserFidsByAddressesAndWinner,
     sendApprovalNotification,
     sendDepositReminderNotification,
-    sendInviteNotification
+    sendInviteNotification,
+    sendRequestNotification
 } from '@/lib/neynar';
+import {fetchPotMiniInfo} from "@/lib/graphQueries";
+import {TPotObjectMini} from "@/lib/types";
+import type {BulkUsersByAddressResponse, FUser} from "@/types/neynar";
 
 export async function sendReminderNotificationForPot(potId: bigint) {
     console.log(`Processing pot #${potId} for reminder notification`);
@@ -138,6 +143,83 @@ export async function sendApproveNotificationForPot(potId: bigint, addresses: Ad
     }
 }
 
+/**
+ * Sends a join request notification to the pot creator.
+ *
+ * @param potId - The ID of the pot to send the notification for
+ * @param addresses - Array of addresses. The first address is the requestor
+ *
+ * @returns Promise<void>
+ */
+export async function sendRequestNotificationForPot(potId: bigint, addresses: Address[]): Promise<void> {
+    console.log(`Processing pot #${potId} for request notification`);
+
+    // Check if the pot exists
+    const pot: TPotObjectMini = await fetchPotMiniInfo(potId);
+    if (!pot) {
+        console.warn(`No pot found for pot #${potId}. Skipping request notification.`);
+        return;
+    }
+
+    // list of addresses to fetch farcaster users
+    const addressList = [pot.creator];
+    let requesterUsername = 'Someone';
+    // target fids
+    const fids: number[] = [];
+
+    if (addresses.length > 0) {
+        // adding requestor to address list
+        addressList.push(addresses[0]);
+    }
+
+    try {
+        console.log('Fetching fids for addresses:', addressList);
+        const userMap: BulkUsersByAddressResponse = await getFarcasterUsersByAddresses(addressList.map(addr => addr.toLowerCase()));
+
+        // get creator fid
+        if (userMap?.[pot.creator.toLowerCase()]) {
+            const creator: FUser = userMap[pot.creator.toLowerCase()]?.[0];
+            if (creator) {
+                fids.push(creator.fid);
+            } else {
+                console.warn(`Fid not found for pot creator ${pot.creator.toLowerCase()}`);
+                return;
+            }
+        } else {
+            console.warn(`Fid not found for pot creator ${pot.creator.toLowerCase()}`);
+            return;
+        }
+
+        // get requestor name
+        if (addresses.length > 0) {
+            if (userMap?.[addresses[0].toLowerCase()]) {
+                const requestor: FUser = userMap[addresses[0].toLowerCase()]?.[0];
+                if (requestor) {
+                    requesterUsername = requestor.username;
+                }
+            }
+        }
+
+        console.log('Fetched fids:', fids);
+    } catch (error) {
+        console.error(`Error fetching FIDs for pot #${potId}:`, error);
+        return;
+    }
+
+    if (fids.length === 0) {
+        console.log(`No FIDs found for pot #${potId}. Skipping request notification.`);
+        return;
+    }
+
+    try {
+        console.log('Sending request notification...');
+        await sendRequestNotification({ potId: Number(potId), creatorFid: fids[0], requesterUsername, potName: pot.name });
+        console.log('Request notification sent successfully');
+    } catch (error) {
+        console.error(`Failed to send request notification for pot #${potId}:`, error);
+    }
+}
+
 export async function sendNotificationForPot(
   potId: bigint,
   addresses: Address[],
@@ -149,6 +231,9 @@ export async function sendNotificationForPot(
       break;
     case ENotificationType.APPROVE:
       await sendApproveNotificationForPot(potId, addresses);
+      break;
+    case ENotificationType.REQUEST:
+      await sendRequestNotificationForPot(potId, addresses);
       break;
     default:
       console.error(`Unsupported notification type: ${type}`);
