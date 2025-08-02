@@ -6,10 +6,14 @@ import type { TPot, TPotObject } from '../types';
 import { formatUnits, hexToString, type Address } from 'viem';
 import { keccak256, encodePacked } from 'viem';
 
-const periodSecondsMap = {
-  daily: BigInt(86400),
-  weekly: BigInt(604800),
-  monthly: BigInt(2592000),
+export const daySeconds = 86400; // 24 * 60 * 60
+export const weekDays = 7;
+export const monthDays = 30;
+
+export const periodSecondsMap = {
+  daily: BigInt(daySeconds),
+  weekly: BigInt(daySeconds * weekDays),
+  monthly: BigInt(daySeconds * monthDays),
 };
 
 function getPeriodInText(period: bigint): string {

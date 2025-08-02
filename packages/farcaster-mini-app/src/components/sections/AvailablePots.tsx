@@ -2,19 +2,13 @@ import { AvailablePotsCard } from "@/components/subcomponents/AvailablePotsCard"
 import { GradientButton2 } from "@/components/ui/Buttons";
 import { useJoinPot } from "@/hooks/useJoinPot";
 import { getAllPotObjects } from "@/lib/graphQueries";
+import { periodSecondsMap } from "@/lib/helpers/contract";
 import type { TPotObject } from "@/lib/types";
 import { Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRequestPot } from "@/hooks/useRequestPot";
 
 let _fetchPotsEffectFlag = true; // prevent multiple fetches
-
-// Helper to map period to seconds
-const periodSecondsMap = {
-	daily: BigInt(86400),
-	weekly: BigInt(604800),
-	monthly: BigInt(2592000),
-};
 
 export default function AvailablePots() {
 	const {
