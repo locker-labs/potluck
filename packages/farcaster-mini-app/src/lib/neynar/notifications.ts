@@ -106,7 +106,7 @@ export async function sendRequestNotification({ potId, potName, requesterUsernam
         });
         return response;
     } catch (error) {
-        console.error("Failed to send invite notification:", error);
+        console.error("Failed to send request notification:", error);
         throw error;
     }
 }
