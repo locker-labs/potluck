@@ -108,13 +108,7 @@ contract Potluck is Ownable {
         if (entryAmount == 0) revert EntryAmountZero();
         if (periodSeconds < 1 hours) revert PeriodTooShort();
 
-        // 1) Collect the fixed fee to treasury
-        IERC20(token).safeTransferFrom(msg.sender, treasury, platformFee);
-
-        // 2) Collect the stake for the pot
-        IERC20(token).safeTransferFrom(msg.sender, address(this), entryAmount);
-
-        // 3) Initialize the pot
+        // Initialize the pot
         uint256 potId = potCount++;
         Pot storage p = pots[potId];
         p.id = potId;
@@ -137,6 +131,11 @@ contract Potluck is Ownable {
         // mark joined in round 0
         bytes32 key = keccak256(abi.encodePacked(potId, uint32(0), msg.sender));
         hasJoinedRound[key] = true;
+
+        //  Collect the fixed fee to treasury
+        IERC20(token).safeTransferFrom(msg.sender, treasury, platformFee);
+        //  Collect the stake for the pot
+        IERC20(token).safeTransferFrom(msg.sender, address(this), entryAmount);
 
         emit PotCreated(potId, msg.sender);
         emit PotJoined(potId, 0, msg.sender);
@@ -230,7 +229,6 @@ contract Potluck is Ownable {
         if (winner == address(0)) revert NoEligibleParticipants();
 
         hasWon[keccak256(abi.encodePacked(potId, winner))] = true;
-        IERC20(p.token).safeTransfer(winner, prize);
 
         uint32 nextRound = ++p.round;
         emit PotPayout(potId, winner, prize, nextRound - 1);
@@ -238,19 +236,18 @@ contract Potluck is Ownable {
         if (isLast) {
             // pot complete
             p.balance = 0;
-            return;
+        } else {
+            p.balance = rollover;
+            delete p.participants;
+
+            // auto-reenter the winner
+            p.participants.push(winner);
+            hasJoinedRound[keccak256(abi.encodePacked(potId, nextRound, winner))] = true;
+            emit PotJoined(potId, nextRound, winner);
+
+            p.deadline = block.timestamp + p.period;
         }
-
-        // roll over one entry
-        p.balance = rollover;
-        delete p.participants;
-
-        // auto-reenter the winner
-        p.participants.push(winner);
-        hasJoinedRound[keccak256(abi.encodePacked(potId, nextRound, winner))] = true;
-        emit PotJoined(potId, nextRound, winner);
-
-        p.deadline = block.timestamp + p.period;
+        IERC20(p.token).safeTransfer(winner, prize);
     }
 
     function endPot(uint256 potId) public {
@@ -263,8 +260,10 @@ contract Potluck is Ownable {
             }
         }
         p.balance = 0;
+        address token = p.token;
+        uint256 entryAmount = p.entryAmount;
         for (uint256 i = 0; i < p.participants.length; i++) {
-            IERC20(p.token).safeTransfer(p.participants[i], p.entryAmount);
+            IERC20(token).safeTransfer(p.participants[i], entryAmount);
         }
         emit PotEnded(potId);
     }
@@ -284,11 +283,12 @@ contract Potluck is Ownable {
         bytes32 key = keccak256(abi.encodePacked(potId, p.round, participant));
         if (hasJoinedRound[key]) revert AlreadyJoined(potId, p.round, participant);
 
-        IERC20(p.token).safeTransferFrom(participant, address(this), p.entryAmount);
         p.balance += p.entryAmount;
         p.participants.push(participant);
 
         hasJoinedRound[key] = true;
+        IERC20(p.token).safeTransferFrom(participant, address(this), p.entryAmount);
+
         emit PotJoined(potId, p.round, participant);
     }
 
@@ -319,6 +319,7 @@ contract Potluck is Ownable {
     }
 
     function setTreasury(address newTreasury) external onlyOwner {
+        require(newTreasury != address(0), "Invalid treasury address");
         treasury = newTreasury;
     }
 
