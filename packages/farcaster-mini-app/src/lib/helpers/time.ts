@@ -43,7 +43,7 @@ function getTimeFromNow(secondsSinceEpoch: number, periodFormat?: 'days' | 'week
           parts.push(`${months}mo`);
         }
         if (days > 0) {
-          const daysLeft = Math.floor(days % monthDays);
+          const daysLeft = Math.floor(days - months * monthDays);
           if (daysLeft > 0) {
             parts.push(`${daysLeft}d`);
           }
@@ -55,7 +55,7 @@ function getTimeFromNow(secondsSinceEpoch: number, periodFormat?: 'days' | 'week
           parts.push(`${weeks}w`);
         }
         if (days > 0) {
-          const daysLeft = Math.floor(days % weekDays);
+          const daysLeft = Math.floor(days - weeks * weekDays);
           if (daysLeft > 0) {
             parts.push(`${daysLeft}d`);
           }
