@@ -1,5 +1,3 @@
-'use client'
-
 import type { ReactNode } from 'react';
 import '@/app/globals.css';
 import { Providers } from '@/app/providers';
