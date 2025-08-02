@@ -5,11 +5,17 @@ import { useAccount } from 'wagmi';
 import YourPots from '@/components/sections/YourPots';
 import AvailablePots from '@/components/sections/AvailablePots';
 import Hero from '@/components/sections/Hero';
+import { motion } from 'motion/react';
+import { animate, initialUp, transition } from "@/lib/pageTransition";
 
 export default function HomePage() {
   const { isConnected, address } = useAccount();
   return (
-    <div>
+    <motion.div
+        initial={initialUp}
+        animate={animate}
+        transition={transition}
+    >
       <AnimatePresence>
         {isConnected && !!address ? <YourPots /> : null}
       </AnimatePresence>
@@ -19,6 +25,6 @@ export default function HomePage() {
         <div className={'px-4'}>
           <AvailablePots />
         </div>
-      </div>
+      </motion.div>
   );
 }

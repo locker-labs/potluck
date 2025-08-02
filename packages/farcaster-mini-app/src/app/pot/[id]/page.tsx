@@ -36,5 +36,5 @@ export default async function Page({ params }: Props) {
 	const { id } = await params;
 	if (!id) return null;
 
-	return <PotPage id={id} />;
+	return <div id={'pot-page'} className={'page-transition'}><PotPage id={id} /></div>;
 }

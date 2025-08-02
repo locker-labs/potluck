@@ -1,3 +1,5 @@
+'use client'
+
 import type { ReactNode } from 'react';
 import '@/app/globals.css';
 import { Providers } from '@/app/providers';
@@ -14,7 +16,9 @@ export default function RootLayout({
     <html lang='en' className={font.className}>
       <body className='antialiased font-sans'>
         <Providers>
-          <AppLayout>{children}</AppLayout>
+          <AppLayout>
+            {children}
+          </AppLayout>
           <Toaster position='bottom-right' />
         </Providers>
       </body>

@@ -20,6 +20,8 @@ import { useUserPotJoinInfo } from '@/hooks/useUserPotJoinInfo';
 import type { Address } from 'viem';
 import { PotProgressBar } from '../subcomponents/PotProgressBar';
 import { NextDrawPill } from '../subcomponents/NextDrawPill';
+import { motion } from "motion/react";
+import { animate, initialUp, transition } from "@/lib/pageTransition";
 
 const defaultLogsState = { loading: true, error: null, logs: [] };
 
@@ -116,7 +118,12 @@ export default function PotPage({ id }: { id: string }) {
 
   // 2️⃣ Main content
   return (
-    <div className={'px-4'}>
+    <motion.div
+      className={'px-4'}
+      initial={initialUp}
+      animate={animate}
+      transition={transition}
+    >
       <div className="w-full flex items-center justify-between gap-4 mb-8">
         <div className="flex items-cener justify-center gap-4">
           <GradientButton3
@@ -235,6 +242,6 @@ export default function PotPage({ id }: { id: string }) {
         <hr className="mt-2 border-gray-500" />
         <RecentActivity logsState={logsState} />
       </div>
-    </div>
+    </motion.div>
   );
 }

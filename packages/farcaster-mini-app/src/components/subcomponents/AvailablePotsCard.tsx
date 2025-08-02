@@ -2,11 +2,11 @@ import type { TPotObject } from "@/lib/types";
 import type { Address } from "viem";
 import { Clock5, UsersRound } from "lucide-react";
 import { GradientCard } from "@/components/ui/GradientCard";
-import Link from "next/link";
 import { useAccount } from "wagmi";
 import { JoinPotButton } from "@/components/buttons/JoinPotButton";
 import { useUserPotRequestInfo } from "@/hooks/useUserPotRequestInfo";
 import { useUserPotJoinInfo } from "@/hooks/useUserPotJoinInfo";
+import { TransitionLink } from "@/components/TransitionLink";
 
 export function AvailablePotsCard({
 	pot,
@@ -55,7 +55,7 @@ export function AvailablePotsCard({
 
 	return (
 		<GradientCard key={pot.id} className="py-5">
-			<Link
+			<TransitionLink
 				href={`/pot/${pot.id}`}
 				className="h-full flex flex-col justify-between"
 			>
@@ -123,7 +123,7 @@ export function AvailablePotsCard({
 						handleRequest={handleRequest}
 					/>
 				</div>
-			</Link>
+			</TransitionLink>
 		</GradientCard>
 	);
 }

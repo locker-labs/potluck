@@ -19,6 +19,7 @@ import { formatUnits } from 'viem';
 import { z } from 'zod';
 import { MAX_PARTICIPANTS } from '@/config';
 import { AnimatePresence, motion } from 'motion/react';
+import { initialUp, transition, animate } from "@/lib/pageTransition";
 
 const emojis = ["🎯", "🏆", "🔥", "🚀", "💪", "⚡", "🎬", "🎓", "🍕", "☕"];
 
@@ -174,7 +175,12 @@ export default function CreatePotPage() {
   const totalAmountUsdc: string = formatUnits(amountBigInt + (fee ?? 0n), 6);
 
   return (
-    <div className={'px-4'}>
+      <motion.div
+          className={'px-4'}
+          initial={initialUp}
+          animate={animate}
+          transition={transition}
+      >
       <div>
         <div className="w-full flex items-center justify-start gap-4 mb-8">
           <GradientButton3 onClick={() => router.push("/")} className="text-sm">
@@ -552,6 +558,6 @@ export default function CreatePotPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </motion.div>
   );
 }
