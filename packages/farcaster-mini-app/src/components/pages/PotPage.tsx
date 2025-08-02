@@ -115,7 +115,7 @@ export default function PotPage({ id }: { id: string }) {
 
   // 2️⃣ Main content
   return (
-    <div>
+    <div className={'px-4'}>
       <div className="w-full flex items-center justify-between gap-4 mb-8">
         <div className="flex items-cener justify-center gap-4">
           <GradientButton3

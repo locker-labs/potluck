@@ -13,8 +13,12 @@ export default function HomePage() {
       <AnimatePresence>
         {isConnected && !!address ? <YourPots /> : null}
       </AnimatePresence>
-      <Hero />
-      <AvailablePots />
-    </div>
+        <div className={'px-4'}>
+          <Hero />
+        </div>
+        <div className={'px-4'}>
+          <AvailablePots />
+        </div>
+      </div>
   );
 }

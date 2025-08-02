@@ -175,7 +175,7 @@ export default function CreatePotPage() {
   const totalAmountUsdc: string = formatUnits(amountBigInt + (fee ?? 0n), 6);
 
   return (
-    <div>
+    <div className={'px-4'}>
       <div>
         <div className="w-full flex items-center justify-start gap-4 mb-8">
           <GradientButton3 onClick={() => router.push("/")} className="text-sm">
