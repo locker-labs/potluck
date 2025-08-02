@@ -117,6 +117,7 @@ export function JoinPotButton({
 
 	const onClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
 		e.preventDefault();
+		e.stopPropagation();
 		if (isPublic || isAllowed) {
 			await handleJoinPot(pot);
 		} else if (!hasRequested) {
