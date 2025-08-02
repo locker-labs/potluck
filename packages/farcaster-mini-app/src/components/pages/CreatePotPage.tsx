@@ -94,7 +94,6 @@ export default function CreatePotPage() {
     hash,
     fee,
     feeUsdc,
-    tokenBalance,
   } = useCreatePot();
   const { handleCopyLink } = useCopyInviteLink({ potId: potId });
   const { handleCastOnFarcaster } = useCreateCast({
