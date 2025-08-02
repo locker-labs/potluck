@@ -343,7 +343,7 @@ export default function CreatePotPage() {
                     duration: 0.1,
                   }}
                 >
-                  Anyone can join this pot
+                  Anyone can join
                 </motion.p>
               ) : (
                 <motion.p
@@ -359,7 +359,7 @@ export default function CreatePotPage() {
                     duration: 0.1,
                   }}
                 >
-                  Only approved participants can join this pot
+                  Only approved participants can join
                 </motion.p>
               )}
             </AnimatePresence>
