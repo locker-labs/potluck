@@ -29,6 +29,12 @@ const timePeriods = [
   { value: BigInt(2592000), label: "Monthly" },
 ];
 
+const modes = [
+  // value is for isPublic boolean
+  { value: true, label: "Public" },
+  { value: false, label: "Private" },
+];
+
 // Zod schema for form validation
 const createPotSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -58,11 +64,11 @@ const createPotSchema = z.object({
         !Number.isNaN(Number(val)) &&
         Number(val) <= MAX_PARTICIPANTS,
       {
-        message: `Participants must be less than ${MAX_PARTICIPANTS + 1}`,
+        message: `Members cannot be more than ${MAX_PARTICIPANTS}`,
       }
     )
     .refine((val) => val !== "" && /^\d+$/.test(val) && Number(val) >= 2, {
-      message: "Participants must be atleast 2",
+      message: "Members must be atleast 2",
     }),
   emoji: z.string().min(1, "Emoji is required"),
   timePeriod: z.bigint(),
@@ -182,7 +188,7 @@ export default function CreatePotPage() {
           transition={transition}
       >
       <div>
-        <div className="w-full flex items-center justify-start gap-4 mb-8">
+        <div className="w-full flex items-center justify-start gap-4 mb-6">
           <GradientButton3 onClick={() => router.push("/")} className="text-sm">
             <MoveLeft size={20} />
           </GradientButton3>
@@ -194,16 +200,20 @@ export default function CreatePotPage() {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-2.5">
+        <form onSubmit={handleSubmit} className='space-y-5'>
           {/* Name */}
           <div>
             <label
               htmlFor="pot-name"
-              className="block text-base font-bold mb-2.5"
+              className="block text-base font-bold"
             >
-              Pot Name
+              Pot Name {" "}
+              {/* <br /> */}
+              <span className="font-medium text-xs text-gray-500">I want to save for...</span>
             </label>
+            
             <Input
+              className='mt-2'
               id="pot-name"
               name="pot-name"
               type="text"
@@ -216,17 +226,18 @@ export default function CreatePotPage() {
             />
             <p
               className={`text-xs text-red-500 mt-1 ${
-                errors.name ? "visible" : "invisible"
+                errors.name ? "visible" : "hidden"
               }`}
             >{`${errors.name}`}</p>
           </div>
+
           {/* Choose Emoji */}
           <div>
             <label
               htmlFor="choose-emoji"
               className="block text-base font-bold mb-2.5"
             >
-              Choose Emoji
+              Add Some Spark
             </label>
             <div className="grid grid-cols-5 gap-2">
               {emojis.map((emojiOption) => (
@@ -245,165 +256,7 @@ export default function CreatePotPage() {
               ))}
             </div>
           </div>
-          {/* Entry Amount */}
-          <div>
-            <label
-              htmlFor="enrty-amount"
-              className="block text-base font-bold mb-2.5"
-            >
-              Individual Contribution Amount
-            </label>
-            <Input
-              id="enrty-amount"
-              type="number"
-              value={amount}
-              onChange={(e) => {
-                // Prevent negative values
-                const value = e.target.value;
-                // Only allow up to two decimal places
-                if (
-                  value === "" ||
-                  (/^\d*(\.\d{0,2})?$/.test(value) &&
-                    Number.parseFloat(value) >= 0)
-                ) {
-                  setAmount(value);
-                  if (clickedSubmit) validate({ amount: value });
-                }
-              }}
-              onKeyDown={(e) => {
-                // Prevent typing minus sign
-                if (e.key === "-" || e.key === "e") {
-                  e.preventDefault();
-                }
-              }}
-              placeholder="0.00"
-              className="w-full"
-            />
-            <p
-              className={`text-xs text-red-500 mt-1 ${
-                errors.amount ? "visible" : "invisible"
-              }`}
-            >{`${errors.amount}`}</p>
-          </div>
-          {/* Participation Type */}
-          <div>
-            <div className="flex items-center justify-between">
-              <p className="block text-base font-bold">Participation</p>
-              <div className="flex items-center gap-4">
-                {/* “Invite-Only” label */}
-                <span
-                  className={`w-[40px] text-right leading-none transition-all duration-250 ${
-                    isPublic
-                      ? "text-white font-medium text-sm"
-                      : "text-gray-400 font-normal text-xs pr-[0.75px]"
-                  }`}
-                >
-                  Public
-                </span>
 
-                {/* The actual switch */}
-                <label className="relative inline-block w-14 h-7 cursor-pointer">
-                  {/* hidden checkbox peer */}
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    checked={!isPublic}
-                    onChange={() => setIsPublic(!isPublic)}
-                  />
-                  {/* track */}
-                  <span className="absolute inset-0 bg-gray-700 rounded-full peer-checked:bg-app-cyan transition-colors" />
-                  {/* knob */}
-                  <span className="absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow transition-all peer-checked:left-8" />
-                </label>
-
-                {/* “Open” label */}
-                <span
-                  className={`w-[44px] leading-none transition-all duration-250 ${
-                    !isPublic
-                      ? "text-white font-medium text-sm"
-                      : "text-gray-400 font-normal text-xs"
-                  }`}
-                >
-                  Private
-                </span>
-              </div>
-            </div>
-            <AnimatePresence mode="popLayout">
-              {isPublic ? (
-                <motion.p
-                  key={"participation-public"}
-                  className="text-xs text-gray-500 pb-2.5"
-                  initial={{ x: 40, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  exit={{ x: 40, opacity: 0 }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 400,
-                    damping: 30,
-                    duration: 0.1,
-                  }}
-                >
-                  Anyone can join
-                </motion.p>
-              ) : (
-                <motion.p
-                  key={"participation-private"}
-                  className="text-xs text-gray-500 pb-2.5"
-                  initial={{ x: -40, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  exit={{ x: -40, opacity: 0 }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 400,
-                    damping: 30,
-                    duration: 0.1,
-                  }}
-                >
-                  Only approved participants can join
-                </motion.p>
-              )}
-            </AnimatePresence>
-          </div>
-          {/* Max Participants */}
-          <div>
-            <label
-              htmlFor="max-participants"
-              className="block text-base font-bold mb-2.5"
-            >
-              Max Participants
-            </label>
-            <Input
-              id="max-participants"
-              type="number"
-              min="1"
-              step="1"
-              value={maxParticipants}
-              onChange={(e) => {
-                // Only allow whole numbers >= 1
-                const value = e.target.value;
-                if (
-                  value === "" ||
-                  (/^\d+$/.test(value) && Number.parseInt(value, 10) >= 1)
-                ) {
-                  setMaxParticipants(value);
-                  if (clickedSubmit) validate({ maxParticipants: value });
-                }
-              }}
-              onKeyDown={(e) => {
-                // Prevent typing minus sign, decimal, or e
-                if (e.key === "-" || e.key === "." || e.key === "e") {
-                  e.preventDefault();
-                }
-              }}
-              placeholder="e.g. 10"
-              className="w-full"
-            />
-            <p
-              className={`text-xs text-red-500 mt-1 ${
-                errors.maxParticipants ? "visible" : "invisible"
-              }`}
-            >{`${errors.maxParticipants}`}</p>
-          </div>
           {/* Choose Time Period */}
           <div>
             <label
@@ -429,14 +282,203 @@ export default function CreatePotPage() {
               ))}
             </div>
           </div>
+
+          {/* Entry Amount */}
+          <div>
+            <label
+              htmlFor="enrty-amount"
+              className="block text-base font-bold mb-2.5"
+            >
+              Amount
+            </label>
+            <Input
+              id="enrty-amount"
+              type="number"
+              value={amount}
+              onChange={(e) => {
+                // Prevent negative values
+                const value = e.target.value;
+                // Only allow up to two decimal places
+                if (
+                  value === "" ||
+                  (/^\d*(\.\d{0,2})?$/.test(value) &&
+                    Number.parseFloat(value) >= 0)
+                ) {
+                  setAmount(value);
+                  if (clickedSubmit) validate({ amount: value });
+                }
+              }}
+              onKeyDown={(e) => {
+                // Prevent typing minus sign
+                if (e.key === "-" || e.key === "e") {
+                  e.preventDefault();
+                }
+              }}
+              placeholder="20"
+              className="w-full"
+            />
+            <p
+              className={`text-xs text-red-500 mt-1 ${
+                errors.amount ? "visible" : "hidden"
+              }`}
+            >{`${errors.amount}`}</p>
+          </div>
+
+          {/* Participation Type */}
+          <div>
+            <label
+              htmlFor="participation-type"
+              className="block text-base font-bold"
+            >
+              Join Mode
+            </label>
+            <AnimatePresence mode="popLayout">
+              {isPublic ? (
+                <motion.p
+                  key={"participation-public"}
+                  className="text-xs text-gray-500"
+                  initial={{ x: 40, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: 40, opacity: 0 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 400,
+                    damping: 30,
+                    duration: 0.1,
+                  }}
+                >
+                  Anyone can join
+                </motion.p>
+              ) : (
+                <motion.p
+                  key={"participation-private"}
+                  className="text-xs text-gray-500"
+                  initial={{ x: -40, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: -40, opacity: 0 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 400,
+                    damping: 30,
+                    duration: 0.1,
+                  }}
+                >
+                  Only approved participants can join
+                </motion.p>
+              )}
+            </AnimatePresence>
+            <div className="mt-2.5 grid grid-cols-2 gap-2.5">
+              {modes.map((mode) => (
+                <button
+                  key={`${mode.label}-${mode.value}`}
+                  type="button"
+                  className={`w-full p-2 flex items-center justify-center text-base font-bold rounded-lg transition-colors outline ${
+                    mode.value === isPublic
+                      ? "bg-app-cyan/20 outline-2 outline-app-cyan"
+                      : "bg-app-dark outline-1 outline-app-light"
+                  }`}
+                  onClick={() => setIsPublic(mode.value)}
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+
+          {/* Commented out for previewing buttons */}
+          {/* Participation Type */}
+          {/* <div className='mt-5'>
+            <div className="flex items-center justify-between">
+              <p className="block text-base font-bold">Participation</p>
+              <div className="flex items-center gap-4">
+                <span
+                  className={`w-[40px] text-right leading-none transition-all duration-250 ${
+                    isPublic
+                      ? "text-white font-medium text-sm"
+                      : "text-gray-400 font-normal text-xs pr-[0.75px]"
+                  }`}
+                >
+                  Public
+                </span>
+
+                <label className="relative inline-block w-14 h-7 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={!isPublic}
+                    onChange={() => setIsPublic(!isPublic)}
+                  />
+                  <span className="absolute inset-0 bg-gray-700 rounded-full peer-checked:bg-app-cyan transition-colors" />
+                  <span className="absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow transition-all peer-checked:left-8" />
+                </label>
+
+                <span
+                  className={`w-[44px] leading-none transition-all duration-250 ${
+                    !isPublic
+                      ? "text-white font-medium text-sm"
+                      : "text-gray-400 font-normal text-xs"
+                  }`}
+                >
+                  Private
+                </span>
+              </div>
+            </div>
+          </div> */}
+
+
+
+          {/* Max Participants */}
+          <div>
+            <label
+              htmlFor="max-participants"
+              className="block text-base font-bold"
+            >
+              Max Members
+            </label>
+            <p className="font-medium text-xs text-gray-500">Total rounds will be same as number of members</p>
+            <Input
+              id="max-participants"
+              type="number"
+              min="1"
+              step="1"
+              value={maxParticipants}
+              onChange={(e) => {
+                // Only allow whole numbers >= 1
+                const value = e.target.value;
+                if (
+                  value === "" ||
+                  (/^\d+$/.test(value) && Number.parseInt(value, 10) >= 1)
+                ) {
+                  setMaxParticipants(value);
+                  if (clickedSubmit) validate({ maxParticipants: value });
+                }
+              }}
+              onKeyDown={(e) => {
+                // Prevent typing minus sign, decimal, or e
+                if (e.key === "-" || e.key === "." || e.key === "e") {
+                  e.preventDefault();
+                }
+              }}
+              placeholder="e.g. 10"
+              className="w-full mt-2"
+            />
+            <p
+              className={`text-xs text-red-500 mt-1 ${
+                errors.maxParticipants ? "visible" : "hidden"
+              }`}
+            >{`${errors.maxParticipants}`}</p>
+          </div>
+          
+          {/* Payment Summary */}
           <div className="border border-gray-700 rounded-[12px] px-3 pt-4">
             <div>
-              <p className="block text-base font-bold mb-2.5">
+              <p className="block text-base font-bold mb-2">
                 Payment Summary
               </p>
 
               <div className="mb-2 mt-5 w-full flex items-start justify-between">
-                <p className="text-sm font-normal">Participation Amount:</p>
+                <p className="text-sm font-normal">Join Amount:</p>
                 <p className="text-sm font-normal">{amountUsdc} USDC</p>
               </div>
 
@@ -461,12 +503,13 @@ export default function CreatePotPage() {
                   height={32}
                 />
                 <p className="w-full text-left text-xs font-normal text-[#FFB300]">
-                  You will be asked to confirm a wallet transaction. Please
-                  ensure you have enough funds available.
+                  You will be asked to approve tokens for all rounds and to confirm a wallet transaction.
                 </p>
               </div>
             </div>
           </div>
+
+          {/* Submit button */}
           <GradientButton type="submit" className="w-full" disabled={disabled}>
             <span className={"flex items-center justify-center gap-2"}>
               <span>{isLoading ? "Loading" : "Create"}</span>

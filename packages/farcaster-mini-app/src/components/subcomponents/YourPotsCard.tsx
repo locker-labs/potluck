@@ -82,7 +82,7 @@ export function YourPotCard({
 	return (
 		<GradientCard2
 			key={pot.id}
-			className={`min-w-[315px] max-w-full pt-[12px] px-[12px] pb-[12px] ${className}`}
+			className={`min-w-[315px] max-w-full p-[12px] ${className}`}
 		>
 			<div className={"flex justify-end"}>
 				<NextDrawPill

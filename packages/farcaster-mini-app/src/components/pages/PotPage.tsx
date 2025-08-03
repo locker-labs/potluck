@@ -124,7 +124,7 @@ export default function PotPage({ id }: { id: string }) {
       animate={animate}
       transition={transition}
     >
-      <div className="w-full flex items-center justify-between gap-4 mb-8">
+      <div className="w-full flex items-center justify-between gap-4 mb-4">
         <div className="flex items-cener justify-center gap-4">
           <GradientButton3
             onClick={() => router.push("/")}
@@ -147,7 +147,7 @@ export default function PotPage({ id }: { id: string }) {
       </div>
 
       {/*  TODO: Create a reusable component  */}
-      <GradientCard2 className="w-full mt-4 pb-4">
+      <GradientCard2 className="w-full">
         <div>
           <div className="flex">
             <NextDrawPill
@@ -232,7 +232,7 @@ export default function PotPage({ id }: { id: string }) {
           <p className="text-sm">Total Won</p>
         </div>
       </div>
-      {showRequests && <JoinRequests potId={pot.id} />}
+      {showRequests && <div className='mt-4'><JoinRequests potId={pot.id} /></div>}
 
       <div className="mt-4 border border-gray-500 pt-6 rounded-xl">
         <div className="flex items-center gap-2 px-4">
