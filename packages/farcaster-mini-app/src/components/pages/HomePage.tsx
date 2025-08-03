@@ -22,7 +22,7 @@ export default function HomePage() {
         <div className={'px-4'}>
           <Hero />
         </div>
-        <div className={'px-4'}>
+        <div className={'mt-6 px-4'}>
           <AvailablePots />
         </div>
       </motion.div>

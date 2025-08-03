@@ -34,6 +34,8 @@ interface GradientButton2Props extends ButtonHTMLAttributes<HTMLButtonElement> {
   isLoading?: boolean;
 }
 
+
+
 export function GradientButton2({
   children,
   isLoading = false,
@@ -44,11 +46,22 @@ export function GradientButton2({
   return (
     <SimpleButton
       isLoading={isLoading}
-      className={`text-white px-[16px]
+      className={`px-[16px]
         ${
           isActive
-            ? 'bg-gradient-to-r from-app-cyan to-[#a756f2] hover:from-app-cyan hover:to-[#a756f2]'
-            : 'border-[1.75px] border-[#9ca3ae] bg-[#1f2936]'
+          ? 'text-white'
+          : 'text-white/60 hover:text-white/90'
+        }
+        ${
+          isActive
+          ? 'bg-gradient-to-r from-app-cyan to-[#a756f2]'
+          : 'bg-[#1f2936]'
+        }
+        ring-inset ring-2
+        ${
+          isActive
+          ? 'ring-transparent'
+          : ' ring-[#9ca3ae] hover:ring-[#a756f2]'
         }
       disabled:text-gray-100
       shadow-md ${className}`}
@@ -56,6 +69,49 @@ export function GradientButton2({
     >
       {children}
     </SimpleButton>
+  );
+}
+
+export function GradientTransitionButton2({
+  children,
+  isLoading = false,
+  className = '',
+  isActive = false,
+  ...props
+}: GradientButton2Props) {
+  return (
+    // gradient div set as background of button
+    <div className={`m-0 p-0 flex items-center justify-center rounded-full
+        transition-all duration-300 ease-in
+        bg-gradient-to-r from-app-cyan to-[#a756f2]`}
+    >
+    <SimpleButton
+      isLoading={isLoading}
+      className={`px-[16px]
+        ${
+          isActive
+            ? 'text-white'
+            : 'text-white/60 hover:text-white/90'
+        }
+        bg-[#1f2936]
+        ${
+          isActive
+            ? 'bg-opacity-0'
+            : 'bg-opacity-100'
+        }
+        ring-inset ring-2
+        ${
+          isActive
+            ? 'ring-transparent'
+            : ' ring-[#9ca3ae] hover:ring-[#a756f2]'
+        }
+      disabled:text-gray-100
+      shadow-md ${className}`}
+      {...props}
+    >
+      {children}
+    </SimpleButton>
+    </div>
   );
 }
 
