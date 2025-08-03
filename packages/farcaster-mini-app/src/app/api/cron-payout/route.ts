@@ -44,6 +44,8 @@ function potArrayToObject(potArray: any): PotObject {
 
 async function toEndPot(potId: number) {
   try {
+    console.log(`Checking if pot #${potId} is eligible for ending`);
+    await new Promise((resolve) => setTimeout(resolve, 100));
     await publicClient.simulateContract({
       address: contractAddress,
       abi: potluckAbi,
@@ -66,9 +68,9 @@ interface PotState {
 }
 
 // pot id to state mapping
-const potStateCache = new Map<number, PotState>();
-const ONE_HOUR_MS = 60 * 60 * 1000;
-let potCacheTimestamp = Date.now();
+// const potStateCache = new Map<number, PotState>();
+// const ONE_HOUR_MS = 60 * 60 * 1000;
+// let potCacheTimestamp = Date.now();
 
 // clients
 const publicClient = createPublicClient({
@@ -83,11 +85,11 @@ const walletClient = createWalletClient({
 });
 
 export async function GET() {
-  if (Date.now() - potCacheTimestamp > ONE_HOUR_MS) {
-    potStateCache.clear();
-    potCacheTimestamp = Date.now();
-    console.log("🔔 Pot state cache cleared after one hour");
-  }
+  // if (Date.now() - potCacheTimestamp > ONE_HOUR_MS) {
+  //   potStateCache.clear();
+  //   potCacheTimestamp = Date.now();
+  //   console.log("🔔 Pot state cache cleared after one hour");
+  // }
    try {
      const potCount = Number(
        await readContract(publicClient, {
@@ -104,18 +106,20 @@ export async function GET() {
      // 1) Find all eligible pots
      for (let i = 0; i < potCount; i++) {
        // i is pot id
-       if (potStateCache.has(i)) {
-         const potState = potStateCache.get(i);
-         if (potState && now >= potState.deadline && potState.balance > 0n) {
-           const toEnd = await toEndPot(i);
-           if (toEnd) {
-             eligibleEndPots.push(BigInt(i));
-           } else {
-             eligiblePayoutPots.push(BigInt(i));
-           }
-         }
-         continue;
-       }
+
+      // // Check if pot state is cached
+      //  if (potStateCache.has(i)) {
+      //    const potState = potStateCache.get(i);
+      //    if (potState && now >= potState.deadline && potState.balance > 0n) {
+      //      const toEnd = await toEndPot(i);
+      //      if (toEnd) {
+      //        eligibleEndPots.push(BigInt(i));
+      //      } else {
+      //        eligiblePayoutPots.push(BigInt(i));
+      //      }
+      //    }
+      //    continue;
+      //  }
 
        const p = await readContract(publicClient, {
          address: contractAddress,
@@ -136,17 +140,21 @@ export async function GET() {
        }
      }
 
+     console.log("Payout pots:", eligiblePayoutPots);
+     console.log("End pots:", eligibleEndPots);
+
      // ToDo: Add batching for more than n (maybe 10/100) pots
      if (eligiblePayoutPots.length > 0) {
+      console.log(
+         `🔔 triggering batch payout for ${eligiblePayoutPots.length} pots`
+       );
        const txHash = await writeContract(walletClient, {
          address: contractAddress,
          abi: potluckAbi,
          functionName: "triggerBatchPayout",
          args: [eligiblePayoutPots],
        });
-       console.log(
-         `🔔 triggering batch payout for ${eligiblePayoutPots.length} pots`
-       );
+       console.log('triggerBatchPayout txHash', txHash);
        await waitForTransactionReceipt(publicClient, { hash: txHash });
 
        // send new round reminder + winner announcement notifications to pot participants
@@ -155,15 +163,16 @@ export async function GET() {
        }
      }
      if (eligibleEndPots.length > 0) {
+       console.log(
+         `🔔 triggering endBatch for ${eligibleEndPots.length} pots`
+       );
        const txHash = await writeContract(walletClient, {
          address: contractAddress,
          abi: potluckAbi,
          functionName: "endBatch",
          args: [eligibleEndPots],
        });
-       console.log(
-         `🔔 triggering batch end for ${eligibleEndPots.length} pots`
-       );
+       console.log('endBatch txHash', txHash);
        await waitForTransactionReceipt(publicClient, { hash: txHash });
      }
      return NextResponse.json({
