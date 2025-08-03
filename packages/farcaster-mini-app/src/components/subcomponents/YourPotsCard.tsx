@@ -1,4 +1,3 @@
-import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import type { TPotObject } from "@/lib/types";
 import type { Address } from "viem";
@@ -7,6 +6,7 @@ import { BorderButton, GradientButton4 } from "../ui/Buttons";
 import { GradientCard2 } from "../ui/GradientCard";
 import { NextDrawPill } from "./NextDrawPill";
 import { PotProgressBar } from "./PotProgressBar";
+import { TransitionLink } from "@/components/TransitionLink";
 
 export function YourPotCard({
 	pot,
@@ -25,7 +25,6 @@ export function YourPotCard({
 	className?: string;
 	tokenBalance: bigint | undefined;
 }) {
-	const router = useRouter();
 	const [hasJoinedRound, setHasJoinedRound] = useState<boolean>(
 		pot.participants.includes(address),
 	);
@@ -80,18 +79,10 @@ export function YourPotCard({
 		handleJoinPot(pot);
 	};
 
-	const onClickViewDetails = (
-		e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
-	) => {
-		e.stopPropagation();
-		e.preventDefault();
-		router.push(`/pot/${pot.id}`);
-	};
-
 	return (
 		<GradientCard2
 			key={pot.id}
-			className={`min-w-[315px] max-w-full pt-[12px] px-[12px] pb-[12px] ${className}`}
+			className={`min-w-[315px] max-w-full p-[12px] ${className}`}
 		>
 			<div className={"flex justify-end"}>
 				<NextDrawPill
@@ -141,13 +132,14 @@ export function YourPotCard({
 			{/* Buttons */}
 			<div className={"w-full mt-[14px] grid grid-cols-2 gap-4"}>
 				{/* View Details Button */}
+				<TransitionLink href={`/pot/${pot.id}`}>
 				<BorderButton
 					type="button"
-					onClick={onClickViewDetails}
 					className="h-[30px] max-w-min min-w-[87px] whitespace-nowrap flex items-center justify-center"
 				>
 					View Details
 				</BorderButton>
+				</TransitionLink>
 
 				{/* Join Round Button */}
 				<GradientButton4

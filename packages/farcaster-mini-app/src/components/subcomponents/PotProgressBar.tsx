@@ -1,7 +1,21 @@
 import type { TPotObject } from "@/lib/types/contract.type";
 import { timeRemaining } from "@/lib/helpers/time";
+import { periodSecondsMap } from "@/lib/helpers/contract";
 
 export function PotProgressBar({ pot }: { pot: TPotObject }) {
+	let periodFormat: "days" | "weeks" | "months" = "days";
+	switch (pot.period) {
+		case periodSecondsMap.daily:
+			periodFormat = "days";
+			break;
+		case periodSecondsMap.weekly:
+			periodFormat = "weeks";
+			break;
+		case periodSecondsMap.monthly:
+			periodFormat = "months";
+			break;
+	}
+
 	const totalRounds: number = pot.totalParticipants; // 4
 	
 	const currentRound: number = 1 + pot.round; // pot.round = 0 denotes round 1
@@ -14,7 +28,7 @@ export function PotProgressBar({ pot }: { pot: TPotObject }) {
 
 	const secondsToEndPot = secondsToEndPendingRounds + secondsToEndCurrentRound;
 	const secondsSinceStart = totalPotDurationSeconds - secondsToEndPot;
-	const timeRemainingStr = timeRemaining(secondsNow + secondsToEndPot);
+	const timeRemainingStr = timeRemaining(secondsNow + secondsToEndPot, periodFormat);
 
 	const timeRemainingText = timeRemainingStr ? `${timeRemainingStr} remaining` : "Completed";
 

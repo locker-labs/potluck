@@ -66,11 +66,10 @@ export function useJoinPot() {
       try {
         await ensureConnection();
       } catch {
-        console.error('Failed to connect wallet:');
         toast.error('Failed to connect wallet');
         return;
       }
-      setPendingPot(pot);
+      // setPendingPot(pot);
       return;
     }
 

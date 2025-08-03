@@ -1,6 +1,6 @@
 // graphQueries.ts
 import { GraphQLClient, gql } from "graphql-request";
-import type { TPotObject } from "./types";
+import type { TPotObject, TPotObjectMini } from "./types";
 import { type Address, hexToString, formatUnits } from "viem";
 import { publicClient } from "@/clients/viem";
 
@@ -91,6 +91,26 @@ const GET_POT_FULL = gql`
       amount
       timestamp
       transactionHash
+    }
+  }
+`;
+
+
+const GET_POT_INFO_MINI = gql`
+  query GetPotInfoMini($potId: ID!) {
+    pot(id: $potId) {
+      id
+      name
+      creator {
+        id
+      }
+      entryAmount
+      tokenAddress
+      participants {
+        user {
+          id
+        }
+      }
     }
   }
 `;
@@ -220,6 +240,8 @@ type RawPot = {
   participants: { user: { id: Address } }[];
 };
 
+type RawPotMini = Pick<RawPot, 'id' | 'name' | 'creator' | 'entryAmount' | 'tokenAddress' | 'participants'>;
+
 type RawJoin = {
   round: { roundNumber: string };
   user: { id: Address };
@@ -301,6 +323,26 @@ async function getDecimals(token: Address): Promise<number> {
   });
   decimalsCache.set(token, dec as number);
   return dec as number;
+}
+
+// ——————————————————————————————————————————————————————————————
+// MINI MAPPER: RawPotMini → TPotObjectMini
+// ——————————————————————————————————————————————————————————————
+
+async function mapRawPotToObjectMini(rp: RawPotMini): Promise<TPotObjectMini> {
+  const entryAmount = BigInt(rp.entryAmount);
+  const dec: number = await getDecimals(rp.tokenAddress);
+
+  const participants = rp.participants.map((x) => x.user.id);
+  const totalParticipants = participants.length;
+  const totalPool: string = formatUnits(entryAmount * BigInt(totalParticipants), dec);
+
+  return {
+    id: BigInt(rp.id),
+    name: decodePotName(rp.name),
+    creator: rp.creator.id,
+    totalPool,
+  }
 }
 
 // ——————————————————————————————————————————————————————————————
@@ -404,6 +446,15 @@ export async function getPotsByUser(user: Address): Promise<TPotObject[]> {
   return Promise.all(rawPots.map(mapRawPotToObject));
 }
 
+
+export async function fetchPotMiniInfo(potId: bigint): Promise<TPotObjectMini> {
+  const vars = {
+    potId: potId.toString(),
+  };
+  const { pot: rp } = await client.request<{ pot: RawPotMini }>(GET_POT_INFO_MINI, vars);
+
+  return mapRawPotToObjectMini(rp);
+}
 
 export async function fetchPotInfo(potId: bigint): Promise<{
   pot: TPotObject;

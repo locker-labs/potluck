@@ -91,6 +91,26 @@ export async function sendInviteNotification({ potId, targetFids }: { potId: num
     }
 }
 
+export async function sendRequestNotification({ potId, potName, requesterUsername, creatorFid }: { potId: number; potName: string; requesterUsername: string; creatorFid: number }) {
+    const notification: TNotification = {
+        title: "Join Request",
+        body: `${requesterUsername} has requested to join ${potName}. Click to approve!`,
+        target_url: `${APP_URL}/pot/${potId}`,
+    };
+
+    try {
+        const response = await client.publishFrameNotifications({
+            targetFids: [creatorFid],
+            filters: {}, // No filters, broadcast to all
+            notification,
+        });
+        return response;
+    } catch (error) {
+        console.error("Failed to send request notification:", error);
+        throw error;
+    }
+}
+
 export async function sendFarcasterNotification(targetFids: number[], notification: TNotification) {
   if (targetFids.length === 0) {
     throw new Error("No target FIDs provided for notification");

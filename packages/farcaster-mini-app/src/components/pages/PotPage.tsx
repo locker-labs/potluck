@@ -20,6 +20,8 @@ import { useUserPotJoinInfo } from '@/hooks/useUserPotJoinInfo';
 import type { Address } from 'viem';
 import { PotProgressBar } from '../subcomponents/PotProgressBar';
 import { NextDrawPill } from '../subcomponents/NextDrawPill';
+import { motion } from "motion/react";
+import { animate, initialDown, transition } from "@/lib/pageTransition";
 
 const defaultLogsState = { loading: true, error: null, logs: [] };
 
@@ -110,13 +112,19 @@ export default function PotPage({ id }: { id: string }) {
 
   // DERIVED STATE
   const isRoundZero: boolean = pot.round === 0;
+  const nowSeconds: number = Math.floor(Date.now() / 1000);
   const deadlinePassed: boolean =
-    pot.deadline < BigInt(Math.floor(Date.now() / 1000));
+    pot.deadline < BigInt(nowSeconds);
 
   // 2️⃣ Main content
   return (
-    <div>
-      <div className="w-full flex items-center justify-between gap-4 mb-8">
+    <motion.div
+      className={'px-4'}
+      initial={initialDown}
+      animate={animate}
+      transition={transition}
+    >
+      <div className="w-full flex items-center justify-between gap-4 mb-4">
         <div className="flex items-cener justify-center gap-4">
           <GradientButton3
             onClick={() => router.push("/")}
@@ -139,7 +147,7 @@ export default function PotPage({ id }: { id: string }) {
       </div>
 
       {/*  TODO: Create a reusable component  */}
-      <GradientCard2 className="w-full mt-4 pb-4">
+      <GradientCard2 className="w-full">
         <div>
           <div className="flex">
             <NextDrawPill
@@ -224,7 +232,7 @@ export default function PotPage({ id }: { id: string }) {
           <p className="text-sm">Total Won</p>
         </div>
       </div>
-      {showRequests && <JoinRequests potId={pot.id} />}
+      {showRequests && <div className='mt-4'><JoinRequests potId={pot.id} /></div>}
 
       <div className="mt-4 border border-gray-500 pt-6 rounded-xl">
         <div className="flex items-center gap-2 px-4">
@@ -234,6 +242,6 @@ export default function PotPage({ id }: { id: string }) {
         <hr className="mt-2 border-gray-500" />
         <RecentActivity logsState={logsState} />
       </div>
-    </div>
+    </motion.div>
   );
 }

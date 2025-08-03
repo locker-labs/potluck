@@ -78,8 +78,8 @@ export default function YourPots() {
       key="your-pots"
     >
       <div>
-        <SectionHeading>Your Pots</SectionHeading>
-        <div className="flex flex-row overflow-x-scroll gap-[12px] md:grid-cols-2 lg:grid-cols-3">
+        <SectionHeading className={'mx-4'}>Your Pots</SectionHeading>
+        <div className="px-4 flex flex-row overflow-x-scroll gap-[12px] md:grid-cols-2 lg:grid-cols-3">
           {pots.map((pot: TPotObject) => (
             <YourPotCard
               key={pot.id}

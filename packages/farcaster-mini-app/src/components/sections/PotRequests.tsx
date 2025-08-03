@@ -85,7 +85,7 @@ export function JoinRequests({ potId }: JoinRequestsProps) {
   };
 
   return (
-    <div className="bg-gray-800 rounded-xl overflow-hidden mt-2.5">
+    <div className="bg-gray-800 rounded-xl overflow-hidden">
       {/* Header */}
       <GradientButton3
         className="w-full flex justify-between items-center text-left px-4 py-3"
