@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import sdk, { type Context, type FrameNotificationDetails, AddMiniApp } from '@farcaster/frame-sdk';
 import { createStore } from 'mipd';
 import React from 'react';
-import { logEvent } from '../../lib/amplitude';
+import { logEvent } from '@/lib/amplitude';
 
 interface FrameContextType {
   isSDKLoaded: boolean;

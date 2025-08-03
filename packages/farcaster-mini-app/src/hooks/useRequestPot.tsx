@@ -5,7 +5,7 @@ import { useWriteContract } from 'wagmi';
 import { toast } from 'sonner';
 import { getTransactionLink } from '@/lib/helpers/blockExplorer';
 import { useConnection } from '@/hooks/useConnection';
-import { useFrame } from '@/components/providers/FrameProvider';
+import { useFrame } from '@/providers/FrameProvider';
 import { sendNotification } from '@/lib/api/sendNotification';
 import { ENotificationType } from '@/enums/notification';
 

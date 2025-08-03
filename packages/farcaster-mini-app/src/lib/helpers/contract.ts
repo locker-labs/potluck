@@ -114,3 +114,12 @@ export async function getPlatformFee(): Promise<bigint> {
     functionName: 'platformFee',
   })) as bigint;
 }
+
+// TODO: create a subgraph query to replace its usage
+export async function getParticipantFee(): Promise<bigint> {
+  return (await publicClient.readContract({
+    address: contractAddress,
+    abi: abi,
+    functionName: 'participantFee',
+  })) as bigint;
+}

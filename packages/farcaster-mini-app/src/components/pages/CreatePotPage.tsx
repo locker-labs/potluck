@@ -2,24 +2,19 @@
 
 import type { FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { parseUnits } from 'viem';
-import { MoveLeft, Copy, Loader2, ExternalLink } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import Link from 'next/link';
+import { MoveLeft, Loader2 } from 'lucide-react';
 import Image from 'next/image';
-import { formatAddress } from '@/lib/address';
 import { GradientButton, GradientButton3 } from '../ui/Buttons';
-import { getTransactionLink } from '@/lib/helpers/blockExplorer';
 import { useCreatePot } from '@/hooks/useCreatePot';
-import { useCopyInviteLink } from '@/hooks/useCopyInviteLink';
-import { useCreateCast } from '@/hooks/useCreateCast';
 import { formatUnits } from 'viem';
 import { z } from 'zod';
 import { MAX_PARTICIPANTS } from '@/config';
 import { AnimatePresence, motion } from 'motion/react';
 import { initialDown, transition, animate } from "@/lib/pageTransition";
+import { CreatePotSuccessDialog } from '@/components/subcomponents/CreatePotSuccessDialog';
 
 const emojis = ["🎯", "🏆", "🔥", "🚀", "💪", "⚡", "🎬", "🎓", "🍕", "☕"];
 
@@ -80,7 +75,6 @@ export default function CreatePotPage() {
   const [timePeriod, setTimePeriod] = useState<bigint>(timePeriods[0].value);
   const [amount, setAmount] = useState("");
   const [maxParticipants, setMaxParticipants] = useState("");
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isPublic, setIsPublic] = useState(true);
   const [errors, setErrors] = useState<{ [k: string]: string }>({});
   const [clickedSubmit, setClickedSubmit] = useState(false);
@@ -99,15 +93,11 @@ export default function CreatePotPage() {
     isCreatingPot,
     isLoading,
     hash,
-    fee,
-    feeUsdc,
+    calculateCreatorFee,
+    platformFeeEth,
+    participantFeeEth,
   } = useCreatePot();
-  const { handleCopyLink } = useCopyInviteLink({ potId: potId });
-  const { handleCastOnFarcaster } = useCreateCast({
-    potId,
-    amount: amountBigInt,
-    period: timePeriod,
-  });
+  
 
   const hasErrors = Object.keys(errors).length > 0;
 
@@ -159,26 +149,9 @@ export default function CreatePotPage() {
     );
   };
 
-  // EFFECTS
-  // Redirect to pot page when success modal is closed
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-  useEffect(() => {
-    if (!showSuccessModal && potId) {
-      router.push(`/pot/${potId}`);
-      setPotId(null);
-    }
-  }, [showSuccessModal]);
-
-  // Show success modal when pot is created
-  useEffect(() => {
-    if (!!hash && !!potId) {
-      setShowSuccessModal(true);
-    }
-  }, [hash, potId]);
-
   // These are only for rendering
   const amountUsdc: string = formatUnits(amountBigInt, 6);
-  const totalAmountUsdc: string = formatUnits(amountBigInt + (fee ?? 0n), 6);
+  const dataCreatorFee = calculateCreatorFee(maxParticipantsInt);
 
   return (
       <motion.div
@@ -207,11 +180,8 @@ export default function CreatePotPage() {
               htmlFor="pot-name"
               className="block text-base font-bold"
             >
-              Pot Name {" "}
-              {/* <br /> */}
-              <span className="font-medium text-xs text-gray-500">I want to save for...</span>
+              Goal
             </label>
-            
             <Input
               className='mt-2'
               id="pot-name"
@@ -235,11 +205,11 @@ export default function CreatePotPage() {
           <div>
             <label
               htmlFor="choose-emoji"
-              className="block text-base font-bold mb-2.5"
+              className="block text-base font-bold"
             >
-              Add Some Spark
+              Icon
             </label>
-            <div className="grid grid-cols-5 gap-2">
+            <div className="mt-2 grid grid-cols-5 gap-2">
               {emojis.map((emojiOption) => (
                 <button
                   key={emojiOption}
@@ -460,7 +430,7 @@ export default function CreatePotPage() {
                   e.preventDefault();
                 }
               }}
-              placeholder="e.g. 10"
+              placeholder="Default is 255"
               className="w-full mt-2"
             />
             <p
@@ -484,14 +454,14 @@ export default function CreatePotPage() {
 
               <div className="mb-2 w-full flex items-start justify-between">
                 <p className="text-sm font-normal">Platform Fee:</p>
-                <p className="text-sm font-normal">{feeUsdc} USDC</p>
+                <p className="text-sm font-normal">{dataCreatorFee?.formatted ?? "0"} ETH</p>
               </div>
 
               <hr />
 
               <div className="mt-2 mb-3 w-full flex items-start justify-between">
                 <p className="text-sm font-bold">Total:</p>
-                <p className="text-sm font-bold">{totalAmountUsdc} USDC</p>
+                <p className="text-sm font-bold">{amountUsdc} USDC</p>
               </div>
 
               <div className="mt-2 mb-3 w-full flex items-start justify-between border border-[#FFB300] rounded-[8px] bg-[#45412E] py-2 px-4">
@@ -525,82 +495,12 @@ export default function CreatePotPage() {
       </div>
 
       {/* Success Dialog */}
-      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
-        <DialogContent className="sm:max-w-md rounded-2xl text-white">
-          <DialogHeader>
-            <DialogTitle className="text-center text-2xl font-bold">
-              Congratulations! 🎉
-            </DialogTitle>
-            <div className="text-center">
-              <div>
-                <Image
-                  src="/success.gif"
-                  alt="Success"
-                  width={150}
-                  height={150}
-                  className="mx-auto rounded-full"
-                  priority
-                />
-                <h3 className="text-xl font-bold mb-2">
-                  Your pot has been created!
-                </h3>
-                <p className="mb-6">
-                  Share with friends to start saving together. The more people
-                  that join, the more everyone saves!
-                </p>
-                {hash && (
-                  <div className="flex w-full items-center justify-center gap-2">
-                    <p>Transaction Hash: </p>
-                    <Link href={getTransactionLink(hash)} target="_blank">
-                      <div className="flex items-center justify-center gap-2">
-                        <p>{formatAddress(hash)}</p>
-                        <ExternalLink size={16} color="#ffffff" />
-                      </div>
-                    </Link>
-                  </div>
-                )}
-              </div>
-            </div>
-          </DialogHeader>
-
-          <div className="space-y-4 mt-2">
-            <GradientButton3
-              type="button"
-              className="w-full flex items-center justify-center gap-2"
-              onClick={handleCastOnFarcaster}
-            >
-              <Image
-                src="/farcaster-transparent-white.svg"
-                alt="Farcaster"
-                width={22}
-                height={22}
-                priority
-              />
-              <span className="text-[20px] font-medium">Cast on Farcaster</span>
-            </GradientButton3>
-
-            <GradientButton3
-              className="w-full flex items-center justify-center gap-2"
-              onClick={handleCopyLink}
-            >
-              <Copy size={18} />
-              <span className="text-[20px] font-medium">Copy Invite Link</span>
-            </GradientButton3>
-
-            <Link
-              href={`/pot/${potId}`}
-              className="w-full"
-              prefetch={showSuccessModal}
-            >
-              <div className="w-full text-center rounded-xl py-3 mt-4 bg-white/80">
-                <span className="text-[20px] text-center font-medium text-black">
-                  Go to Pot
-                </span>
-              </div>
-            </Link>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <CreatePotSuccessDialog
+        hash={hash}
+        potId={potId}
+        amountBigInt={amountBigInt}
+        timePeriod={timePeriod}
+      />
     </motion.div>
   );
 }
