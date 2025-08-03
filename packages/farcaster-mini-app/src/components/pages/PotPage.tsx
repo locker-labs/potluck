@@ -21,7 +21,7 @@ import type { Address } from 'viem';
 import { PotProgressBar } from '../subcomponents/PotProgressBar';
 import { NextDrawPill } from '../subcomponents/NextDrawPill';
 import { motion } from "motion/react";
-import { animate, initialUp, transition } from "@/lib/pageTransition";
+import { animate, initialDown, transition } from "@/lib/pageTransition";
 
 const defaultLogsState = { loading: true, error: null, logs: [] };
 
@@ -120,7 +120,7 @@ export default function PotPage({ id }: { id: string }) {
   return (
     <motion.div
       className={'px-4'}
-      initial={initialUp}
+      initial={initialDown}
       animate={animate}
       transition={transition}
     >

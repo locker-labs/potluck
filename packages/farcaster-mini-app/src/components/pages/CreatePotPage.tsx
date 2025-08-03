@@ -19,7 +19,7 @@ import { formatUnits } from 'viem';
 import { z } from 'zod';
 import { MAX_PARTICIPANTS } from '@/config';
 import { AnimatePresence, motion } from 'motion/react';
-import { initialUp, transition, animate } from "@/lib/pageTransition";
+import { initialDown, transition, animate } from "@/lib/pageTransition";
 
 const emojis = ["🎯", "🏆", "🔥", "🚀", "💪", "⚡", "🎬", "🎓", "🍕", "☕"];
 
@@ -177,7 +177,7 @@ export default function CreatePotPage() {
   return (
       <motion.div
           className={'px-4'}
-          initial={initialUp}
+          initial={initialDown}
           animate={animate}
           transition={transition}
       >
