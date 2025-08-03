@@ -392,13 +392,13 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
     }
 
     function setChainlinkVRF(
-        address vrfCoordinator,
+        address _vrfCoordinator,
         bytes32 _keyHash,
         uint64 _subscriptionId,
         uint16 _requestConfirmations,
         uint32 _callbackGasLimit
     ) external onlyPotluckOwner {
-        vrfCoordinator = VRFCoordinatorV2_5(vrfCoordinator);
+        vrfCoordinator = VRFCoordinatorV2_5(_vrfCoordinator);
         keyHash = _keyHash;
         s_subscriptionId = _subscriptionId;
         requestConfirmations = _requestConfirmations;
