@@ -333,6 +333,9 @@ async function mapRawPotToObjectMini(rp: RawPotMini): Promise<TPotObjectMini> {
   const entryAmount = BigInt(rp.entryAmount);
   const dec: number = await getDecimals(rp.tokenAddress);
 
+  /**
+   * @dev is this address in user.id always lowercase?
+   */
   const participants = rp.participants.map((x) => x.user.id);
   const totalParticipants = participants.length;
   const totalPool: string = formatUnits(entryAmount * BigInt(totalParticipants), dec);

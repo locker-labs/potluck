@@ -33,6 +33,9 @@ type PotluckContextType = Pick<
 				decimals: number;
 				symbol: string;
 				value: bigint;
+				valueParsed: string;
+				valueFormatted: string;
+				valueFormattedSym: string;
 		  }
 		| undefined;
 	tokenBalance: bigint | undefined;
@@ -71,10 +74,23 @@ const PotluckContext = createContext<PotluckContextType | null>(null);
 export const PotluckProvider = ({ children }: { children: ReactNode }) => {
 	const { address } = useAccount();
 	const {
-		data: dataNativeBalance,
+		data: nativeBalanceData,
 		isLoading: isLoadingNativeBalance,
 		refetch: refetchNativeBalance,
 	} = useBalance({ address, query: { enabled: !!address, refetchInterval: 5000 } });
+	const dataNativeBalance = nativeBalanceData ? (() => {
+		const parsedValue = formatUnits(nativeBalanceData.value, nativeBalanceData.decimals);
+		const parts = parsedValue.split('.');
+		const formattedValue = parts[0] + (parts.length > 1 ? '.' + parts[1].slice(0, 4) : '');
+		return	{
+			decimals: nativeBalanceData.decimals,
+			symbol: nativeBalanceData.symbol,
+			value: nativeBalanceData.value,
+			valueParsed: parsedValue,
+			valueFormatted: formattedValue,
+			valueFormattedSym: `${formattedValue} ${nativeBalanceData.symbol}`,
+		}
+	})() : undefined;
 	const {
 		data: tokenBalance,
 		isLoading: isLoadingTokenBalance,
