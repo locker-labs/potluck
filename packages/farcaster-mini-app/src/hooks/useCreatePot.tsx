@@ -29,6 +29,7 @@ export function useCreatePot() {
 				participantFeeWei,
         participantFeeEth,
 				calculateCreatorFee,
+        calculateJoineeFee,
 				isLoadingFee,
 				dataNativeBalance,
 				isLoadingNativeBalance,
@@ -222,6 +223,9 @@ export function useCreatePot() {
     tokenBalance,
     refetchTokenAllowance,
     calculateCreatorFee,
+    calculateJoineeFee,
+    platformFeeWei,
+    participantFeeWei,
     platformFeeEth,
     participantFeeEth,
   };

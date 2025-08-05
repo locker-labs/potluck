@@ -15,13 +15,14 @@ import { MAX_PARTICIPANTS } from '@/config';
 import { AnimatePresence, motion } from 'motion/react';
 import { initialDown, transition, animate } from "@/lib/pageTransition";
 import { CreatePotSuccessDialog } from '@/components/subcomponents/CreatePotSuccessDialog';
+import { daySeconds, weekSeconds, monthSeconds } from '@/lib/helpers/contract';
 
 const emojis = ["🎯", "🏆", "🔥", "🚀", "💪", "⚡", "🎬", "🎓", "🍕", "☕"];
 
 const timePeriods = [
-  { value: BigInt(86400), label: "Daily" },
-  { value: BigInt(604800), label: "Weekly" },
-  { value: BigInt(2592000), label: "Monthly" },
+  { value: BigInt(daySeconds), label: "Daily" },
+  { value: BigInt(weekSeconds), label: "Weekly" },
+  { value: BigInt(monthSeconds), label: "Monthly" },
 ];
 
 const modes = [
@@ -53,17 +54,18 @@ const createPotSchema = z.object({
     ),
   maxParticipants: z
     .string()
+    .refine((val) => !Number.isNaN(Number(val)), {
+      message: "Value must be a number",
+    })
     .refine(
-      (val) =>
-        val !== "" &&
-        !Number.isNaN(Number(val)) &&
+      (val) => !Number.isNaN(Number(val)) &&
         Number(val) <= MAX_PARTICIPANTS,
       {
         message: `Members cannot be more than ${MAX_PARTICIPANTS}`,
       }
     )
-    .refine((val) => val !== "" && /^\d+$/.test(val) && Number(val) >= 2, {
-      message: "Members must be atleast 2",
+    .refine((val) => !Number.isNaN(Number(val)) && Number(val) !== 1, {
+      message: "Members should be more than 1",
     }),
   emoji: z.string().min(1, "Emoji is required"),
   timePeriod: z.bigint(),
@@ -76,6 +78,8 @@ export default function CreatePotPage() {
   const [amount, setAmount] = useState("");
   const [maxParticipants, setMaxParticipants] = useState("");
   const [isPublic, setIsPublic] = useState(true);
+
+  const [touched, setTouched] = useState<{ [k: string]: boolean }>({});
   const [errors, setErrors] = useState<{ [k: string]: string }>({});
   const [clickedSubmit, setClickedSubmit] = useState(false);
 
@@ -88,14 +92,14 @@ export default function CreatePotPage() {
   const router = useRouter();
   const {
     potId,
-    setPotId,
     handleCreatePot,
     isCreatingPot,
     isLoading,
     hash,
+    calculateJoineeFee,
     calculateCreatorFee,
+    platformFeeWei,
     platformFeeEth,
-    participantFeeEth,
   } = useCreatePot();
   
 
@@ -151,7 +155,16 @@ export default function CreatePotPage() {
 
   // These are only for rendering
   const amountUsdc: string = formatUnits(amountBigInt, 6);
-  const dataCreatorFee = calculateCreatorFee(maxParticipantsInt);
+  const roundsForFee =
+			maxParticipantsInt === 0
+				? MAX_PARTICIPANTS // default to MAX_PARTICIPANTS if not set
+				: maxParticipantsInt === 1
+					? undefined
+					: maxParticipantsInt <= MAX_PARTICIPANTS
+						? maxParticipantsInt
+						: undefined;
+  const totalGasFee = roundsForFee ? calculateJoineeFee(roundsForFee) : undefined;
+  const totalFee = roundsForFee ? calculateCreatorFee(roundsForFee) : undefined;
 
   return (
       <motion.div
@@ -189,14 +202,15 @@ export default function CreatePotPage() {
               type="text"
               value={name}
               onChange={(e) => {
+                setTouched((prev) => ({ ...prev, name: true }));
                 setName(e.target.value);
-                if (clickedSubmit) validate({ name: e.target.value });
+                if (clickedSubmit || touched.name) validate({ name: e.target.value });
               }}
               placeholder="DeFi Warriors"
             />
             <p
               className={`text-xs text-red-500 mt-1 ${
-                errors.name ? "visible" : "hidden"
+                ((clickedSubmit || touched.name) && errors.name) ? "visible" : "hidden"
               }`}
             >{`${errors.name}`}</p>
           </div>
@@ -274,8 +288,9 @@ export default function CreatePotPage() {
                   (/^\d*(\.\d{0,2})?$/.test(value) &&
                     Number.parseFloat(value) >= 0)
                 ) {
+                  setTouched((prev) => ({ ...prev, amount: true }));
                   setAmount(value);
-                  if (clickedSubmit) validate({ amount: value });
+                  if (clickedSubmit || touched.amount) validate({ amount: value });
                 }
               }}
               onKeyDown={(e) => {
@@ -289,7 +304,7 @@ export default function CreatePotPage() {
             />
             <p
               className={`text-xs text-red-500 mt-1 ${
-                errors.amount ? "visible" : "hidden"
+                ((clickedSubmit || touched.amount) && errors.amount) ? "visible" : "hidden"
               }`}
             >{`${errors.amount}`}</p>
           </div>
@@ -420,8 +435,9 @@ export default function CreatePotPage() {
                   value === "" ||
                   (/^\d+$/.test(value) && Number.parseInt(value, 10) >= 1)
                 ) {
+                  setTouched((prev) => ({ ...prev, maxParticipants: true }));
                   setMaxParticipants(value);
-                  if (clickedSubmit) validate({ maxParticipants: value });
+                  if (clickedSubmit || touched.maxParticipants) validate({ maxParticipants: value });
                 }
               }}
               onKeyDown={(e) => {
@@ -435,7 +451,7 @@ export default function CreatePotPage() {
             />
             <p
               className={`text-xs text-red-500 mt-1 ${
-                errors.maxParticipants ? "visible" : "hidden"
+                ((clickedSubmit || touched.maxParticipants) && errors.maxParticipants) ? "visible" : "hidden"
               }`}
             >{`${errors.maxParticipants}`}</p>
           </div>
@@ -454,7 +470,17 @@ export default function CreatePotPage() {
 
               <div className="mb-2 w-full flex items-start justify-between">
                 <p className="text-sm font-normal">Platform Fee:</p>
-                <p className="text-sm font-normal">{dataCreatorFee?.formatted ?? "0"} ETH</p>
+                <p className="text-sm font-normal">{platformFeeEth ? `${platformFeeEth} ETH` : '-'}</p>
+              </div>
+
+              <div className="mb-2 w-full flex items-start justify-between">
+                <p className="text-sm font-normal">Total Gas Fee {roundsForFee ? `(${roundsForFee} rounds)` : null}:</p>
+                <p className="text-sm font-normal">{totalGasFee ? `${totalGasFee.formatted} ETH` : '-'}</p>
+              </div>
+
+              <div className="mb-2 w-full flex items-start justify-between">
+                <p className="text-sm font-normal">Total Fee:</p>
+                <p className="text-sm font-normal">{totalFee ? `${totalFee.formatted} ETH` : '-'}</p>
               </div>
 
               <hr />
