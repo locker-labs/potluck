@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getParticipantFee, getPlatformFee } from '../lib/helpers/contract';
 import { formatEther } from 'viem';
+import { MAX_PARTICIPANTS } from '@/config';
 
 interface FeeState {
   platformFeeWei: bigint | undefined;
@@ -60,7 +61,7 @@ export function usePlatformFee(): UsePlatformFeeReturnType {
       return undefined;
     }
 
-    const value = state.platformFeeWei + state.participantFeeWei * BigInt(maxParticipants);
+    const value = state.platformFeeWei + state.participantFeeWei * BigInt(maxParticipants || MAX_PARTICIPANTS);
     const formatted = formatEther(value, "wei");
 
     return { value, formatted };
@@ -71,7 +72,7 @@ export function usePlatformFee(): UsePlatformFeeReturnType {
       return undefined;
     }
 
-    const value = state.participantFeeWei * BigInt(maxParticipants);
+    const value = state.participantFeeWei * BigInt(maxParticipants || MAX_PARTICIPANTS);
     const formatted = formatEther(value, "wei");
 
     return { value, formatted };
