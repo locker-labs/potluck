@@ -19,24 +19,27 @@ export function useJoinPot() {
   const {
     isLoading,
     tokenBalance,
+    dataNativeBalance,
     tokenAllowance,
     approveTokens,
     refetchTokenAllowance,
+    calculateJoineeFee,
 		} = usePotluck();
   const { writeContractAsync } = useWriteContract();
 
-  const joinPot = async (id: bigint): Promise<void> => {
+  const joinPot = async (id: bigint, joineeFee: bigint): Promise<void> => {
     if (!address) {
       throw new Error('Wallet not connected');
     }
 
     try {
-      // broadcast transaction
+      // broadcast transaction with joinee fee as value
       const hash = await writeContractAsync({
         address: contractAddress,
         abi,
         functionName: 'joinPot',
         args: [id],
+        value: joineeFee,
       });
 
       // wait for confirmation
@@ -70,7 +73,6 @@ export function useJoinPot() {
         toast.error('Failed to connect wallet');
         return;
       }
-      // setPendingPot(pot);
       return;
     }
 
@@ -83,7 +85,6 @@ export function useJoinPot() {
 
     const isRoundZero: boolean = pot.round === 0;
 
-    // check if user is trying to join a pot that has already started
     if (!isRoundZero) {
       setJoiningPotId(potId);
       let hasJoinedBefore: boolean | null = null;
@@ -109,6 +110,23 @@ export function useJoinPot() {
       return;
     }
 
+    const fee = calculateJoineeFee(pot.maxParticipants);
+
+    if (fee === undefined) {
+      toast.error('Unable to fetch platform fee. Please try again');
+      return;
+    }
+
+    if (dataNativeBalance === undefined) {
+      toast.error('Unable to fetch native balance. Please try again');
+      return;
+    }
+
+    if (fee.value > dataNativeBalance.value) {
+      toast.error(`You do not have ${fee.formatted} ${dataNativeBalance.symbol} to join this pot. Balance: ${dataNativeBalance.valueFormattedSym}`);
+      return;
+    }
+
     if (entryAmount > tokenBalance) {
       toast.error('You do not have enough USDC');
       return;
@@ -118,11 +136,15 @@ export function useJoinPot() {
 
     try {
       setJoinedPotId(null);
-      if (entryAmount > BigInt(tokenAllowance)) {
-        await approveTokens(entryAmount);
+
+      const pendingRounds = pot.maxParticipants - pot.round;
+      const approveAmount = entryAmount * BigInt(pendingRounds);
+      if (approveAmount > tokenAllowance) {
+        await approveTokens(approveAmount);
         await refetchTokenAllowance();
       }
-      await joinPot(potId);
+
+      await joinPot(potId, fee.value);
       setJoinedPotId(potId);
 
       toast.success(`Successfully joined pot #${potId}`);
