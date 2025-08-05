@@ -1,5 +1,5 @@
 import { publicClient } from '@/clients/viem';
-import { contractAddress, abi, tokenAddress, PotCreatedEventSignatureHash } from '@/config';
+import { contractAddress, abi, tokenAddress, PotCreatedEventSignatureHash, MAX_PARTICIPANTS } from '@/config';
 import { useState, useEffect } from 'react';
 import { useAccount, useWriteContract } from 'wagmi';
 import { toast } from 'sonner';
@@ -29,6 +29,7 @@ export function useCreatePot() {
 				participantFeeWei,
         participantFeeEth,
 				calculateCreatorFee,
+        calculateJoineeFee,
 				isLoadingFee,
 				dataNativeBalance,
 				isLoadingNativeBalance,
@@ -37,6 +38,7 @@ export function useCreatePot() {
 				tokenAllowance,
 				isLoadingTokenAllowance,
 				refetchTokenAllowance,
+        refetch,
 				approveTokens,
   } = usePotluck();
   const { address } = useAccount();
@@ -112,6 +114,7 @@ export function useCreatePot() {
     timePeriod: bigint,
     isPublic: boolean
   ) => {
+    console.log('maxParticipants', maxParticipants, 'handlecreatepot')
     await checkAndAddMiniApp();
 
     _potName = potName;
@@ -130,6 +133,16 @@ export function useCreatePot() {
         return;
       }
       setIsPending(true);
+      return;
+    }
+
+    if (maxParticipants === 1) {
+      toast.error("Max members should not be 1");
+      return;
+    }
+
+    if (maxParticipants > MAX_PARTICIPANTS) {
+      toast.error(`Max members should be less than ${1 + MAX_PARTICIPANTS}`);
       return;
     }
 
@@ -156,12 +169,12 @@ export function useCreatePot() {
     }
 
     if (dataFee.value > dataNativeBalance.value) {
-      toast.error(`You do not have enough native tokens. Balance: ${formatEther(dataNativeBalance.value, "wei")} ETH`);
+      toast.error(`You do not have enough native tokens. Balance: ${Number(Number(formatEther(dataNativeBalance.value, "wei")).toFixed(4))} ETH`);
       return;
     }
 
     if (amount > tokenBalance) {
-      toast.error(`You do not have enough USDC. Balance: ${formatUnits(tokenBalance, 6)} USDC`);
+      toast.error(`You do not have enough USDC. Balance: ${Number(Number(formatUnits(tokenBalance, 6)).toFixed(4))} USDC`);
       return;
     }
 
@@ -169,10 +182,11 @@ export function useCreatePot() {
 
     try {
       if (amount >= BigInt(tokenAllowance)) {
-        await approveTokens(amount);
+        await approveTokens(amount * BigInt(maxParticipants || MAX_PARTICIPANTS));
       }
 
-      await createPot(potName, amount, maxParticipants, timePeriod, isPublic, dataNativeBalance.value);
+      // TODO: replace with dataFee.value
+      await createPot(potName, amount, maxParticipants, timePeriod, isPublic, dataFee.value * BigInt(maxParticipants || MAX_PARTICIPANTS));
     } catch (error) {
       toast.error("Error creating potluck", {
         description:
@@ -209,7 +223,7 @@ export function useCreatePot() {
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
-    refetchTokenAllowance();
+    refetch();
   }, [isCreatingPot]);
 
   return {
@@ -220,8 +234,11 @@ export function useCreatePot() {
     hash,
     isLoading,
     tokenBalance,
-    refetchTokenAllowance,
+    dataNativeBalance,
     calculateCreatorFee,
+    calculateJoineeFee,
+    platformFeeWei,
+    participantFeeWei,
     platformFeeEth,
     participantFeeEth,
   };

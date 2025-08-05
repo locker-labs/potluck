@@ -27,6 +27,7 @@ type PotluckContextType = Pick<
 	| "calculateCreatorFee"
 	| "calculateJoineeFee"
 > & {
+	address: Address | undefined;
 	dataNativeBalance:
 		| {
 				decimals: number;
@@ -73,7 +74,7 @@ export const PotluckProvider = ({ children }: { children: ReactNode }) => {
 		data: dataNativeBalance,
 		isLoading: isLoadingNativeBalance,
 		refetch: refetchNativeBalance,
-	} = useBalance({ address, query: { enabled: !!address } });
+	} = useBalance({ address, query: { enabled: !!address, refetchInterval: 5000 } });
 	const {
 		data: tokenBalance,
 		isLoading: isLoadingTokenBalance,
@@ -83,7 +84,7 @@ export const PotluckProvider = ({ children }: { children: ReactNode }) => {
 		address: tokenAddress,
 		functionName: "balanceOf",
 		args: [address as Address],
-		query: { enabled: !!address },
+		query: { enabled: !!address, refetchInterval: 5000 },
 	});
 	const {
 		data: tokenAllowance,
@@ -94,7 +95,7 @@ export const PotluckProvider = ({ children }: { children: ReactNode }) => {
 		abi: erc20Abi,
 		functionName: "allowance",
 		args: [address as Address, contractAddress],
-		query: { enabled: !!address },
+		query: { enabled: !!address, refetchInterval: 5000 },
 	});
 	const {
 		platformFeeWei,
@@ -153,6 +154,7 @@ export const PotluckProvider = ({ children }: { children: ReactNode }) => {
 	return (
 		<PotluckContext.Provider
 			value={{
+				address,
 				isLoading,
 				platformFeeWei,
 				participantFeeWei,

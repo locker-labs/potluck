@@ -2,9 +2,9 @@
 
 import type { FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Input } from '@/components/ui/input';
-import { parseUnits } from 'viem';
+import { formatEther, parseUnits } from 'viem';
 import { MoveLeft, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { GradientButton, GradientButton3 } from '../ui/Buttons';
@@ -15,13 +15,15 @@ import { MAX_PARTICIPANTS } from '@/config';
 import { AnimatePresence, motion } from 'motion/react';
 import { initialDown, transition, animate } from "@/lib/pageTransition";
 import { CreatePotSuccessDialog } from '@/components/subcomponents/CreatePotSuccessDialog';
+import { daySeconds, weekSeconds, monthSeconds } from '@/lib/helpers/contract';
+import { usePotluck } from '@/providers/PotluckProvider';
 
 const emojis = ["🎯", "🏆", "🔥", "🚀", "💪", "⚡", "🎬", "🎓", "🍕", "☕"];
 
 const timePeriods = [
-  { value: BigInt(86400), label: "Daily" },
-  { value: BigInt(604800), label: "Weekly" },
-  { value: BigInt(2592000), label: "Monthly" },
+  { value: BigInt(daySeconds), label: "Daily" },
+  { value: BigInt(weekSeconds), label: "Weekly" },
+  { value: BigInt(monthSeconds), label: "Monthly" },
 ];
 
 const modes = [
@@ -31,77 +33,127 @@ const modes = [
 ];
 
 // Zod schema for form validation
-const createPotSchema = z.object({
-  name: z.string().min(1, "Name is required"),
+const createPotSchema = ({
+  tokenBalance,
+  // dataNativeBalance,
+  // calculateCreatorFee
+}: {
+  tokenBalance: bigint | undefined;
+  // dataNativeBalance: { value: bigint } | undefined;
+  // calculateCreatorFee: (maxParticipants: number) => undefined | {
+  //   value: bigint;
+  //   formatted: string;
+  // }
+}) => {
+  return z.object({
+  name: z.string().min(1, "is required"),
   amount: z
     .string()
     .refine(
       (val) => val !== "" && !Number.isNaN(Number(val)) && Number(val) >= 0.01,
       {
-        message: "Amount must be at least 0.01",
+        message: "must be at least 0.01",
       }
     )
     .refine(
       (val) => {
         // Accept only up to two decimal places
         if (val === "") return true;
-        return /^\d+(\.\d{1,2})?$/.test(val);
+        const decimals = val.split('.');
+        if (decimals.length < 2) return true;
+        return decimals[1].length <= 2;
       },
       {
         message: "Only 2 decimal places allowed",
       }
+    )
+    .refine(
+      (val) => {
+        if (val === "") return true;
+        const amountBigInt = BigInt(parseUnits(val, 6));
+        const isInsufficientTokenBalance = tokenBalance !== undefined && amountBigInt > tokenBalance;
+        console.log({ isInsufficientTokenBalance })
+        return !Number.isNaN(Number(val)) && !isInsufficientTokenBalance},
+      {
+        message: "exceeds your balance",
+      }
     ),
   maxParticipants: z
     .string()
+    .refine((val) => !Number.isNaN(Number(val)), {
+      message: "must be a number",
+    })
     .refine(
-      (val) =>
-        val !== "" &&
-        !Number.isNaN(Number(val)) &&
-        Number(val) <= MAX_PARTICIPANTS,
+      (val) => Number(val) <= MAX_PARTICIPANTS,
       {
-        message: `Members cannot be more than ${MAX_PARTICIPANTS}`,
+        message: `should not exceed ${MAX_PARTICIPANTS}`,
       }
     )
-    .refine((val) => val !== "" && /^\d+$/.test(val) && Number(val) >= 2, {
-      message: "Members must be atleast 2",
+    .refine((val) => Number(val) !== 1, {
+      message: "should be more than 1",
     }),
-  emoji: z.string().min(1, "Emoji is required"),
+    // .refine(
+    //   (val) => {
+    //     const maxParticipantsInt = Number.parseInt(val || "0", 10);
+    //     const validMaxParticipants = maxParticipantsInt !== 1 && maxParticipantsInt <= MAX_PARTICIPANTS;
+    //     const totalFee = validMaxParticipants ? calculateCreatorFee(maxParticipantsInt) : undefined;
+    //     const isInsufficientNativeBalance = dataNativeBalance !== undefined && totalFee !== undefined && totalFee.value > dataNativeBalance.value;
+    //     return !isInsufficientNativeBalance;
+    //   },
+    //   {
+    //     message: "Insufficient Balance",
+    //   }
+    // ),
+  emoji: z.string().min(1, "is required"),
   timePeriod: z.bigint(),
 });
+}
 
 export default function CreatePotPage() {
+  // Form Input State
   const [emoji, setEmoji] = useState<string>(emojis[0]);
   const [name, setName] = useState<string>("");
   const [timePeriod, setTimePeriod] = useState<bigint>(timePeriods[0].value);
   const [amount, setAmount] = useState("");
   const [maxParticipants, setMaxParticipants] = useState("");
   const [isPublic, setIsPublic] = useState(true);
+  // Form Action State
+  const [touched, setTouched] = useState<{ [k: string]: boolean }>({});
   const [errors, setErrors] = useState<{ [k: string]: string }>({});
   const [clickedSubmit, setClickedSubmit] = useState(false);
 
   const potName = `${emoji} ${name.trim()}`;
   const amountBigInt = BigInt(parseUnits(amount, 6));
-  const maxParticipantsInt = maxParticipants
-    ? Number.parseInt(maxParticipants, 10)
-    : 0;
+  const maxParticipantsInt = Number.parseInt(maxParticipants || '0', 10);
 
   const router = useRouter();
   const {
     potId,
-    setPotId,
     handleCreatePot,
     isCreatingPot,
     isLoading,
     hash,
-    calculateCreatorFee,
-    platformFeeEth,
-    participantFeeEth,
   } = useCreatePot();
+  const {
+			calculateCreatorFee,
+			tokenBalance,
+			dataNativeBalance,
+      refetch,
+		} = usePotluck();
   
-
-  const hasErrors = Object.keys(errors).length > 0;
-
-  const disabled = isLoading || isCreatingPot || (clickedSubmit && hasErrors);
+  const validationSchema = useMemo(
+			() =>
+				createPotSchema({
+					tokenBalance,
+					// dataNativeBalance,
+          // calculateCreatorFee
+        }),
+			[
+        tokenBalance,
+        // dataNativeBalance,
+        // calculateCreatorFee
+      ],
+		);
 
   // FUNCTIONS
   // Accepts overrides for latest values
@@ -123,7 +175,7 @@ export default function CreatePotPage() {
       timePeriod,
       ...override,
     };
-    const result = createPotSchema.safeParse(values);
+    const result = validationSchema.safeParse(values);
     if (!result.success) {
       const fieldErrors: { [k: string]: string } = {};
       for (const err of result.error.errors) {
@@ -150,8 +202,18 @@ export default function CreatePotPage() {
   };
 
   // These are only for rendering
-  const amountUsdc: string = formatUnits(amountBigInt, 6);
-  const dataCreatorFee = calculateCreatorFee(maxParticipantsInt);
+  const amountTokenFormatted: string = formatUnits(amountBigInt, 6);
+  const validMaxParticipants = maxParticipantsInt !== 1 && maxParticipantsInt <= MAX_PARTICIPANTS;
+  // const totalGasFee = validMaxParticipants ? calculateJoineeFee(maxParticipantsInt) : undefined;
+  const totalFee = validMaxParticipants ? calculateCreatorFee(maxParticipantsInt) : undefined;
+  const isInsufficientNativeBalance = dataNativeBalance !== undefined && totalFee !== undefined && totalFee.value > dataNativeBalance.value;
+
+  const hasErrors = Object.keys(errors).length > 0;
+  const hasTouched = Object.keys(touched).length > 0;
+  const showError = (key: string) => (clickedSubmit || touched[key]) && errors[key];
+  const showInsufficientNativeBalance = (clickedSubmit || touched.maxParticipants) && isInsufficientNativeBalance;
+
+  const disabled = isLoading || isCreatingPot || ((clickedSubmit || hasTouched) && hasErrors) || showInsufficientNativeBalance;
 
   return (
       <motion.div
@@ -174,31 +236,35 @@ export default function CreatePotPage() {
         </div>
 
         <form onSubmit={handleSubmit} className='space-y-5'>
+
           {/* Name */}
           <div>
             <label
               htmlFor="pot-name"
-              className="block text-base font-bold"
+              className="block"
             >
-              Goal
+              <span className='text-base font-bold'>Goal {" "}</span>
+              <span
+                className={`text-xs text-red-500 font-medium ${showError('name') ? "visible" : "hidden"}`}
+              >{`${errors.name}`}</span>
             </label>
             <Input
-              className='mt-2'
               id="pot-name"
               name="pot-name"
               type="text"
               value={name}
               onChange={(e) => {
+                setTouched((prev) => ({ ...prev, name: true }));
                 setName(e.target.value);
-                if (clickedSubmit) validate({ name: e.target.value });
+                validate({ name: e.target.value });
               }}
               placeholder="DeFi Warriors"
-            />
-            <p
-              className={`text-xs text-red-500 mt-1 ${
-                errors.name ? "visible" : "hidden"
+              className={`mt-2 w-full ${
+                showError('name')
+                  ? "outline-red-500 ring ring-red-500"
+                  : null
               }`}
-            >{`${errors.name}`}</p>
+            />
           </div>
 
           {/* Choose Emoji */}
@@ -257,11 +323,15 @@ export default function CreatePotPage() {
           <div>
             <label
               htmlFor="enrty-amount"
-              className="block text-base font-bold mb-2.5"
+              className="block mb-2.5"
             >
-              Amount
+              <span className='text-base font-bold'>Amount{" "}</span>
+              <span
+                className={`font-medium text-xs text-red-500 ${showError('amount') ? "visible" : "hidden"}`}
+              >{`${errors.amount}`}</span>
             </label>
             <Input
+              className={`w-full ${showError('amount') ? "outline-red-500 ring ring-red-500" : null}`}
               id="enrty-amount"
               type="number"
               value={amount}
@@ -274,8 +344,9 @@ export default function CreatePotPage() {
                   (/^\d*(\.\d{0,2})?$/.test(value) &&
                     Number.parseFloat(value) >= 0)
                 ) {
+                  setTouched((prev) => ({ ...prev, amount: true }));
                   setAmount(value);
-                  if (clickedSubmit) validate({ amount: value });
+                  validate({ amount: value });
                 }
               }}
               onKeyDown={(e) => {
@@ -285,13 +356,14 @@ export default function CreatePotPage() {
                 }
               }}
               placeholder="20"
-              className="w-full"
             />
-            <p
-              className={`text-xs text-red-500 mt-1 ${
-                errors.amount ? "visible" : "hidden"
-              }`}
-            >{`${errors.amount}`}</p>
+            {/* Display token balance */}
+            {tokenBalance !== undefined && <div className="mt-2 flex items-center text-xs">
+              Balance:&nbsp;
+                <span className="font-semibold">
+                  {Number(Number(formatUnits(tokenBalance, 6)).toFixed(4))} USDC
+                </span>
+            </div>}
           </div>
 
           {/* Participation Type */}
@@ -402,9 +474,13 @@ export default function CreatePotPage() {
           <div>
             <label
               htmlFor="max-participants"
-              className="block text-base font-bold"
+              className="block"
             >
-              Max Members
+              <span className='text-base font-bold'>Max Members {" "}</span>
+              {/* Max participants validation error */}
+              <span
+                className={`text-xs font-medium text-red-500 mt-1 ${showError('maxParticipants') ? "visible" : "hidden"}`}
+              >{errors.maxParticipants}</span>
             </label>
             <p className="font-medium text-xs text-gray-500">Total rounds will be same as number of members</p>
             <Input
@@ -420,8 +496,9 @@ export default function CreatePotPage() {
                   value === "" ||
                   (/^\d+$/.test(value) && Number.parseInt(value, 10) >= 1)
                 ) {
+                  setTouched((prev) => ({ ...prev, maxParticipants: true }));
                   setMaxParticipants(value);
-                  if (clickedSubmit) validate({ maxParticipants: value });
+                  validate({ maxParticipants: value });
                 }
               }}
               onKeyDown={(e) => {
@@ -431,13 +508,8 @@ export default function CreatePotPage() {
                 }
               }}
               placeholder="Default is 255"
-              className="w-full mt-2"
+              className={`mt-2 w-full ${showError('maxParticipants') ? "outline-red-500 ring ring-red-500" : null}`}
             />
-            <p
-              className={`text-xs text-red-500 mt-1 ${
-                errors.maxParticipants ? "visible" : "hidden"
-              }`}
-            >{`${errors.maxParticipants}`}</p>
           </div>
           
           {/* Payment Summary */}
@@ -449,19 +521,36 @@ export default function CreatePotPage() {
 
               <div className="mb-2 mt-5 w-full flex items-start justify-between">
                 <p className="text-sm font-normal">Join Amount:</p>
-                <p className="text-sm font-normal">{amountUsdc} USDC</p>
+                <p className="text-sm font-normal">{amountTokenFormatted} USDC</p>
+              </div>
+
+              {/* <div className="mb-2 w-full flex items-start justify-between">
+                <p className="text-sm font-normal">Platform Fee:</p>
+                <p className="text-sm font-normal">{platformFeeEth ? `${platformFeeEth} ETH` : '-'}</p>
               </div>
 
               <div className="mb-2 w-full flex items-start justify-between">
-                <p className="text-sm font-normal">Platform Fee:</p>
-                <p className="text-sm font-normal">{dataCreatorFee?.formatted ?? "0"} ETH</p>
+                <p className="text-sm font-normal">Total Gas Fee{roundsForFee ? ` (${roundsForFee} rounds)` : null}:</p>
+                <p className="text-sm font-normal">{totalGasFee ? `${totalGasFee.formatted} ETH` : '-'}</p>
+              </div> */}
+
+              <div className="mb-2 w-full flex items-start justify-between">
+                <p className="text-sm font-normal">Platform Fee{validMaxParticipants ? ` (${maxParticipantsInt || MAX_PARTICIPANTS} Rounds)` : null}:</p>
+                <p className="text-sm font-normal">{totalFee ? `${totalFee.formatted} ETH` : '-'}</p>
               </div>
+
+              {(clickedSubmit || touched.maxParticipants) && isInsufficientNativeBalance && <div className="mb-2 w-full flex items-start justify-between">
+                <p className="text-sm font-medium text-red-500">Insufficient Balance:</p>
+                <p className="text-sm font-medium text-red-500">
+                  {Number(Number(formatEther(dataNativeBalance.value)).toFixed(4))} ETH
+                </p>
+              </div>}
 
               <hr />
 
               <div className="mt-2 mb-3 w-full flex items-start justify-between">
                 <p className="text-sm font-bold">Total:</p>
-                <p className="text-sm font-bold">{amountUsdc} USDC</p>
+                <p className="text-sm font-bold">{amountTokenFormatted} USDC</p>
               </div>
 
               <div className="mt-2 mb-3 w-full flex items-start justify-between border border-[#FFB300] rounded-[8px] bg-[#45412E] py-2 px-4">
