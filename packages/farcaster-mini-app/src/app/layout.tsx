@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import '@/app/globals.css';
-import { Providers } from '@/app/providers';
+import { Providers } from '@/providers';
 import { font } from '@/app/font';
 import AppLayout from '@/components/AppLayout';
 import { Toaster } from '@/components/ui/sonner';

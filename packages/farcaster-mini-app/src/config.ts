@@ -33,6 +33,7 @@ type TContractConfig = {
   deploymentBlockBigInt: bigint;
   contractAddress: Address;
   tokenAddress: Address;
+  tokenDecimals: number;
 };
 
 const chainIdToContractConfig: Record<TChainId, TContractConfig> = {
@@ -42,6 +43,7 @@ const chainIdToContractConfig: Record<TChainId, TContractConfig> = {
     deploymentBlockBigInt: 0n, // Not deployed on mainnet yet
     contractAddress: zeroAddress,
     tokenAddress: zeroAddress,
+    tokenDecimals: 6,
   },
   84532: {
     appKitNetwork: appKitBaseSepolia,
@@ -49,6 +51,7 @@ const chainIdToContractConfig: Record<TChainId, TContractConfig> = {
     deploymentBlockBigInt: 26625932n, // Deployment block for Base Sepolia
     contractAddress: PotluckAddressBaseSepolia as Address,
     tokenAddress: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
+    tokenDecimals: 6,
   },
 };
 
@@ -57,6 +60,7 @@ const chain: Chain = chainIdToContractConfig[chainId].chain;
 const deploymentBlockBigInt: bigint = chainIdToContractConfig[chainId].deploymentBlockBigInt;
 const contractAddress: Address = chainIdToContractConfig[chainId].contractAddress;
 const tokenAddress: Address = chainIdToContractConfig[chainId].tokenAddress;
+const tokenDecimals: number = chainIdToContractConfig[chainId].tokenDecimals;
 const MAX_PARTICIPANTS = 2 ** 8 - 1; // max value for uint8
 
 const PotCreatedEventSignature = 'event PotCreated(uint256 indexed potId, address indexed creator)';
@@ -79,6 +83,7 @@ export {
   deploymentBlockBigInt,
   contractAddress,
   tokenAddress,
+  tokenDecimals,
   PotCreatedEventSignature,
   PotJoinedEventSignature,
   PotPayoutEventSignature,

@@ -5,7 +5,7 @@ import { type Address, hexToString, formatUnits } from "viem";
 import { publicClient } from "@/clients/viem";
 
 const SUBGRAPH_URL =
-  "https://api.studio.thegraph.com/query/112614/potluck-subgraph/version/latest";
+  "https://api.studio.thegraph.com/query/117923/potluck/version/latest";
 const client = new GraphQLClient(SUBGRAPH_URL);
 
 const GET_ALL_ROUND_ZERO_POTS = gql`
@@ -333,6 +333,9 @@ async function mapRawPotToObjectMini(rp: RawPotMini): Promise<TPotObjectMini> {
   const entryAmount = BigInt(rp.entryAmount);
   const dec: number = await getDecimals(rp.tokenAddress);
 
+  /**
+   * @dev is this address in user.id always lowercase?
+   */
   const participants = rp.participants.map((x) => x.user.id);
   const totalParticipants = participants.length;
   const totalPool: string = formatUnits(entryAmount * BigInt(totalParticipants), dec);
