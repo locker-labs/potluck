@@ -79,7 +79,7 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
         address token;
         uint256 entryAmount;
         uint256 period;
-        uint32 totalParticipants;
+        uint8 totalParticipants;
         uint8 maxParticipants;
         address[] participants;
         bool isPublic;
