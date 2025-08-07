@@ -3,6 +3,7 @@ import { GraphQLClient, gql } from "graphql-request";
 import type { TPotObject, TPotObjectMini } from "./types";
 import { type Address, hexToString, formatUnits } from "viem";
 import { publicClient } from "@/clients/viem";
+import { MAX_PARTICIPANTS } from "@/config";
 
 const SUBGRAPH_URL =
   "https://api.studio.thegraph.com/query/117923/potluck/version/latest";
@@ -400,7 +401,7 @@ async function mapRawPotToObject(rp: RawPot): Promise<TPotObject> {
     entryAmountFormatted: formatUnits(entryAmount, dec),
     period,
     totalParticipants,
-    maxParticipants: Number(rp.maxParticipants),
+    maxParticipants: Number(rp.maxParticipants) || MAX_PARTICIPANTS,
     participants,
     isPublic: rp.isPublic,
 
