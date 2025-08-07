@@ -137,12 +137,11 @@ export function useJoinPot() {
     try {
       setJoinedPotId(null);
 
-      const pendingRounds = pot.maxParticipants - pot.round;
-      const approveAmount = entryAmount * BigInt(pendingRounds);
-      if (approveAmount > tokenAllowance) {
-        await approveTokens(approveAmount);
+	  if (pot.round === 0) {
+        const approveAmount = entryAmount * BigInt(pot.maxParticipants);
+        await approveTokens(tokenAllowance + approveAmount);
         await refetchTokenAllowance();
-      }
+	  }
 
       await joinPot(potId, fee.value);
       setJoinedPotId(potId);
