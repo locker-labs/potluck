@@ -29,7 +29,7 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
     error AlreadyJoined(uint256 potId, uint32 round, address user);
     error RoundNotReady(uint256 deadline, uint256 nowTimestamp);
     error InsufficientFundsToRollover(uint256 total, uint256 rollover);
-    error InsufficientFundsToCreatePot(uint256 sent, uint256 required);
+    error InsufficientFundsForAutoJoin(uint256 sent, uint256 required);
     error NoEligibleParticipants();
     error NotPotCreator(address sender, uint256 potId);
     error NotAllowed(address user, uint256 potId);
@@ -53,7 +53,7 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
 
     // VRF configuration parameters
     bytes32 public keyHash;
-    uint64 public s_subscriptionId;
+    uint256 public s_subscriptionId;
     uint16 public requestConfirmations;
     uint32 public callbackGasLimit;
 
@@ -119,7 +119,7 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
     }
 
     modifier onlyPotluckOwner() {
-        require(msg.sender == potluckOwner, "Not the owner");
+        require(msg.sender == potluckOwner, "Not the potluck owner");
         _;
     }
 
@@ -173,9 +173,9 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
         IERC20(token).safeTransferFrom(msg.sender, address(this), entryAmount);
 
         //  Collect fee to treasury
-        uint256 requiredFee = getRequiredFee(maxParticipants);
+        uint256 requiredFee = getCreatorFee(maxParticipants);
         if (msg.value < requiredFee) {
-            revert InsufficientFundsToCreatePot(msg.value, requiredFee);
+            revert InsufficientFundsForAutoJoin(msg.value, requiredFee);
         }
         payable(treasury).transfer(requiredFee);
         // Transfer the platform fee to the treasury
@@ -221,7 +221,7 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
     //––––––––––––––––––––
     /// @notice Join a pot for the current round.
     /// @param potId ID of the pot to join
-    function joinPot(uint256 potId) external {
+    function joinPot(uint256 potId) external payable nonReentrant {
         Pot storage p = pots[potId];
         if (p.balance == 0) revert PotDoesNotExist(potId);
         if (block.timestamp >= p.deadline) revert RoundEnded(p.deadline, block.timestamp);
@@ -230,10 +230,19 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
 
         bytes32 key = keccak256(abi.encodePacked(potId, p.round, msg.sender));
         if (hasJoinedRound[key]) revert AlreadyJoined(potId, p.round, msg.sender);
-
         // only increment totalParticipants in the first round
         if (p.round == 0) {
             p.totalParticipants++;
+            //  Collect fee to treasury
+            uint256 requiredFee = getParticipantFee(p.maxParticipants);
+            if (msg.value < requiredFee) {
+                revert InsufficientFundsForAutoJoin(msg.value, requiredFee);
+            }
+            payable(treasury).transfer(requiredFee);
+            if (msg.value > requiredFee) {
+                // Its sender's responsibility to ensure they can accept ETH.
+                (bool success,) = msg.sender.call{value: msg.value - requiredFee}("");
+            }
         } else {
             if (!hasJoinedRound[keccak256(abi.encodePacked(potId, p.round - 1, msg.sender))]) {
                 revert NotAllowed(msg.sender, potId);
@@ -246,6 +255,34 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
 
         hasJoinedRound[key] = true;
         emit PotJoined(potId, p.round, msg.sender);
+    }
+
+    /// @notice Join a pot on behalf of another participant.
+    /// @param potId ID of the pot to join
+    /// @param participant Address of the participant to join on behalf of
+    /// @dev This can only be called if the participant is allowed to join the pot and has already joined the previous round.
+    function joinOnBehalf(uint256 potId, address participant) public {
+        Pot storage p = pots[potId];
+        if (p.balance == 0) revert PotDoesNotExist(potId);
+        if (block.timestamp >= p.deadline) revert RoundEnded(p.deadline, block.timestamp);
+        if (!isAllowed[potId][participant] && !p.isPublic) revert NotAllowed(participant, potId);
+        if (p.round == 0) {
+            revert NotAllowed(msg.sender, potId);
+        }
+        if (!hasJoinedRound[keccak256(abi.encodePacked(potId, p.round - 1, participant))]) {
+            revert NotAllowed(participant, potId);
+        }
+
+        bytes32 key = keccak256(abi.encodePacked(potId, p.round, participant));
+        if (hasJoinedRound[key]) revert AlreadyJoined(potId, p.round, participant);
+
+        p.balance += p.entryAmount;
+        p.participants.push(participant);
+
+        hasJoinedRound[key] = true;
+        IERC20(p.token).safeTransferFrom(participant, address(this), p.entryAmount);
+
+        emit PotJoined(potId, p.round, participant);
     }
 
     //––––––––––––––––––––
@@ -294,34 +331,9 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
         emit PotEnded(potId);
     }
 
-    /// @notice Join a pot on behalf of another participant.
-    /// @param potId ID of the pot to join
-    /// @param participant Address of the participant to join on behalf of
-    /// @dev This can only be called if the participant is allowed to join the pot and has already joined the previous round.
-    function joinOnBehalf(uint256 potId, address participant) public {
-        Pot storage p = pots[potId];
-        if (p.balance == 0) revert PotDoesNotExist(potId);
-        if (block.timestamp >= p.deadline) revert RoundEnded(p.deadline, block.timestamp);
-        if (!isAllowed[potId][participant] && !p.isPublic) revert NotAllowed(participant, potId);
-        if (p.round == 0) {
-            revert NotAllowed(msg.sender, potId);
-        }
-        if (!hasJoinedRound[keccak256(abi.encodePacked(potId, p.round - 1, participant))]) {
-            revert NotAllowed(participant, potId);
-        }
-
-        bytes32 key = keccak256(abi.encodePacked(potId, p.round, participant));
-        if (hasJoinedRound[key]) revert AlreadyJoined(potId, p.round, participant);
-
-        p.balance += p.entryAmount;
-        p.participants.push(participant);
-
-        hasJoinedRound[key] = true;
-        IERC20(p.token).safeTransferFrom(participant, address(this), p.entryAmount);
-
-        emit PotJoined(potId, p.round, participant);
-    }
-
+    //––––––––––––––––––––
+    // BATCH OPERATIONS
+    //––––––––––––––––––––
     function triggerBatchPayout(uint256[] calldata potIds) external {
         for (uint256 i = 0; i < potIds.length; i++) {
             triggerPotPayout(potIds[i]);
@@ -340,7 +352,7 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
         }
     }
 
-    /// @dev Chainlink will call this with your random words
+    /// @dev Chainlink will call this with random words
     /// @notice Chainlink VRF callback with random words
     function fulfillRandomWords(uint256 requestId, uint256[] calldata randomWords) internal override {
         uint256 potId = requestToPot[requestId];
@@ -390,18 +402,28 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
         treasury = newTreasury;
     }
 
+    /// @notice Set the Chainlink VRF parameters
+    /// @param _keyHash The key hash for the VRF
+    /// @param _subscriptionId The subscription ID for the VRF
+    /// @param _requestConfirmations Number of confirmations for the VRF request
+    /// @param _callbackGasLimit Gas limit for the VRF callback
     function setChainlinkVRF(
-        address _vrfCoordinator,
         bytes32 _keyHash,
-        uint64 _subscriptionId,
+        uint256 _subscriptionId,
         uint16 _requestConfirmations,
         uint32 _callbackGasLimit
     ) external onlyPotluckOwner {
-        vrfCoordinator = VRFCoordinatorV2_5(_vrfCoordinator);
         keyHash = _keyHash;
         s_subscriptionId = _subscriptionId;
         requestConfirmations = _requestConfirmations;
         callbackGasLimit = _callbackGasLimit;
+    }
+
+    /// @notice Set the Chainlink VRF Coordinator address
+    /// @param _vrfCoordinator Address of the Chainlink VRF Coordinator
+    function setChainlinkVRF(address _vrfCoordinator) external onlyPotluckOwner {
+        require(_vrfCoordinator != address(0), "Invalid VRF Coordinator address");
+        vrfCoordinator = VRFCoordinatorV2_5(_vrfCoordinator);
     }
 
     /// @notice Withdraw all ETH from the contract to the treasury
@@ -422,8 +444,14 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
     function getRequests(uint256 potId) external view returns (PotRequest[] memory) {
         return requestedParticipants[potId];
     }
-    function getRequiredFee(uint8 maxParticipants) public view returns (uint256) {
-    uint256 slots = maxParticipants == 0 ? type(uint8).max : maxParticipants;
-    return platformFee + participantFee * slots * slots;
- }
+
+    function getCreatorFee(uint8 maxParticipants) public view returns (uint256) {
+        uint256 slots = maxParticipants == 0 ? type(uint8).max : maxParticipants;
+        return platformFee + participantFee * slots;
+    }
+
+    function getParticipantFee(uint8 maxParticipants) public view returns (uint256) {
+        uint256 slots = maxParticipants == 0 ? type(uint8).max : maxParticipants;
+        return participantFee * slots;
+    }
 }
