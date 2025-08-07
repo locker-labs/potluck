@@ -10,20 +10,15 @@ contract DeployPotluck is Script {
     function run() external {
         // load deployer key and config from env
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        address treasury          = vm.envAddress("TREASURY_ADDRESS");
-        address vrfCoordinator    = vm.envAddress("VRF_COORDINATOR");
-        uint256 platformFee       = 500_000_000_000_000;       // 0.0005 ETH
-        uint256 participantFee    = 1_200_000_000_000_000;    //  0.0012 ETH 
+        address treasury = vm.envAddress("TREASURY_ADDRESS");
+        address vrfCoordinator = 0x5C210eF41CD1a72de73bF76eC39637bB0d3d7BEE;
+        uint256 platformFee = 500_000_000_000_000; // 0.0005 ETH
+        uint256 participantFee = 120_000_000_000_000; //  0.00012 ETH
 
         vm.startBroadcast(deployerPrivateKey);
 
         // constructor: (uint256 _platformFee, uint256 _partFee, address _treasury, address _vrfCoordinator)
-        Potluck potluck = new Potluck(
-            platformFee,
-            participantFee,
-            treasury,
-            vrfCoordinator
-        );
+        Potluck potluck = new Potluck(platformFee, participantFee, treasury, vrfCoordinator);
 
         console.log("=== Deployment Info ===");
         console.log("Potluck deployed to: %s", address(potluck));
