@@ -5,7 +5,7 @@ import { type Address, hexToString, formatUnits } from "viem";
 import { publicClient } from "@/clients/viem";
 
 const SUBGRAPH_URL =
-  "https://api.studio.thegraph.com/query/112614/potluck-subgraph/version/latest";
+  "https://api.studio.thegraph.com/query/117923/potluck/version/latest";
 const client = new GraphQLClient(SUBGRAPH_URL);
 
 const GET_ALL_ROUND_ZERO_POTS = gql`
