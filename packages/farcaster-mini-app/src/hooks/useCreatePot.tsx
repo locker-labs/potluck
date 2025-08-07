@@ -181,9 +181,7 @@ export function useCreatePot() {
     setIsCreatingPot(true);
 
     try {
-      if (amount >= BigInt(tokenAllowance)) {
-        await approveTokens(amount * BigInt(maxParticipants || MAX_PARTICIPANTS));
-      }
+      await approveTokens(BigInt(tokenAllowance) + (amount * BigInt(maxParticipants || MAX_PARTICIPANTS)));
 
       await createPot(potName, amount, maxParticipants, timePeriod, isPublic, dataFee.value);
     } catch (error) {
