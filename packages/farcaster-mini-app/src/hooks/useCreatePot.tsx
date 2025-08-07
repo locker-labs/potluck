@@ -185,8 +185,7 @@ export function useCreatePot() {
         await approveTokens(amount * BigInt(maxParticipants || MAX_PARTICIPANTS));
       }
 
-      // TODO: replace with dataFee.value
-      await createPot(potName, amount, maxParticipants, timePeriod, isPublic, dataFee.value * BigInt(maxParticipants || MAX_PARTICIPANTS));
+      await createPot(potName, amount, maxParticipants, timePeriod, isPublic, dataFee.value);
     } catch (error) {
       toast.error("Error creating potluck", {
         description:

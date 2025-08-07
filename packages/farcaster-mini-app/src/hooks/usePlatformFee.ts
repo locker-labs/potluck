@@ -72,8 +72,7 @@ export function usePlatformFee(): UsePlatformFeeReturnType {
       return undefined;
     }
 
-    // TODO: replace with state.participantFeeWei * BigInt(maxParticipants || MAX_PARTICIPANTS)
-    const value = state.participantFeeWei * BigInt(maxParticipants || MAX_PARTICIPANTS) * BigInt(maxParticipants || MAX_PARTICIPANTS);
+    const value = state.participantFeeWei * BigInt(maxParticipants || MAX_PARTICIPANTS);
     const formatted = formatEther(value, "wei");
 
     return { value, formatted };
