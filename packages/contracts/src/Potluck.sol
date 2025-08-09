@@ -337,7 +337,7 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
     /// @dev Withdraw tokens from the contract
     /// @param token The address of the token to withdraw
     /// @param amount The amount of tokens to withdraw
-    function withdraw(address receiver,address token, uint256 amount) public {
+    function withdraw(address receiver,address token, uint256 amount) public nonReentrant {
         require(withdrawalBalances[receiver][token] >= amount, "Insufficient balance");
         withdrawalBalances[receiver][token] -= amount;
         IERC20(token).safeTransfer(receiver, amount);
@@ -365,6 +365,7 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
     }
 
     function withdrawBatch(address[] calldata receivers, address token, uint256[] calldata amounts) external {
+        require(receivers.length == amounts.length, "Mismatched arrays");
         for (uint256 i = 0; i < amounts.length; i++) {
             withdraw(receivers[i], token, amounts[i]);
         }
