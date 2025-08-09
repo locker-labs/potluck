@@ -454,9 +454,9 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
 
     /// @notice Allow a token for use in the potluck
     /// @param token The address of the token to allow
-    function allowToken(address token) external onlyPotluckOwner {
+    function setTokenStatus(address token, bool status) external onlyPotluckOwner {
         require(token != address(0), "Invalid token address");
-        allowedTokens[token] = true;
+        allowedTokens[token] = status;
     }
 
     //––––––––––––––––––––
