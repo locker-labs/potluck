@@ -1,90 +1,268 @@
-import React, { useEffect, useState } from "react";
+import type React from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getTokenBalance } from "@/lib/helpers/contract";
 import { tokenAddress as USDC } from "@/config";
-import { Address } from "viem";
+import { formatUnits, parseUnits, type Address } from "viem";
 import { GradientCard } from "../ui/GradientCard";
 import { GradientButton } from "../ui/Buttons";
+import { SectionHeading } from "../ui/SectionHeading";
+import { Input } from "@/components/ui/input";
+import { z } from "zod";
+import { usePotluck } from "@/providers/PotluckProvider";
+import Hero from "../sections/Hero";
+import { Loader2 } from "lucide-react";
 
 export interface TokenBalance {
-  symbol: string;
-  balance: string;
-  decimals: number;
-  address: Address;
+	symbol: string;
+	balance: bigint;
+	decimals: number;
+	address: Address;
 }
 
 interface TokenWithdrawProps {
-  address: Address;
+	address: Address;
 }
 
+const tokenWithdrawSchema = ({
+	tokenBalance,
+}: {
+	tokenBalance: bigint | undefined;
+}) => {
+	return z.object({
+		amount: z
+			.string()
+			.refine(
+				(val) =>
+					val !== "" && !Number.isNaN(Number(val)) && Number(val) >= 0.01,
+				{
+					message: "must be at least 0.01",
+				},
+			)
+			.refine(
+				(val) => {
+					// Accept only up to two decimal places
+					if (val === "") return true;
+					const decimals = val.split(".");
+					if (decimals.length < 2) return true;
+					return decimals[1].length <= 2;
+				},
+				{
+					message: "Only 2 decimal places allowed",
+				},
+			)
+			.refine(
+				(val) => {
+					if (val === "") return true;
+					const amountBigInt = BigInt(parseUnits(val, 6));
+					const isInsufficientTokenBalance =
+						tokenBalance !== undefined && amountBigInt > tokenBalance;
+					console.log({ isInsufficientTokenBalance });
+					return !Number.isNaN(Number(val)) && !isInsufficientTokenBalance;
+				},
+				{
+					message: "exceeds your balance",
+				},
+			),
+	});
+};
+
 const TokenWithdraw: React.FC<TokenWithdrawProps> = ({ address }) => {
-  // Placeholder for fetched tokens
-  const [tokens, setTokens] = useState<TokenBalance[]>([]);
-  const [amounts, setAmounts] = useState<{ [tokenAddress: string]: string }>({});
-  const [isLoading, setIsLoading] = useState(false);
+	const [tokens, setTokens] = useState<TokenBalance[]>([
+		{
+			symbol: "USDC",
+			balance: BigInt(45000000),
+			decimals: 6,
+			address: USDC,
+		},
+	]);
+	const [amounts, setAmounts] = useState<{ [tokenAddress: string]: string }>(
+		{},
+	);
+	const [isLoading, setIsLoading] = useState(false);
 
-  // TODO: Fetch tokens and balances for the given address here
+	const [token, setToken] = useState<TokenBalance | undefined>({
+		symbol: "USDC",
+		balance: BigInt(54040000),
+		decimals: 6,
+		address: USDC,
+	});
+	const [amount, setAmount] = useState("");
+	// Form Action State
+	const [touched, setTouched] = useState<{ [k: string]: boolean }>({});
+	const [errors, setErrors] = useState<{ [k: string]: string }>({});
+	const [clickedSubmit, setClickedSubmit] = useState(false);
 
-  const handleChange = (tokenAddress: string, value: string) => {
-    setAmounts((prev) => ({ ...prev, [tokenAddress]: value }));
-  };
+	const { dataNativeBalance, isLoading: isLoadingPotluck } = usePotluck();
 
-  const handleWithdraw = () => {
-    // TODO: Implement withdraw logic
-    // Example: send { address, withdrawals: amounts }
-    setIsLoading(true);
-    setTimeout(() => setIsLoading(false), 1000); // Placeholder
-  };
-    
-    useEffect(() => {
-      const fetchTokenBalances = async () => {
-        const usdcBalance = await getTokenBalance(address, USDC);
-        setTokens([{ symbol: "USDC", balance: usdcBalance.toString(), decimals: 6, address: USDC }]);
-      };
-      fetchTokenBalances();
-    }, [address]);
+	// TODO: Fetch tokens and balances for the given address here
 
-  return (
-      <GradientCard>
-        <p className="text-xs text-gray-400">Balances</p>
-      <div className="space-y-4">
-        {tokens.length === 0 ? (
-          <div className="text-md">
-            No savings found, start now!.
-          </div>
-        ) : (
-          tokens.map((token) => (
-            <div key={token.address} className="flex flex-col gap-1">
-              <div className="flex justify-between items-center">
-                <span className="font-medium">{token.symbol}</span>
-                <span className="text-xs text-gray-500">
-                  Balance: {token.balance}
-                </span>
-              </div>
-              <input
-                type="number"
-                min="0"
-                step={1 / Math.pow(10, token.decimals)}
-                className="border rounded px-2 py-1 text-sm"
-                placeholder={`Amount to withdraw (${token.symbol})`}
-                value={amounts[token.address] || ""}
-                onChange={(e) => handleChange(token.address, e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
-          ))
-        )}
-      </div>
-      {tokens.length > 0 && (
-        <GradientButton
-          className="mt-6 w-full"
-          onClick={handleWithdraw}
-          disabled={isLoading}
-        >
-          {isLoading ? "Withdrawing..." : "Withdraw"}
-        </GradientButton>
-      )}
-    </GradientCard>
-  );
+	const handleChange = (tokenAddress: string, value: string) => {
+		setAmounts((prev) => ({ ...prev, [tokenAddress]: value }));
+	};
+
+	const handleWithdraw = () => {
+		// TODO: Implement withdraw logic
+		// Example: send { address, withdrawals: amounts }
+		setIsLoading(true);
+		setTimeout(() => setIsLoading(false), 1000); // Placeholder
+	};
+
+	useEffect(() => {
+		const fetchTokenBalances = async () => {
+			setTokens([
+				{
+					symbol: token?.symbol ?? "USDC",
+					balance: token?.balance ?? BigInt(0),
+					decimals: token?.decimals ?? 6,
+					address: token?.address ?? USDC,
+				},
+			]);
+		};
+		fetchTokenBalances();
+	}, [address]);
+
+	const validationSchema = useMemo(
+		() =>
+			tokenWithdrawSchema({
+				tokenBalance: token?.balance ?? BigInt(0),
+			}),
+		[token],
+	);
+
+	// FUNCTIONS
+	// Accepts overrides for latest values
+	// Only for input validation
+	const validate = (
+		override?: Partial<{
+			name: string;
+			amount: string;
+			maxParticipants: string;
+			emoji: string;
+			timePeriod: bigint;
+		}>,
+	) => {
+		const values = {
+			name,
+			amount,
+			...override,
+		};
+		const result = validationSchema.safeParse(values);
+		if (!result.success) {
+			const fieldErrors: { [k: string]: string } = {};
+			for (const err of result.error.errors) {
+				if (err.path[0]) fieldErrors[err.path[0]] = err.message;
+			}
+			setErrors(fieldErrors);
+			return false;
+		}
+		setErrors({});
+		return true;
+	};
+
+	const hasTouched = Object.keys(touched).length > 0;
+	const hasErrors = Object.keys(errors).length > 0;
+	const showError = (key: string) =>
+		(clickedSubmit || touched[key]) && errors[key];
+
+	const isWithdrawing = false;
+
+	const disabled =
+		isLoading ||
+		isLoadingPotluck ||
+		isWithdrawing ||
+		((clickedSubmit || hasTouched) && hasErrors);
+	// TODO: take into account gas fee for dataNativeBalance
+
+	return (
+		<div>
+			<SectionHeading>Savings</SectionHeading>
+			<GradientCard>
+				<div className="space-y-4">
+					{tokens.length === 0 ? (
+						<div>
+							<p className="text-md">No savings found, start now!</p>
+						</div>
+					) : (
+						tokens.map((token) => (
+							<div
+								key={token.address}
+								className="w-full flex items-center justify-between"
+							>
+								<div>
+									{/* w-full flex items-center justify-between gap-4 */}
+									<p className="text-base font-bold text-gray-300">Balance</p>
+									<p className="pb-1 text-3xl font-bold">
+										{Number(formatUnits(token.balance, token.decimals))}{" "}
+										{token.symbol}
+									</p>
+								</div>
+							</div>
+						))
+					)}
+				</div>
+
+				{token ? (
+					<div className="mt-2 flex flex-col gap-1">
+						<div>
+							<label htmlFor="enrty-amount" className="block mb-2.5">
+								<span className="text-base font-bold text-gray-300">
+									Amount{" "}
+								</span>
+								<span
+									className={`font-medium text-xs text-red-500 ${showError("amount") ? "visible" : "hidden"}`}
+								>{`${errors.amount}`}</span>
+							</label>
+							<Input
+								className={`rounded-xl w-full ${showError("amount") ? "outline-red-500 ring ring-red-500" : null}`}
+								id="enrty-amount"
+								type="number"
+								value={amount}
+								onChange={(e) => {
+									// Prevent negative values
+									const value = e.target.value;
+									// Only allow up to two decimal places
+									if (
+										value === "" ||
+										(/^\d*(\.\d{0,2})?$/.test(value) &&
+											Number.parseFloat(value) >= 0)
+									) {
+										setTouched((prev) => ({ ...prev, amount: true }));
+										setAmount(value);
+										validate({ amount: value });
+									}
+								}}
+								onKeyDown={(e) => {
+									// Prevent typing minus sign
+									if (e.key === "-" || e.key === "e") {
+										e.preventDefault();
+									}
+								}}
+								placeholder={formatUnits(token.balance, token.decimals) ?? "0"}
+							/>
+						</div>
+					</div>
+				) : null}
+
+				{tokens.length > 0 && (
+					<GradientButton
+						className="mt-4 w-full"
+						onClick={handleWithdraw}
+						disabled={disabled}
+					>
+						<span className={"flex items-center justify-center gap-2"}>
+							<span>{isLoading ? "Loading" : "Withdraw"}</span>
+							{isLoading || isWithdrawing ? (
+								<Loader2
+									className="animate-spin h-5 w-5 text-white"
+									size={20}
+								/>
+							) : null}
+						</span>
+					</GradientButton>
+				)}
+			</GradientCard>
+		</div>
+	);
 };
 
 export default TokenWithdraw;

@@ -1,4 +1,6 @@
 "use client";
+
+// TODO: This component will be used for public profiles when we add reputation
 import { type Address, getAddress, isAddress } from "viem";
 import type { FUser } from "@/types/neynar";
 import { fetchFarcasterUsers } from "@/lib/api/fetchFarcasterUsers";
@@ -72,9 +74,9 @@ export default function Profile({ address }: { address: string }) {
       <h1 className="text-xl font-bold mb-4">Profile</h1>
       <div className="flex flex-col gap-4">
         {loading && <div>Loading Farcaster…</div>}
-        <UserCard user={fUser} address={normalized as Address} />
+        {fUser && <UserCard user={fUser} address={normalized as Address} />}
         <TokenWithdraw address={normalized as Address} />
-              <YourPots />
+              <YourPots type="created" />
               <Reputation />
         </div>
     </div>

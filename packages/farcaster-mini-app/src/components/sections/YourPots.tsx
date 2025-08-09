@@ -11,7 +11,7 @@ import { SectionHeading } from '@/components/ui/SectionHeading';
 
 let _fetchPotsEffectFlag = true; // prevent multiple fetches
 
-export default function YourPots() {
+export default function YourPots({ type }: { type: 'created' | 'joined' }) {
   const { handleJoinPot, joiningPotId, joinedPotId, tokenBalance } =
     useJoinPot();
   const {
@@ -47,12 +47,18 @@ export default function YourPots() {
     _fetchPotsEffectFlag = false;
 
     (async () => {
-      const pots = await getPotsByUser(address as Address);
+      let pots: TPotObject[] = [];
+      if (type === 'joined') {
+        pots = await getPotsByUser(address as Address);
+      } else if (type === 'created') {
+        // TODO: add a param in getPotsByUser to fetch only created pots
+        pots = await getPotsByUser(address as Address);
+      }
       setPots((prevPots) => [...prevPots, ...pots]);
       setLoading(false);
       _fetchPotsEffectFlag = true;
     })();
-  }, [address]);
+  }, [address, type]);
 
   // ---------
   // RENDERING
@@ -78,7 +84,7 @@ export default function YourPots() {
       key="your-pots"
     >
       <div>
-        <SectionHeading className={'mx-4'}>Your Pots</SectionHeading>
+        <SectionHeading className={'mx-4'}>{type === "joined" ? "Active" : "My"} Pots</SectionHeading>
         <div className="px-4 flex flex-row overflow-x-scroll gap-[12px] md:grid-cols-2 lg:grid-cols-3">
           {pots.map((pot: TPotObject) => (
             <YourPotCard
