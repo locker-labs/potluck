@@ -1,11 +1,11 @@
-import React from "react";
-import { Address } from "viem";
+import type React from "react";
+import type { Address } from "viem";
 import type { FUser } from "@/types/neynar";
 import { GradientCard2 } from "../ui/GradientCard";
 import { formatAddress } from "@/lib/address";
 
 interface UserCardProps {
-  user?: Pick<FUser, "fid" | "username" | "display_name" | "custody_address"> | null;
+  user: FUser | null;
   address: string;
 }
 
@@ -20,7 +20,7 @@ const UserCard: React.FC<UserCardProps> = ({ user, address }) => {
           <div className="flex justify-between items-center">
             <div className="text-sm mb-1">@{user.username}</div>
             <div className="font-mono text-sm">
-              {formatAddress(user.custody_address as Address)}
+              {formatAddress(address as Address)}
             </div>
           </div>
         </>

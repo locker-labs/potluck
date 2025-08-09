@@ -22,6 +22,7 @@ import { PotProgressBar } from '../subcomponents/PotProgressBar';
 import { NextDrawPill } from '../subcomponents/NextDrawPill';
 import { motion } from "motion/react";
 import { animate, initialDown, transition } from "@/lib/pageTransition";
+import { usePotluck } from '@/providers/PotluckProvider';
 
 const defaultLogsState = { loading: true, error: null, logs: [] };
 
@@ -42,6 +43,8 @@ export default function PotPage({ id }: { id: string }) {
     error: string | null;
     logs: LogEntry[];
   }>(defaultLogsState);
+
+  const { users, fetchUsers } = usePotluck();
 
   const {
     handleJoinPot,
@@ -232,15 +235,17 @@ export default function PotPage({ id }: { id: string }) {
           <p className="text-sm">Total Won</p>
         </div>
       </div>
-      {showRequests && <div className='mt-4'><JoinRequests potId={pot.id} /></div>}
+      {showRequests && <div className='mt-4'>
+        <JoinRequests potId={pot.id} users={users} fetchUsers={fetchUsers} />
+        </div>}
 
-      <div className="mt-4 border border-gray-500 pt-6 rounded-xl">
-        <div className="flex items-center gap-2 px-4">
+      <div className="mt-4 border border-gray-500 rounded-xl">
+        <div className="flex items-center gap-2 px-4 pt-4 pb-3">
           <TrendingUp strokeWidth="2px" size={18} color="#14b6d3" />
           <p>Recent Activities</p>
         </div>
-        <hr className="mt-2 border-gray-500" />
-        <RecentActivity logsState={logsState} />
+        <hr className="border-gray-500" />
+        <RecentActivity logsState={logsState} users={users} fetchUsers={fetchUsers} />
       </div>
     </motion.div>
   );
