@@ -58,16 +58,9 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
     uint16 public requestConfirmations;
     uint32 public callbackGasLimit;
 
-    enum RequestStatus {
-        Active,
-        Completed,
-        Cancelled
-    }
-
     struct PotRequest {
         address requestor;
         uint256 timestamp;
-        RequestStatus status;
     }
 
     struct Pot {
@@ -214,7 +207,7 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
     /// @param potId ID of the pot to request access to
     function requestPotAllow(uint256 potId) external {
         requestedParticipants[potId].push(
-            PotRequest({requestor: msg.sender, timestamp: block.timestamp, status: RequestStatus.Active})
+            PotRequest({requestor: msg.sender, timestamp: block.timestamp})
         );
         emit PotAllowRequested(potId, msg.sender);
     }
@@ -341,34 +334,6 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
         require(withdrawalBalances[msg.sender][token] >= amount, "Insufficient balance");
         withdrawalBalances[msg.sender][token] -= amount;
         IERC20(token).safeTransfer(msg.sender, amount);
-    }
-
-    //––––––––––––––––––––
-    // BATCH OPERATIONS
-    //––––––––––––––––––––
-    function triggerBatchPayout(uint256[] calldata potIds) external {
-        for (uint256 i = 0; i < potIds.length; i++) {
-            triggerPotPayout(potIds[i]);
-        }
-    }
-
-    function endBatch(uint256[] calldata potIds) external {
-        for (uint256 i = 0; i < potIds.length; i++) {
-            endPot(potIds[i]);
-        }
-    }
-
-    function triggerBatchJoinOnBehalf(uint256 potId, address[] calldata participants) external {
-        for (uint256 i = 0; i < participants.length; i++) {
-            joinOnBehalf(potId, participants[i]);
-        }
-    }
-
-    function withdrawBatch(address[] calldata tokens, uint256[] calldata amounts) external {
-        require(tokens.length == amounts.length, "Mismatched arrays");
-        for (uint256 i = 0; i < amounts.length; i++) {
-            withdraw(tokens[i], amounts[i]);
-        }
     }
 
     /// @dev Chainlink will call this with random words
