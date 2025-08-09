@@ -34,6 +34,7 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
     error NotPotCreator(address sender, uint256 potId);
     error NotAllowed(address user, uint256 potId);
     error NotAllParticipantsWon(uint256 potId);
+    error TokenNotAllowed(address token);
 
     //––––––––––––––––––––
     // STATE
@@ -88,10 +89,11 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
     mapping(uint256 => Pot) public pots;
     mapping(bytes32 => bool) public hasJoinedRound; // keccak(pot,round,user)
     mapping(bytes32 => bool) public hasWon; // keccak(pot,user)
-
+    mapping (address => bool) public allowedTokens; // Allowed tokens for pot entry
     // Simple allow-list: potId => participant => allowed
     mapping(uint256 => mapping(address => bool)) public isAllowed;
     mapping(uint256 => PotRequest[]) public requestedParticipants;
+    mapping(address => mapping(address=>uint256)) public withdrawalBalances; // user => token => balance
 
     // Maps chainlink requestId to potId and round
     mapping(uint256 => uint256) public requestToPot;
@@ -144,6 +146,7 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
     ) external payable nonReentrant {
         if (entryAmount == 0) revert EntryAmountZero();
         if (periodSeconds < 1 hours) revert PeriodTooShort();
+        if (!allowedTokens[token]) revert TokenNotAllowed(token);
 
         // Initialize the pot
         uint256 potId = potCount++;
@@ -261,7 +264,7 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
     /// @param potId ID of the pot to join
     /// @param participant Address of the participant to join on behalf of
     /// @dev This can only be called if the participant is allowed to join the pot and has already joined the previous round.
-    function joinOnBehalf(uint256 potId, address participant) public {
+    function joinOnBehalf(uint256 potId, address participant) public nonReentrant {
         Pot storage p = pots[potId];
         if (p.balance == 0) revert PotDoesNotExist(potId);
         if (block.timestamp >= p.deadline) revert RoundEnded(p.deadline, block.timestamp);
@@ -290,7 +293,7 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
     //––––––––––––––––––––
     /// @notice Trigger the payout for the current round of a pot.
     /// @param potId ID of the pot to trigger payout for
-    function triggerPotPayout(uint256 potId) public nonReentrant {
+    function triggerPotPayout(uint256 potId) public {
         Pot storage p = pots[potId];
         if (p.balance == 0) revert PotDoesNotExist(potId);
         if (block.timestamp < p.deadline) revert RoundNotReady(p.deadline, block.timestamp);
@@ -326,9 +329,18 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
         address token = p.token;
         uint256 entryAmount = p.entryAmount;
         for (uint256 i = 0; i < p.participants.length; i++) {
-            IERC20(token).safeTransfer(p.participants[i], entryAmount);
+            withdrawalBalances[p.participants[i]][token] += entryAmount;
         }
         emit PotEnded(potId);
+    }
+
+    /// @dev Withdraw tokens from the contract
+    /// @param token The address of the token to withdraw
+    /// @param amount The amount of tokens to withdraw
+    function withdraw(address receiver,address token, uint256 amount) public {
+        require(withdrawalBalances[receiver][token] >= amount, "Insufficient balance");
+        withdrawalBalances[receiver][token] -= amount;
+        IERC20(token).safeTransfer(receiver, amount);
     }
 
     //––––––––––––––––––––
@@ -352,6 +364,13 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
         }
     }
 
+    function withdrawBatch(address[] calldata receivers, address token, uint256[] calldata amounts) external {
+        for (uint256 i = 0; i < amounts.length; i++) {
+            withdraw(receivers[i], token, amounts[i]);
+        }
+    }
+
+
     /// @dev Chainlink will call this with random words
     /// @notice Chainlink VRF callback with random words
     function fulfillRandomWords(uint256 requestId, uint256[] calldata randomWords) internal override {
@@ -368,7 +387,7 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
         uint256 prize = p.balance - rollover;
 
         emit PotPayout(potId, winner, prize, round);
-        IERC20(p.token).safeTransfer(winner, prize);
+        withdrawalBalances[winner][p.token] += prize;
 
         if (round == p.totalParticipants - 1) {
             p.balance = 0;
@@ -382,6 +401,8 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
             p.deadline = block.timestamp + p.period;
         }
     }
+
+    
 
     //––––––––––––––––––––
     // OWNER ACTIONS
@@ -431,6 +452,13 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
         uint256 balance = address(this).balance;
         require(balance > 0, "No balance to withdraw");
         payable(treasury).transfer(balance);
+    }
+
+    /// @notice Allow a token for use in the potluck
+    /// @param token The address of the token to allow
+    function allowToken(address token) external onlyPotluckOwner {
+        require(token != address(0), "Invalid token address");
+        allowedTokens[token] = true;
     }
 
     //––––––––––––––––––––
