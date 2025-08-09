@@ -206,9 +206,7 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
     /// @notice Request to be allowed to join a private pot
     /// @param potId ID of the pot to request access to
     function requestPotAllow(uint256 potId) external {
-        requestedParticipants[potId].push(
-            PotRequest({requestor: msg.sender, timestamp: block.timestamp})
-        );
+        requestedParticipants[potId].push(PotRequest({requestor: msg.sender, timestamp: block.timestamp}));
         emit PotAllowRequested(potId, msg.sender);
     }
 
