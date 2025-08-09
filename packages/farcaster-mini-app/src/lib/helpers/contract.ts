@@ -126,3 +126,15 @@ export async function getParticipantFee(): Promise<bigint> {
     functionName: 'participantFee',
   })) as bigint;
 }
+
+export async function getTokenBalance(
+  user: Address,
+  token: Address
+): Promise<bigint> {
+  return (await publicClient.readContract({
+    address: contractAddress,
+    abi: abi,
+    functionName: "withdrawalBalances",
+    args: [user, token],
+  })) as bigint;
+}
