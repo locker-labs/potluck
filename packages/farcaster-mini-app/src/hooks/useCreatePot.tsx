@@ -110,11 +110,12 @@ export function useCreatePot() {
   const handleCreatePot = async (
     potName: string,
     amount: bigint,
-    maxParticipants: number,
+    maxMembers: number,
     timePeriod: bigint,
     isPublic: boolean
   ) => {
-    console.log('maxParticipants', maxParticipants, 'handlecreatepot')
+    const maxParticipants = maxMembers || MAX_PARTICIPANTS;
+
     await checkAndAddMiniApp();
 
     _potName = potName;
@@ -181,9 +182,8 @@ export function useCreatePot() {
     setIsCreatingPot(true);
 
     try {
-      if (amount >= BigInt(tokenAllowance)) {
-        await approveTokens(amount * BigInt(maxParticipants || MAX_PARTICIPANTS));
-      }
+      const approveAmount = amount * BigInt(maxParticipants);
+      await approveTokens(tokenAllowance + approveAmount);
 
       await createPot(potName, amount, maxParticipants, timePeriod, isPublic, dataFee.value);
     } catch (error) {
