@@ -89,11 +89,11 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
     mapping(uint256 => Pot) public pots;
     mapping(bytes32 => bool) public hasJoinedRound; // keccak(pot,round,user)
     mapping(bytes32 => bool) public hasWon; // keccak(pot,user)
-    mapping (address => bool) public allowedTokens; // Allowed tokens for pot entry
+    mapping(address => bool) public allowedTokens; // Allowed tokens for pot entry
     // Simple allow-list: potId => participant => allowed
     mapping(uint256 => mapping(address => bool)) public isAllowed;
     mapping(uint256 => PotRequest[]) public requestedParticipants;
-    mapping(address => mapping(address=>uint256)) public withdrawalBalances; // user => token => balance
+    mapping(address => mapping(address => uint256)) public withdrawalBalances; // user => token => balance
 
     // Maps chainlink requestId to potId and round
     mapping(uint256 => uint256) public requestToPot;
@@ -337,7 +337,7 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
     /// @dev Withdraw tokens from the contract
     /// @param token The address of the token to withdraw
     /// @param amount The amount of tokens to withdraw
-    function withdraw(address receiver,address token, uint256 amount) public nonReentrant {
+    function withdraw(address receiver, address token, uint256 amount) public nonReentrant {
         require(withdrawalBalances[receiver][token] >= amount, "Insufficient balance");
         withdrawalBalances[receiver][token] -= amount;
         IERC20(token).safeTransfer(receiver, amount);
@@ -371,7 +371,6 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
         }
     }
 
-
     /// @dev Chainlink will call this with random words
     /// @notice Chainlink VRF callback with random words
     function fulfillRandomWords(uint256 requestId, uint256[] calldata randomWords) internal override {
@@ -402,8 +401,6 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
             p.deadline = block.timestamp + p.period;
         }
     }
-
-    
 
     //––––––––––––––––––––
     // OWNER ACTIONS
