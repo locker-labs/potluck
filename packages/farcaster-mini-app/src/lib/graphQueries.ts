@@ -370,7 +370,7 @@ export type LogEntry = {
     participantIndex: number;
     potId: bigint;
     round: number;
-    txHash: Hex;
+    txHash: string;
     user: Address;
   };
 } | {
@@ -380,7 +380,7 @@ export type LogEntry = {
     amount: string;
     potId: bigint;
     round: number;
-    txHash: Hex;
+    txHash: string;
     winner: Address;
   };
 }
