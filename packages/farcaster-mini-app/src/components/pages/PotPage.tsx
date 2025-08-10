@@ -23,7 +23,6 @@ import { DeadlinePill } from '../subcomponents/DeadlinePill';
 import { motion } from "motion/react";
 import { animate, initialDown, transition } from "@/lib/pageTransition";
 import { usePotluck } from '@/providers/PotluckProvider';
-import { EntryPeriodAndMembers } from '../subcomponents/EntryPeriodAndMembers';
 import { PotInfo } from '../subcomponents/PotInfo';
 
 const defaultLogsState = { loading: true, error: null, logs: [] };
@@ -116,7 +115,7 @@ export default function PotPage({ id }: { id: string }) {
   // 2️⃣ Main content
   return (
     <motion.div
-      className={'px-4'}
+      className={'mt-2 px-4'}
       initial={initialDown}
       animate={animate}
       transition={transition}
