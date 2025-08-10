@@ -83,17 +83,17 @@ export async function fetchPot(potIdBigInt: bigint): Promise<TPot> {
     args: [potIdBigInt],
   })) as TPot;
 }
+*/
 
-// Dead code
+
 export async function getPotParticipants(potIdBigInt: bigint): Promise<Address[]> {
   return (await publicClient.readContract({
     address: contractAddress,
     abi: abi,
-    functionName: 'getParticipants',
+    functionName: "getParticipants",
     args: [potIdBigInt],
   })) as Address[];
 }
-*/
 
 // TODO: create a subgraph query to replace its usage
 export async function getHasJoinedRound(
