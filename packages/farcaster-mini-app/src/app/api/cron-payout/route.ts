@@ -124,7 +124,7 @@ export async function GET() {
     const now = BigInt(Math.floor(Date.now() / 1000));
     const eligiblePayoutPots: bigint[] = [];
     const eligibleEndPots: bigint[] = [];
-    const eligibleJoinPots: { potId: bigint; user: Address[] }[] = [];
+    const eligibleJoinPots: { potId: bigint; users: Address[] }[] = [];
     console.log(`🔔 Checking ${potCount} pots for payouts...`);
     // 1) Find all eligible pots
     for (let i = 0; i < potCount; i++) {
@@ -150,10 +150,6 @@ export async function GET() {
       });
 
       const pot = potArrayToObject(p);
-      potStateCache.set(i, {
-        deadline: pot.deadline,
-        balance: pot.balance,
-      });
       const currentDeadline = pot.deadline;
       if (now >= currentDeadline && pot.balance > 0n) {
         const toEnd = await toEndPot(i);
@@ -163,6 +159,10 @@ export async function GET() {
           eligiblePayoutPots.push(BigInt(i));
         }
       } else if (now < currentDeadline) {
+        potStateCache.set(i, {
+          deadline: pot.deadline,
+          balance: pot.balance,
+        });
         const eligibleUsers: Address[] = [];
         const joinedParticipants = await getPotParticipants(BigInt(i));
         // Pot is not yet ended, check for auto joiners
@@ -181,10 +181,11 @@ export async function GET() {
             eligibleUsers.push(contribution.user.id);
           }
         }
-        eligibleJoinPots.push({
-          potId: BigInt(i),
-          user: eligibleUsers,
-        });
+        if (eligibleUsers.length > 0)
+          eligibleJoinPots.push({
+            potId: BigInt(i),
+            users: eligibleUsers,
+          });
       }
     }
 
@@ -193,7 +194,7 @@ export async function GET() {
       const txHash = await writeContract(walletClient, {
         address: batcherAddress,
         abi: batcherAbi,
-        functionName: "triggerBatchPayout",
+        functionName: "batchTriggerPayout",
         args: [eligiblePayoutPots],
       });
       console.log(
@@ -225,7 +226,7 @@ export async function GET() {
           address: batcherAddress,
           abi: batcherAbi,
           functionName: "triggerBatchJoinOnBehalf",
-          args: [eligible],
+          args: [eligible.potId, eligible.users],
         });
         await waitForTransactionReceipt(publicClient, { hash: txHash });
       }
@@ -233,6 +234,7 @@ export async function GET() {
     return NextResponse.json({
       triggered: eligiblePayoutPots.length,
       ended: eligibleEndPots.length,
+      autoJoined: eligibleJoinPots.length,
       success: true,
       checked: potCount,
     });
