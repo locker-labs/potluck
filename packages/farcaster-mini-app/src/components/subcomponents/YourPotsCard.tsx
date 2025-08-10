@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import type { TPotObject } from "@/lib/types";
 import type { Address } from "viem";
-import { Loader2, UsersRound } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { BorderButton, GradientButton4 } from "../ui/Buttons";
 import { GradientCard2 } from "../ui/GradientCard";
-import { NextDrawPill } from "./NextDrawPill";
+import { DeadlinePill } from "./DeadlinePill";
 import { PotProgressBar } from "./PotProgressBar";
 import { TransitionLink } from "@/components/TransitionLink";
+import { EntryPeriodAndMembers } from "./EntryPeriodAndMembers";
+import { PotInfo } from "./PotInfo";
 
 export function YourPotCard({
 	pot,
@@ -86,42 +88,13 @@ export function YourPotCard({
 			className={`min-w-[315px] max-w-full p-[12px] ${className}`}
 		>
 			<div className={"flex justify-end"}>
-				<NextDrawPill pot={pot} className={"text-[15px]"} />
+				<DeadlinePill pot={pot} className={"text-[15px]"} />
 			</div>
 			<p className="text-[18px] font-bold leading-[1.2] line-clamp-1">
 				{pot.name}
 			</p>
 
-			<div className="mt-2 grid grid-cols-5">
-				{/* Total Pool amount */}
-				<div className="col-span-5">
-					<p className="w-full text-end text-cyan-400 font-bold text-[38px] leading-none">
-						${pot.totalPool}
-					</p>
-				</div>
-
-				{/* Participants, Entry amount, Total pool text */}
-				<div className="col-span-3 flex justify-start gap-8">
-					<div className="flex items-center justify-start gap-1">
-						<UsersRound strokeWidth="1.25px" size={18} color="#14b6d3" />
-						<span className="font-base text-[14px]">
-							{isRoundZero
-								? `${String(pot.participants.length)}/${String(
-										pot.maxParticipants,
-									)}`
-								: `${String(pot.participants.length)}/${String(
-										pot.totalParticipants,
-									)}`}
-						</span>
-					</div>
-					<p className="font-base text-[14px] whitespace-nowrap text-left">
-						${pot.entryAmountFormatted} {pot.periodString}
-					</p>
-				</div>
-				<p className="col-span-2 font-base text-[14px] text-right">
-					Total Pool
-				</p>
-			</div>
+			<PotInfo pot={pot} />
 
 			{/* Pot progress bar */}
 			<PotProgressBar pot={pot} />
@@ -130,12 +103,12 @@ export function YourPotCard({
 			<div className={"w-full mt-[14px] grid grid-cols-2 gap-4"}>
 				{/* View Details Button */}
 				<TransitionLink href={`/pot/${pot.id}`}>
-				<BorderButton
-					type="button"
-					className="h-[30px] max-w-min min-w-[87px] whitespace-nowrap flex items-center justify-center"
-				>
-					View Details
-				</BorderButton>
+					<BorderButton
+						type="button"
+						className="h-[30px] max-w-min min-w-[87px] whitespace-nowrap flex items-center justify-center"
+					>
+						View Details
+					</BorderButton>
 				</TransitionLink>
 
 				{/* Join Round Button */}

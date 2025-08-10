@@ -1,6 +1,6 @@
 'use client';
 
-import { TrendingUp, Loader2, UsersRound } from 'lucide-react';
+import { TrendingUp, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { TPotObject } from "@/lib/types/contract.type";
 import { GradientButton3 } from "@/components/ui/Buttons";
@@ -19,10 +19,12 @@ import { useUserPotRequestInfo } from '@/hooks/useUserPotRequestInfo';
 import { useUserPotJoinInfo } from '@/hooks/useUserPotJoinInfo';
 import type { Address } from 'viem';
 import { PotProgressBar } from '../subcomponents/PotProgressBar';
-import { NextDrawPill } from '../subcomponents/NextDrawPill';
+import { DeadlinePill } from '../subcomponents/DeadlinePill';
 import { motion } from "motion/react";
 import { animate, initialDown, transition } from "@/lib/pageTransition";
 import { usePotluck } from '@/providers/PotluckProvider';
+import { EntryPeriodAndMembers } from '../subcomponents/EntryPeriodAndMembers';
+import { PotInfo } from '../subcomponents/PotInfo';
 
 const defaultLogsState = { loading: true, error: null, logs: [] };
 
@@ -145,38 +147,11 @@ export default function PotPage({ id }: { id: string }) {
       <GradientCard2 className="w-full">
         <div>
           <div className="flex">
-            <NextDrawPill pot={pot} />
+            <DeadlinePill pot={pot} />
           </div>
         </div>
 
-        {/* Total Pool amount, Participants, Entry amount, Total pool text */}
-        <div className="mt-2 grid grid-cols-5">
-          <div className="col-span-5">
-            <p className="w-full text-end text-cyan-400 font-bold text-[38px] leading-none">
-              ${pot.totalPool}
-            </p>
-          </div>
-          <div className="col-span-3 grid grid-cols-2">
-            <div className="flex items-center justify-start gap-1">
-              <UsersRound strokeWidth="1.25px" size={18} color="#14b6d3" />
-              <span className="font-base text-[14px]">
-                {pot.round === 0
-                  ? `${String(pot.participants.length)}/${String(
-                      pot.maxParticipants
-                    )}`
-                  : `${String(pot.participants.length)}/${String(
-                      pot.totalParticipants
-                    )}`}
-              </span>
-            </div>
-            <p className="font-base text-[14px] whitespace-nowrap text-left">
-              ${pot.entryAmountFormatted} {pot.periodString}
-            </p>
-          </div>
-          <p className="col-span-2 font-base text-[14px] text-right">
-            Total Pool
-          </p>
-        </div>
+        <PotInfo pot={pot} />
 
         {/* Pot progress bar */}
         <PotProgressBar pot={pot} />

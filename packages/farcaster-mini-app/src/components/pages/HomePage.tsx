@@ -19,7 +19,7 @@ export default function HomePage() {
       <AnimatePresence>
         {isConnected && !!address ? <YourPots type='joined' /> : null}
       </AnimatePresence>
-        <div className={'px-4'}>
+        <div className={'mt-6 px-4'}>
           <Hero />
         </div>
         <div className={'mt-6 px-4'}>
