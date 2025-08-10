@@ -241,6 +241,44 @@ const GET_POT_ROUND_PARTICIPANTS = gql`
 `;
 
 // ——————————————————————————————————————————————————————————————
+// Get all allowed addresses for a pot
+// ——————————————————————————————————————————————————————————————
+const GET_POT_ALLOWED_USERS = gql`
+  query GetAllowedUsers($potId: ID!) {
+    pot(id: $potId) {
+      allowedUsers {
+        user {
+          id
+          address
+        }
+        addedAt
+        addedBy {
+          id
+          address
+        }
+      }
+    }
+  }
+`;
+
+// ——————————————————————————————————————————————————————————————
+// Get pending allow requests for a pot
+// ——————————————————————————————————————————————————————————————
+const GET_POT_PENDING_REQUESTS = gql`
+  query GetPendingAllowRequests($potId: ID!) {
+    pot(id: $potId) {
+      allowRequests(where: { status: PENDING }) {
+        user {
+          id
+          address
+        }
+        requestedAt
+      }
+    }
+  }
+`;
+
+// ——————————————————————————————————————————————————————————————
 // Raw types
 // ——————————————————————————————————————————————————————————————
 
@@ -300,6 +338,17 @@ type GqlPotInfoResponse = {
 type GqlPotParticipationInfoResponse = {
   allowRequests: { id: string }[];
   allowedUsers: { id: string }[];
+};
+
+type RawAllowedUser = {
+  user: { id: Address; address: string };
+  addedAt: string;
+  addedBy: { id: Address; address: string };
+};
+
+type RawPendingRequest = {
+  user: { id: Address; address: string };
+  requestedAt: string;
 };
 
 // ——————————————————————————————————————————————————————————————
@@ -616,4 +665,22 @@ export async function getPotRoundParticipants(
     contributions: RawRoundParticipant[];
   }>(GET_POT_ROUND_PARTICIPANTS, vars);
   return contributions;
+}
+
+export async function getPotAllowedUsers(potId: bigint): Promise<Address[]> {
+  const vars = { potId: potId.toString() };
+  const { pot } = await client.request<{
+    pot: { allowedUsers: RawAllowedUser[] };
+  }>(GET_POT_ALLOWED_USERS, vars);
+  if (!pot?.allowedUsers) return [];
+  return pot.allowedUsers.map((au) => au.user.id);
+}
+
+export async function getPotPendingRequests(potId: bigint): Promise<Address[]> {
+  const vars = { potId: potId.toString() };
+  const { pot } = await client.request<{
+    pot: { allowRequests: RawPendingRequest[] };
+  }>(GET_POT_PENDING_REQUESTS, vars);
+  if (!pot?.allowRequests) return [];
+  return pot.allowRequests.map((req) => req.user.id);
 }
