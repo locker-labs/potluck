@@ -138,7 +138,7 @@ export function JoinPotButton({
 		return (
 			<GradientButton2
 				isActive={true}
-				className="w-full h-[35px] flex items-center justify-center mt-3 mx-auto shadow-lg hover:shadow-xl transition-all duration-300 text-base font-bold rounded-xl"
+				className={`w-full h-[35px] flex items-center justify-center mt-3 mx-auto shadow-lg disabled:cursor-not-allowed transition-all duration-300 text-base font-bold rounded-xl ${disabled ? "" : "hover:shadow-xl"}`}
 				onClick={onClick}
 				disabled={disabled}
 			>
