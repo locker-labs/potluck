@@ -127,7 +127,11 @@ const TokenWithdraw: React.FC<TokenWithdrawProps> = ({ address, isMyAddress }) =
 		(clickedSubmit || touched[key]) && errors[key];
 
 
-  const isLoading = isLoadingWithdraw || isLoadingPotluck;
+    /**
+	 * @dev do not add isWithdrawing in isLoading but keep it in disabled
+	 * this is to display 'Withdraw' text with loader when isWithdrawing is true
+	 */
+    const isLoading = isLoadingWithdraw || isLoadingPotluck;
 
 	const disabled =
 		isLoading || isWithdrawing || ((clickedSubmit || hasTouched) && hasErrors);
@@ -142,12 +146,17 @@ const TokenWithdraw: React.FC<TokenWithdrawProps> = ({ address, isMyAddress }) =
 	};
 	// TODO: take into account gas fee for dataNativeBalance
 
+	const hasBalance = withdrawBalance !== undefined && withdrawBalance > BigInt(0);
+	const hasNoBalance = withdrawBalance !== undefined && withdrawBalance === BigInt(0);
+	const showWithdraw = isMyAddress && token && hasBalance;
+	const showStartSaving = isMyAddress && token && hasNoBalance;
+
 	return (
 		<div>
 			<SectionHeading>Savings</SectionHeading>
 			<GradientCard>
 				<div className="space-y-4">
-					{tokens.length === 0 ? (
+					{!showStartSaving ? (
 						<div>
 							<p className="text-md">No savings found, start now!</p>
 						</div>
@@ -170,7 +179,8 @@ const TokenWithdraw: React.FC<TokenWithdrawProps> = ({ address, isMyAddress }) =
 					)}
 				</div>
 
-				{isMyAddress && token ? (
+                {/* Withdraw Amount Input */}
+				{showWithdraw ? (
 					<div className="mt-2 flex flex-col gap-1">
 						<div>
 							<label htmlFor="enrty-amount" className="block mb-2.5">
@@ -212,7 +222,8 @@ const TokenWithdraw: React.FC<TokenWithdrawProps> = ({ address, isMyAddress }) =
 					</div>
 				) : null}
 
-				{isMyAddress && token && (
+                {/* Withdraw Button */}
+				{showWithdraw ? (
 					<GradientButton
 						className="mt-4 w-full"
 						onClick={onClick}
@@ -228,7 +239,7 @@ const TokenWithdraw: React.FC<TokenWithdrawProps> = ({ address, isMyAddress }) =
 							) : null}
 						</span>
 					</GradientButton>
-				)}
+				) : null}
 			</GradientCard>
 		</div>
 	);
