@@ -5,9 +5,11 @@ import "./Potluck.sol";
 
 contract PotluckBatcher {
     Potluck immutable potluck;
+
     constructor(address _potluck) {
         potluck = Potluck(_potluck);
     }
+
     function batchTriggerPayout(uint256[] memory potIds) public {
         for (uint256 i = 0; i < potIds.length; i++) {
             potluck.triggerPotPayout(potIds[i]);
