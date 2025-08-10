@@ -101,7 +101,7 @@ export function YourPotCard({
 				</div>
 
 				{/* Participants, Entry amount, Total pool text */}
-				<div className="col-span-3 grid grid-cols-2">
+				<div className="col-span-3 flex justify-start gap-8">
 					<div className="flex items-center justify-start gap-1">
 						<UsersRound strokeWidth="1.25px" size={18} color="#14b6d3" />
 						<span className="font-base text-[14px]">
