@@ -20,11 +20,14 @@ export function useWithdraw() {
 				isLoadingNativeBalance,
         refetchNativeBalance,
         refetchTokenBalance,
+        withdrawBalance,
+        isLoadingWithdrawBalance,
+        refetchWithdrawBalance
   } = usePotluck();
   const { address } = useAccount();
   const { writeContractAsync } = useWriteContract();
 
-  const isLoading = isLoadingNativeBalance;
+  const isLoading = isLoadingNativeBalance || isLoadingWithdrawBalance;
 
   const withdraw = async (
     token: Address,
@@ -96,6 +99,16 @@ export function useWithdraw() {
       return;
     }
 
+    if (withdrawBalance === undefined) {
+      toast.error("Unable to fetch withdraw balance. Please try again");
+      return;
+    }
+
+    if (withdrawBalance < amount) {
+      toast.error("Insufficient withdraw balance");
+      return;
+    }
+
     // if (gasFee.value > dataNativeBalance.value) {
     //   toast.error(`You do not have enough native tokens. Balance: ${Number(Number(formatEther(dataNativeBalance.value, "wei")).toFixed(4))} ETH`);
     //   return;
@@ -122,6 +135,7 @@ export function useWithdraw() {
   useEffect(() => {
     refetchTokenBalance();
     refetchNativeBalance();
+    refetchWithdrawBalance();
   }, [isWithdrawing]);
 
   return {
@@ -130,5 +144,7 @@ export function useWithdraw() {
     hash,
     isLoading,
     dataNativeBalance,
+    withdrawBalance,
+    refetchWithdrawBalance
   };
 }

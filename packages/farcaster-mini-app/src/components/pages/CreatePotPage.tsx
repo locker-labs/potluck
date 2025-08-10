@@ -217,7 +217,7 @@ export default function CreatePotPage() {
 
   return (
       <motion.div
-          className={'px-4'}
+          className={'pt-2 px-4'}
           initial={initialDown}
           animate={animate}
           transition={transition}

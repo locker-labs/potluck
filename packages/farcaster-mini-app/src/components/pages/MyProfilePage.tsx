@@ -49,7 +49,7 @@ export function MyProfilePage() {
 						<TokenWithdraw address={address} isMyAddress={true} />
 					</div>
 
-					<YourPots type="created" address={address} isConnectedAddress={true} />
+					<YourPots type="created" creator={address} />
 
 					<div className="px-4">
 						<Reputation />

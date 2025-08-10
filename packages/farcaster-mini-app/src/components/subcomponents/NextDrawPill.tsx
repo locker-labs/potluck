@@ -1,17 +1,21 @@
 import { timeFromNow } from "@/lib/helpers/time";
 import { Pill } from "../ui/Pill";
 import { Clock5 } from "lucide-react";
+import type { TPotObject } from "@/lib/types";
 
 export function NextDrawPill({
-    deadline,
-    deadlinePassed,
+	pot,
 	className,
 }: {
-    deadline: bigint;
-	deadlinePassed: boolean;
+    pot: Pick<TPotObject, "ended" | "deadline" | "deadlinePassed">;
 	className?: string;
 }) {
-    const text = deadlinePassed ? "Awaiting payout" : `Next draw in: ${timeFromNow(Number(deadline))}`
+    const text = pot.ended
+					? "Ended"
+					: pot.deadlinePassed
+						? "Awaiting payout"
+						: `Next draw in: ${timeFromNow(Number(pot.deadline))}`;
+
 	return (
 		<Pill>
 			<Clock5 size={14} className="text-cyan-400" />

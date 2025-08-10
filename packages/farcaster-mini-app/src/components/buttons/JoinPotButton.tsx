@@ -45,7 +45,6 @@ export function JoinPotButton({
 
 	// DERIVED STATE
 	const initialLoading: boolean = isLoadingJoinPot || loadingPot;
-	const isPublic: boolean = pot.isPublic;
 	const isRoundZero: boolean = pot.round === 0;
 	const isJoiningPot: boolean = joiningPotId !== null;
 	const isJoiningThisPot: boolean = isJoiningPot && joiningPotId === potId;
@@ -55,15 +54,14 @@ export function JoinPotButton({
 		isRoundZero && pot.participants.length === pot.maxParticipants;
 	const insufficientBalance: boolean =
 		tokenBalance !== undefined && tokenBalance < pot.entryAmount;
-	const deadlinePassed: boolean =
-		pot.deadline < BigInt(Math.floor(Date.now() / 1000));
 
 	const showLoader = initialLoading || isJoiningThisPot || isRequestingThisPot;
 
 	const disabled: boolean =
 		initialLoading ||
+		pot.ended ||
 		potFull ||
-		deadlinePassed ||
+		pot.deadlinePassed ||
 		(!!address &&
 			(isJoiningPot ||
 				isRequestingPot ||
@@ -75,11 +73,13 @@ export function JoinPotButton({
 
 	const buttonText = initialLoading ? (
 		"Loading"
+	) : pot.ended ? (
+		"Ended"
 	) : hasJoinedRound ? (
 		"Joined"
 	) : isJoiningThisPot ? (
 		"Joining"
-	) : deadlinePassed ? (
+	) : pot.deadlinePassed ? (
 		"Expired ⌛"
 	) : potFull ? (
 		"Pot Full 📦"
@@ -88,7 +88,7 @@ export function JoinPotButton({
 	) : insufficientBalance ? (
 		"Insufficient Balance 💰"
 	) : isRoundZero ? (
-		isPublic ? (
+		pot.isPublic ? (
 			"Join Pot"
 		) : isRequestingThisPot ? (
 			"Requesting to Join"
@@ -118,7 +118,7 @@ export function JoinPotButton({
 	const onClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
 		e.preventDefault();
 		e.stopPropagation();
-		if (isPublic || isAllowed) {
+		if (pot.isPublic || isAllowed) {
 			await handleJoinPot(pot);
 		} else if (!hasRequested) {
 			await handleRequest(pot.id);

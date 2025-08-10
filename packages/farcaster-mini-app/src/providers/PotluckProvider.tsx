@@ -1,4 +1,4 @@
-import { contractAddress, tokenAddress, tokenDecimals } from "@/config";
+import { abi, contractAddress, tokenAddress, tokenDecimals } from "@/config";
 import {
 	usePlatformFee,
 	type UsePlatformFeeReturnType,
@@ -42,11 +42,13 @@ type PotluckContextType = Pick<
 		| undefined;
 	tokenBalance: bigint | undefined;
 	tokenAllowance: bigint | undefined;
+	withdrawBalance: bigint | undefined;
 	isLoading: boolean;
 	isLoadingFee: boolean;
 	isLoadingNativeBalance: boolean;
 	isLoadingTokenAllowance: boolean;
 	isLoadingTokenBalance: boolean;
+	isLoadingWithdrawBalance: boolean;
 	isPendingApproveTokens: boolean;
 	approveTokens: (amount: bigint) => Promise<void>;
 	refetch: () => Promise<void>;
@@ -67,6 +69,9 @@ type PotluckContextType = Pick<
 	) => Promise<QueryObserverResult<bigint, ReadContractErrorType>>;
 	refetchTokenBalance: (
 		options?: RefetchOptions,
+	) => Promise<QueryObserverResult<bigint, ReadContractErrorType>>;
+	refetchWithdrawBalance: (
+		options?: RefetchOptions | undefined,
 	) => Promise<QueryObserverResult<bigint, ReadContractErrorType>>;
 	users: Record<Address, FUser | null>;
 	fetchUsers: (addresses: Address[]) => void;
@@ -116,6 +121,17 @@ export const PotluckProvider = ({ children }: { children: ReactNode }) => {
 		functionName: "allowance",
 		args: [address as Address, contractAddress],
 		query: { enabled: !!address, refetchInterval: 5000 },
+	});
+	const {
+		data: withdrawBalance,
+		isLoading: isLoadingWithdrawBalance,
+		refetch: refetchWithdrawBalance,
+	} = useReadContract({
+		address: tokenAddress,
+		abi: abi,
+		functionName: "withdrawalBalances",
+		args: [address, tokenAddress],
+		query: { enabled: !!address },
 	});
 	const {
 		platformFeeWei,
@@ -199,6 +215,11 @@ export const PotluckProvider = ({ children }: { children: ReactNode }) => {
 				refetch,
 				users,
 				fetchUsers,
+				isLoadingWithdrawBalance,
+				withdrawBalance: withdrawBalance as bigint | undefined,
+				refetchWithdrawBalance: refetchWithdrawBalance as (
+					options?: RefetchOptions,
+				) => Promise<QueryObserverResult<bigint, ReadContractErrorType>>,
 			}}
 		>
 			{children}

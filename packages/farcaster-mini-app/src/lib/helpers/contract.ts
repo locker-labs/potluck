@@ -19,6 +19,7 @@ export const periodSecondsMap = {
   monthly: BigInt(monthSeconds),
 };
 
+/**
 function getPeriodInText(period: bigint): string {
   for (const [key, value] of Object.entries(periodSecondsMap)) {
     if (period === value) {
@@ -92,6 +93,7 @@ export async function getPotParticipants(potIdBigInt: bigint): Promise<Address[]
     args: [potIdBigInt],
   })) as Address[];
 }
+*/
 
 // TODO: create a subgraph query to replace its usage
 export async function getHasJoinedRound(

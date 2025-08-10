@@ -11,10 +11,11 @@ import { SectionHeading } from '@/components/ui/SectionHeading';
 
 let _fetchPotsEffectFlag = true; // prevent multiple fetches
 
-export default function YourPots({ type, address: addressWithCheckSum, isConnectedAddress }: { type: 'created' | 'joined', address: Address | undefined, isConnectedAddress: boolean }) {
+export default function YourPots({ type, creator }: { type: 'created' | 'joined', creator?: Address }) {
   const { handleJoinPot, joiningPotId, joinedPotId, tokenBalance } =
     useJoinPot();
   const {
+    address: addressWithCheckSum,
     isConnected,
   } = useAccount();
   const address = addressWithCheckSum?.toLowerCase() as Address | undefined;
@@ -37,7 +38,11 @@ export default function YourPots({ type, address: addressWithCheckSum, isConnect
 
   // Get logs from contract on mount
   useEffect(() => {
-    if (!address) return;
+    if (type === 'joined') {
+      if (!address) return;
+    } else if (type === 'created') {
+      if (!creator) return;
+    }
 
     if (!_fetchPotsEffectFlag) {
       console.log("Skipping fetch pots effect as it has already run.");
@@ -47,21 +52,35 @@ export default function YourPots({ type, address: addressWithCheckSum, isConnect
 
     (async () => {
       let pots: TPotObject[] = [];
-      if (type === 'joined') {
-        pots = await getPotsByUser(address as Address);
-      } else if (type === 'created') {
-        // TODO: add a param in getPotsByUser to fetch only created pots
-        pots = await getPotsByUser(address as Address);
+      try {
+        if (type === 'joined') {
+          pots = await getPotsByUser(address as Address);
+        } else if (type === 'created') {
+          // TODO: add a param in getPotsByUser to fetch only created pots
+          pots = await getPotsByUser(creator as Address);
+        }
+      } catch (error) {
+        console.error("Error fetching pots by user:", error);
       }
       setPots((prevPots) => [...prevPots, ...pots]);
       setLoading(false);
       _fetchPotsEffectFlag = true;
     })();
-  }, [address, type]);
+  }, [address, type, creator]);
 
   // ---------
   // RENDERING
   // ---------
+
+  const isCreator =
+    type === "created" &&
+    !!creator &&
+    !!address &&
+    creator.toLowerCase() === address.toLowerCase();
+
+  if (type === 'created' && !creator) {
+    return null; // No creator provided for fetching created pots
+  }
 
   if (!address || !isConnected) {
     return null;
@@ -83,7 +102,7 @@ export default function YourPots({ type, address: addressWithCheckSum, isConnect
       key="your-pots"
     >
       <div>
-        <SectionHeading className={'mx-4'}>{type === "joined" ? "Active" : isConnectedAddress ? "My" : "Created"} Pots</SectionHeading>
+        <SectionHeading className={'mx-4'}>{type === "joined" ? "Active" : isCreator ? "My" : "Created"} Pots</SectionHeading>
         <div className="px-4 flex flex-row overflow-x-scroll gap-[12px] md:grid-cols-2 lg:grid-cols-3">
           {pots.map((pot: TPotObject) => (
             <YourPotCard
