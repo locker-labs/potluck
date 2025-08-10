@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import { Users as UsersIcon, ChevronDown, ChevronUp } from "lucide-react";
-import { getPotRequests } from "@/lib/getLogs";
 import { BorderButton, GradientButton3 } from "../ui/Buttons";
 import { useAllowPotRequest } from "@/hooks/useAllowPotRequest";
 import type { Address } from "viem";
-import { getAllowedAddresses } from "@/lib/getLogs";
+import { getPotAllowedUsers, getPotPendingRequests } from "@/lib/graphQueries";
 import type { FUser } from "@/types/neynar";
 import { formatAddress } from "@/lib/address";
 
@@ -20,35 +19,21 @@ export function JoinRequests({ potId, users, fetchUsers }: JoinRequestsProps) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const { handleAllow, pendingApproval } = useAllowPotRequest();
-  
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: only potId, pendingApproval are requried
   useEffect(() => {
     setLoading(pendingApproval !== null);
     if (pendingApproval !== null) return;
     const fetchRequests = async () => {
       try {
-        const logs = await getPotRequests(potId);
-        const addresses: string[] = logs
-          .map((log) => {
-            if (
-              log.args &&
-              typeof log.args === "object" &&
-              "requester" in log.args &&
-              typeof (log.args as Record<string, unknown>).requester ===
-                "string"
-            ) {
-              return (log.args as Record<string, unknown>).requester as string;
-            }
-            return "";
-          })
-          .filter((addr) => addr !== "");
-        const allowedAddresses = await getAllowedAddresses(potId);
+        const addresses = await getPotPendingRequests(potId);
+        const allowedAddresses = await getPotAllowedUsers(potId);
         const pending = addresses.filter(
           (addr) => !allowedAddresses.includes(addr as Address)
         ) as Address[];
 
         // fetch farcaster names for newAddresses from addresses
-        const newAddrs = pending.filter(addr => !users[addr]);
+        const newAddrs = pending.filter((addr) => !users[addr]);
 
         if (newAddrs.length > 0) {
           fetchUsers(newAddrs);
@@ -60,7 +45,6 @@ export function JoinRequests({ potId, users, fetchUsers }: JoinRequestsProps) {
     };
     fetchRequests();
   }, [potId, pendingApproval]);
-
 
   const toggleSelect = (addr: string) => {
     setSelected((prev) => {
@@ -106,24 +90,27 @@ export function JoinRequests({ potId, users, fetchUsers }: JoinRequestsProps) {
             {requests.length > 0 ? (
               requests.map((address) => {
                 const addr = address.toLowerCase() as Address;
-                const nameOrAddress = users[addr]?.username ?? formatAddress(addr);
+                const nameOrAddress =
+                  users[addr]?.username ?? formatAddress(addr);
 
-                return <label
-                  key={addr}
-                  className="flex items-center justify-between px-4 py-2 hover:bg-gray-700 transition"
-                >
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={selected.has(addr)}
-                      onChange={() => toggleSelect(addr)}
-                      className="h-4 w-4 text-app-cyan bg-gray-600 border-gray-500 rounded focus:ring-app-cyan"
-                    />
-                    <span className="text-sm text-gray-200">
-                      {nameOrAddress}
-                    </span>
-                  </div>
-                </label>
+                return (
+                  <label
+                    key={addr}
+                    className="flex items-center justify-between px-4 py-2 hover:bg-gray-700 transition"
+                  >
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(addr)}
+                        onChange={() => toggleSelect(addr)}
+                        className="h-4 w-4 text-app-cyan bg-gray-600 border-gray-500 rounded focus:ring-app-cyan"
+                      />
+                      <span className="text-sm text-gray-200">
+                        {nameOrAddress}
+                      </span>
+                    </div>
+                  </label>
+                );
               })
             ) : (
               <div className="px-4 py-3 text-sm text-gray-400">
