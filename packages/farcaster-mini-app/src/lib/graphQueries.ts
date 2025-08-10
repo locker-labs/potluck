@@ -390,6 +390,9 @@ async function mapRawPotToObject(rp: RawPot): Promise<TPotObject> {
       ? `${Math.floor(secsLeft / 3600)}h`
       : `${Math.floor(secsLeft / 86400)}d`;
 
+  const deadlinePassed = deadline < BigInt(nowSec);
+	const ended = balance === BigInt(0);
+
   return {
     id: BigInt(rp.id),
     name: decodePotName(rp.name),
@@ -407,6 +410,8 @@ async function mapRawPotToObject(rp: RawPot): Promise<TPotObject> {
 
     periodString,
     deadlineString,
+    deadlinePassed,
+    ended,
     totalPool,
     creator: rp.creator.id,
     nextDrawAt: new Date(Number(deadline) * 1000),

@@ -55,15 +55,14 @@ export function JoinPotButton({
 		isRoundZero && pot.participants.length === pot.maxParticipants;
 	const insufficientBalance: boolean =
 		tokenBalance !== undefined && tokenBalance < pot.entryAmount;
-	const deadlinePassed: boolean =
-		pot.deadline < BigInt(Math.floor(Date.now() / 1000));
 
 	const showLoader = initialLoading || isJoiningThisPot || isRequestingThisPot;
 
 	const disabled: boolean =
 		initialLoading ||
+		pot.ended ||
 		potFull ||
-		deadlinePassed ||
+		pot.deadlinePassed ||
 		(!!address &&
 			(isJoiningPot ||
 				isRequestingPot ||
@@ -75,11 +74,13 @@ export function JoinPotButton({
 
 	const buttonText = initialLoading ? (
 		"Loading"
+	) : pot.ended ? (
+		"Ended"
 	) : hasJoinedRound ? (
 		"Joined"
 	) : isJoiningThisPot ? (
 		"Joining"
-	) : deadlinePassed ? (
+	) : pot.deadlinePassed ? (
 		"Expired ⌛"
 	) : potFull ? (
 		"Pot Full 📦"
