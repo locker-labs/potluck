@@ -1,5 +1,5 @@
 import type React from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { tokenAddress as USDC } from "@/config";
 import { formatUnits, parseUnits, type Address } from "viem";
 import { GradientCard } from "../ui/GradientCard";
@@ -13,7 +13,7 @@ import { useWithdraw } from "@/hooks/useWithdraw";
 
 export interface TokenBalance {
 	symbol: string;
-	balance: bigint;
+	// balance: bigint;
 	decimals: number;
 	address: Address;
 }
@@ -70,15 +70,12 @@ const TokenWithdraw: React.FC<TokenWithdrawProps> = ({ address, isMyAddress }) =
 	const [tokens, setTokens] = useState<TokenBalance[]>([
 		{
 			symbol: "USDC",
-			balance: BigInt(45000000),
 			decimals: 6,
 			address: USDC,
 		},
 	]);
-
 	const [token, setToken] = useState<TokenBalance | undefined>({
 		symbol: "USDC",
-		balance: BigInt(54040000),
 		decimals: 6,
 		address: USDC,
 	});
@@ -89,30 +86,14 @@ const TokenWithdraw: React.FC<TokenWithdrawProps> = ({ address, isMyAddress }) =
 	const [clickedSubmit, setClickedSubmit] = useState(false);
 
 	const { dataNativeBalance, isLoading: isLoadingPotluck } = usePotluck();
-  const { isLoading: isLoadingWithdraw, isWithdrawing, handleWithdraw } = useWithdraw();
-
-	// TODO: Fetch tokens and balances for the given address here
-
-	useEffect(() => {
-		const fetchTokenBalances = async () => {
-			setTokens([
-				{
-					symbol: token?.symbol ?? "USDC",
-					balance: token?.balance ?? BigInt(0),
-					decimals: token?.decimals ?? 6,
-					address: token?.address ?? USDC,
-				},
-			]);
-		};
-		fetchTokenBalances();
-	}, [token]);
+    const { isLoading: isLoadingWithdraw, isWithdrawing, handleWithdraw, withdrawBalance } = useWithdraw();
 
 	const validationSchema = useMemo(
 		() =>
 			tokenWithdrawSchema({
-				tokenBalance: token?.balance ?? BigInt(0),
+				tokenBalance: withdrawBalance ?? BigInt(0),
 			}),
-		[token],
+		[withdrawBalance],
 	);
 
 	// FUNCTIONS
@@ -120,15 +101,10 @@ const TokenWithdraw: React.FC<TokenWithdrawProps> = ({ address, isMyAddress }) =
 	// Only for input validation
 	const validate = (
 		override?: Partial<{
-			name: string;
 			amount: string;
-			maxParticipants: string;
-			emoji: string;
-			timePeriod: bigint;
 		}>,
 	) => {
 		const values = {
-			name,
 			amount,
 			...override,
 		};
@@ -156,11 +132,14 @@ const TokenWithdraw: React.FC<TokenWithdrawProps> = ({ address, isMyAddress }) =
 	const disabled =
 		isLoading || isWithdrawing || ((clickedSubmit || hasTouched) && hasErrors);
 
-    const onClick = async () => {
-      if (!disabled && token) {
-        handleWithdraw(token.address, BigInt(parseUnits(amount, token.decimals)));
-      }
-    }
+	const onClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
+		e.preventDefault();
+		setClickedSubmit(true);
+		if (!validate()) return;
+		if (!disabled && token) {
+			handleWithdraw(token.address, BigInt(parseUnits(amount, token.decimals)));
+		}
+	};
 	// TODO: take into account gas fee for dataNativeBalance
 
 	return (
@@ -182,7 +161,7 @@ const TokenWithdraw: React.FC<TokenWithdrawProps> = ({ address, isMyAddress }) =
 									{/* w-full flex items-center justify-between gap-4 */}
 									<p className="text-base font-bold text-gray-300">Balance</p>
 									<p className="pb-1 text-3xl font-bold">
-										{Number(formatUnits(token.balance, token.decimals))}{" "}
+										{Number(formatUnits(withdrawBalance ?? BigInt(0), token.decimals))}{" "}
 										{token.symbol}
 									</p>
 								</div>
@@ -227,7 +206,7 @@ const TokenWithdraw: React.FC<TokenWithdrawProps> = ({ address, isMyAddress }) =
 										e.preventDefault();
 									}
 								}}
-								placeholder={formatUnits(token.balance, token.decimals) ?? "0"}
+								placeholder={formatUnits(withdrawBalance ?? BigInt(0), token.decimals) ?? "0"}
 							/>
 						</div>
 					</div>
