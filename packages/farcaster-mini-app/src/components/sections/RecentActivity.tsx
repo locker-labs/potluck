@@ -43,23 +43,27 @@ export function RecentActivity({
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: adding fetchUsers in deps might trigger unnecessary re-renders
   useEffect(() => {
-    fetchUsers(
-      activities
-        .map((log) => log.data.user ? log.data.user.toLowerCase() as Address : null)
-        .filter(addr => !!addr)
-    );
+    const addressSet = new Set<Address>();
+
+    for (const act of activities) {
+      if (act.type === 'joined') {
+        addressSet.add(act.data.user.toLowerCase() as Address);
+      } else {
+        addressSet.add(act.data.winner.toLowerCase() as Address);
+      }
+    }
+
+    fetchUsers(Array.from(addressSet));
   }, [activities]);
 
   return (
     <div className="py-4 max-h-[300px] overflow-y-auto">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {activities.filter(log => log.data.user).map((log, idx) => {
-          const userAddr = log.data.user?.toLowerCase() as Address;
-          const username = users[userAddr] ? users[userAddr].username : formatAddress(userAddr);
+        {activities.reverse().map((log, idx) => {
           const isWinner = log.type === "payout";
-          const action = isWinner ? "Winner Payout" : "Deposited";
-          const amount = log.data.amount;
-          const txHash = log.data.txHash as string;
+          const userAddr = isWinner ? log.data.winner.toLowerCase() as Address : log.data.user.toLowerCase() as Address;
+          const username = users[userAddr] ? users[userAddr].username : formatAddress(userAddr);
+          const action = isWinner ? "Winner" : "Deposited";
 
           return (
             // biome-ignore lint/suspicious/noArrayIndexKey: not a dynamic list so works
@@ -67,16 +71,12 @@ export function RecentActivity({
               {/* Icon + Label */}
               <div className="flex items-start gap-2">
                 {isWinner ? (
-                 <MoveUpRight
-                    strokeWidth="2px"
-                    size={18}
-                    color="#14b6d3"
-                  />
+                  "🎉"
                 ) : (
                   <MoveUpRight
                     strokeWidth="2px"
                     size={18}
-                    color="#14b6d3"
+                    className="text-app-cyan"
                   />
                 )}
                 <div className="flex flex-col gap-1.5">
@@ -93,10 +93,9 @@ export function RecentActivity({
               {/* Amount + Link */}
               <div className="flex flex-col items-end gap-1.5">
                 <div className="flex items-center">
-                  <Image src="/usdc.png" alt="usdc" width={16} height={16} />
-                  <span className="ml-1 leading-none">{amount}</span>
+                  <span className="font-medium leading-none">${log.data.amount}</span>
                 </div>
-                <Link href={getTransactionLink(txHash)} target="_blank">
+                <Link href={getTransactionLink(log.data.txHash)} target="_blank">
                   <div className="flex items-center gap-1">
                     <p className="text-xs leading-none">
                       {formatDateFromTimestamp(Number(log.timestamp))}
