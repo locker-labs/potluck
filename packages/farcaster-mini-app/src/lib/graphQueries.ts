@@ -6,16 +6,16 @@ import { publicClient } from "@/clients/viem";
 import { MAX_PARTICIPANTS } from "@/config";
 
 const SUBGRAPH_URL =
-  "https://api.studio.thegraph.com/query/117923/potluck/version/latest";
+  "https://api.studio.thegraph.com/query/117923/prod-pot/version/latest";
 const client = new GraphQLClient(SUBGRAPH_URL);
 
 const GET_ALL_ROUND_ZERO_POTS = gql`
   query GetAllRoundZeroPots($first: Int!, $skip: Int!) {
     pots(
-      first: $first,
-      skip: $skip,
-      where: { currentRound: 0 },
-      orderBy: createdAt,
+      first: $first
+      skip: $skip
+      where: { currentRound: 0 }
+      orderBy: createdAt
       orderDirection: desc
     ) {
       id
@@ -95,7 +95,6 @@ const GET_POT_FULL = gql`
     }
   }
 `;
-
 
 const GET_POT_INFO_MINI = gql`
   query GetPotInfoMini($potId: ID!) {
@@ -221,8 +220,37 @@ const GET_POTS_BY_USER = gql`
 `;
 
 // ——————————————————————————————————————————————————————————————
+// Get participants of a particular round of a pot
+// ——————————————————————————————————————————————————————————————
+const GET_POT_ROUND_PARTICIPANTS = gql`
+  query GetParticipantsOfPotRound($potId: ID!, $roundNumber: Int!) {
+    contributions(
+      where: { pot: $potId, round_: { roundNumber: $roundNumber } }
+      orderBy: timestamp
+      orderDirection: asc
+    ) {
+      user {
+        id
+      }
+      amount
+      timestamp
+      transactionHash
+      participantIndex
+    }
+  }
+`;
+
+// ——————————————————————————————————————————————————————————————
 // Raw types
 // ——————————————————————————————————————————————————————————————
+
+type RawRoundParticipant = {
+  user: { id: Address };
+  amount: string;
+  timestamp: string;
+  transactionHash: string;
+  participantIndex: string;
+};
 
 type RawPot = {
   id: string;
@@ -241,7 +269,10 @@ type RawPot = {
   participants: { user: { id: Address } }[];
 };
 
-type RawPotMini = Pick<RawPot, 'id' | 'name' | 'creator' | 'entryAmount' | 'tokenAddress' | 'participants'>;
+type RawPotMini = Pick<
+  RawPot,
+  "id" | "name" | "creator" | "entryAmount" | "tokenAddress" | "participants"
+>;
 
 type RawJoin = {
   round: { roundNumber: string };
@@ -339,14 +370,17 @@ async function mapRawPotToObjectMini(rp: RawPotMini): Promise<TPotObjectMini> {
    */
   const participants = rp.participants.map((x) => x.user.id);
   const totalParticipants = participants.length;
-  const totalPool: string = formatUnits(entryAmount * BigInt(totalParticipants), dec);
+  const totalPool: string = formatUnits(
+    entryAmount * BigInt(totalParticipants),
+    dec
+  );
 
   return {
     id: BigInt(rp.id),
     name: decodePotName(rp.name),
     creator: rp.creator.id,
     totalPool,
-  }
+  };
 }
 
 // ——————————————————————————————————————————————————————————————
@@ -363,7 +397,10 @@ async function mapRawPotToObject(rp: RawPot): Promise<TPotObject> {
 
   const participants = rp.participants.map((x) => x.user.id);
   const totalParticipants = participants.length;
-  const totalPool: string = formatUnits(entryAmount * BigInt(totalParticipants), dec);
+  const totalPool: string = formatUnits(
+    entryAmount * BigInt(totalParticipants),
+    dec
+  );
 
   const hrs = Number(period / 3600n);
   const periodString =
@@ -418,10 +455,13 @@ export async function getAllPotObjects(
   first = 1000,
   skip = 0
 ): Promise<TPotObject[]> {
-  const { pots } = await client.request<{ pots: RawPot[] }>(GET_ALL_ROUND_ZERO_POTS, {
-    first,
-    skip,
-  });
+  const { pots } = await client.request<{ pots: RawPot[] }>(
+    GET_ALL_ROUND_ZERO_POTS,
+    {
+      first,
+      skip,
+    }
+  );
 
   const tokens = Array.from(new Set(pots.map((p) => p.tokenAddress)));
   await Promise.all(tokens.map((t) => getDecimals(t)));
@@ -450,12 +490,14 @@ export async function getPotsByUser(user: Address): Promise<TPotObject[]> {
   return Promise.all(rawPots.map(mapRawPotToObject));
 }
 
-
 export async function fetchPotMiniInfo(potId: bigint): Promise<TPotObjectMini> {
   const vars = {
     potId: potId.toString(),
   };
-  const { pot: rp } = await client.request<{ pot: RawPotMini }>(GET_POT_INFO_MINI, vars);
+  const { pot: rp } = await client.request<{ pot: RawPotMini }>(
+    GET_POT_INFO_MINI,
+    vars
+  );
 
   return mapRawPotToObjectMini(rp);
 }
@@ -523,7 +565,7 @@ export async function fetchPotInfo(potId: bigint): Promise<{
 
   return {
     pot,
-    logs
+    logs,
   };
 }
 
@@ -538,10 +580,11 @@ export async function fetchPotParticipationInfo(
     potId: potId.toString(),
     userAddress: userAddress.toLowerCase(),
   };
-  const {
-    allowRequests,
-    allowedUsers,
-  } = await client.request<GqlPotParticipationInfoResponse>(GET_POT_PARTICIPATION_INFO, vars);
+  const { allowRequests, allowedUsers } =
+    await client.request<GqlPotParticipationInfoResponse>(
+      GET_POT_PARTICIPATION_INFO,
+      vars
+    );
 
   return {
     hasRequested: allowRequests.length > 0,
@@ -559,4 +602,18 @@ export async function getPotsByCreator(
   const tokens = Array.from(new Set(pots.map((p) => p.tokenAddress)));
   await Promise.all(tokens.map(getDecimals));
   return Promise.all(pots.map(mapRawPotToObject));
+}
+
+export async function getPotRoundParticipants(
+  potId: bigint,
+  roundNumber: number
+): Promise<RawRoundParticipant[]> {
+  const vars = {
+    potId: potId.toString(),
+    roundNumber,
+  };
+  const { contributions } = await client.request<{
+    contributions: RawRoundParticipant[];
+  }>(GET_POT_ROUND_PARTICIPANTS, vars);
+  return contributions;
 }
