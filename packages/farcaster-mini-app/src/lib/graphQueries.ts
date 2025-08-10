@@ -1,7 +1,7 @@
 // graphQueries.ts
 import { GraphQLClient, gql } from "graphql-request";
 import type { TPotObject, TPotObjectMini } from "./types";
-import { type Address, hexToString, formatUnits } from "viem";
+import { type Address, hexToString, formatUnits, type Hex } from "viem";
 import { publicClient } from "@/clients/viem";
 import { MAX_PARTICIPANTS } from "@/config";
 
@@ -355,18 +355,33 @@ type RawPendingRequest = {
 // LogEntry type
 // ——————————————————————————————————————————————————————————————
 
-export interface LogEntry {
-  type: "created" | "joined" | "payout";
+export type LogEntry = {
+  type: "created";
   timestamp: bigint;
   data: {
     potId: bigint;
-    creator?: Address;
-    user?: Address;
-    amount?: string;
-    round?: number;
-    txHash?: string;
-    participantIndex?: number;
-    winner?: Address;
+    creator: Address;
+  };
+} | {
+  type: "joined";
+  timestamp: bigint;
+  data: {
+    amount: string;
+    participantIndex: number;
+    potId: bigint;
+    round: number;
+    txHash: string;
+    user: Address;
+  };
+} | {
+  type: "payout";
+  timestamp: bigint;
+  data: {
+    amount: string;
+    potId: bigint;
+    round: number;
+    txHash: string;
+    winner: Address;
   };
 }
 
