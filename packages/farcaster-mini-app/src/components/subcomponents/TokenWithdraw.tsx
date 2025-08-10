@@ -1,6 +1,5 @@
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
-import { getTokenBalance } from "@/lib/helpers/contract";
 import { tokenAddress as USDC } from "@/config";
 import { formatUnits, parseUnits, type Address } from "viem";
 import { GradientCard } from "../ui/GradientCard";
@@ -9,8 +8,8 @@ import { SectionHeading } from "../ui/SectionHeading";
 import { Input } from "@/components/ui/input";
 import { z } from "zod";
 import { usePotluck } from "@/providers/PotluckProvider";
-import Hero from "../sections/Hero";
 import { Loader2 } from "lucide-react";
+import { useWithdraw } from "@/hooks/useWithdraw";
 
 export interface TokenBalance {
 	symbol: string;
@@ -75,10 +74,6 @@ const TokenWithdraw: React.FC<TokenWithdrawProps> = ({ address }) => {
 			address: USDC,
 		},
 	]);
-	const [amounts, setAmounts] = useState<{ [tokenAddress: string]: string }>(
-		{},
-	);
-	const [isLoading, setIsLoading] = useState(false);
 
 	const [token, setToken] = useState<TokenBalance | undefined>({
 		symbol: "USDC",
@@ -93,19 +88,9 @@ const TokenWithdraw: React.FC<TokenWithdrawProps> = ({ address }) => {
 	const [clickedSubmit, setClickedSubmit] = useState(false);
 
 	const { dataNativeBalance, isLoading: isLoadingPotluck } = usePotluck();
+  const { isLoading: isLoadingWithdraw, isWithdrawing, handleWithdraw } = useWithdraw();
 
 	// TODO: Fetch tokens and balances for the given address here
-
-	const handleChange = (tokenAddress: string, value: string) => {
-		setAmounts((prev) => ({ ...prev, [tokenAddress]: value }));
-	};
-
-	const handleWithdraw = () => {
-		// TODO: Implement withdraw logic
-		// Example: send { address, withdrawals: amounts }
-		setIsLoading(true);
-		setTimeout(() => setIsLoading(false), 1000); // Placeholder
-	};
 
 	useEffect(() => {
 		const fetchTokenBalances = async () => {
@@ -119,7 +104,7 @@ const TokenWithdraw: React.FC<TokenWithdrawProps> = ({ address }) => {
 			]);
 		};
 		fetchTokenBalances();
-	}, [address]);
+	}, [token]);
 
 	const validationSchema = useMemo(
 		() =>
@@ -164,13 +149,17 @@ const TokenWithdraw: React.FC<TokenWithdrawProps> = ({ address }) => {
 	const showError = (key: string) =>
 		(clickedSubmit || touched[key]) && errors[key];
 
-	const isWithdrawing = false;
+
+  const isLoading = isLoadingWithdraw || isLoadingPotluck;
 
 	const disabled =
-		isLoading ||
-		isLoadingPotluck ||
-		isWithdrawing ||
-		((clickedSubmit || hasTouched) && hasErrors);
+		isLoading || isWithdrawing || ((clickedSubmit || hasTouched) && hasErrors);
+
+    const onClick = async () => {
+      if (!disabled && token) {
+        handleWithdraw(token.address, BigInt(parseUnits(amount, token.decimals)));
+      }
+    }
 	// TODO: take into account gas fee for dataNativeBalance
 
 	return (
@@ -246,7 +235,7 @@ const TokenWithdraw: React.FC<TokenWithdrawProps> = ({ address }) => {
 				{tokens.length > 0 && (
 					<GradientButton
 						className="mt-4 w-full"
-						onClick={handleWithdraw}
+						onClick={onClick}
 						disabled={disabled}
 					>
 						<span className={"flex items-center justify-center gap-2"}>
