@@ -68,8 +68,7 @@ export default function Profile({ address: rawAddress }: { address: Address }) {
 
 					<YourPots
 						type="created"
-						address={address}
-						isConnectedAddress={isMyAddress}
+						creator={address}
 					/>
 
 					<div className="px-4">
