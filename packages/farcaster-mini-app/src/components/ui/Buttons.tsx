@@ -67,15 +67,18 @@ export function GradientButton({
   children,
   className = '',
   isLoading = false,
+  disabled,
   ...props
 }: ButtonProps) {
   return (
     <SimpleButton
       isLoading={isLoading}
       className={`py-[8px] font-bold rounded-[12px]
-      bg-gradient-to-r  from-[#571d84] to-[#a756f2] hover:from-[#4a156c] hover:to-[#944ee2]
+      bg-gradient-to-r  from-[#571d84] to-[#a756f2]
+      ${disabled ? '' : 'hover:from-[#4a156c] hover:to-[#944ee2]'}
       disabled:text-gray-100
       text-white border-0 shadow-md ${className}`}
+      disabled={disabled}
       {...props}
     >
       {children}
