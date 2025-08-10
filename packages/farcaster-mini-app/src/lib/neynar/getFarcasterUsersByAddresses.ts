@@ -39,6 +39,11 @@ export async function getFarcasterUsersByAddresses(
       }
     });
 
+    // Address not found
+    if (response.status === 404) {
+      return {};
+    }
+
     if (!response.ok) {
       throw new Error(`API request failed: ${response.status} ${response.statusText}`);
     }

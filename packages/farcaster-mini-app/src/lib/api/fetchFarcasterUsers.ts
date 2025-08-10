@@ -7,10 +7,10 @@ type FetchFarcasterUsersParams = {
 
 export async function fetchFarcasterUsers({ addresses }: FetchFarcasterUsersParams): Promise<{
     success?: boolean;
-    data: Record<string, Pick<FUser, 'fid' | 'username' | 'display_name'>>;
+    data: Record<string, FUser>;
     error?: string;
 }> {
-    let response: Record<string, Pick<FUser, 'fid' | 'username' | 'display_name'>> = {};
+    let response: Record<string, FUser> = {};
 
     try {
         const res = await fetch("/api/farcaster-users", {

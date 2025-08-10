@@ -1,5 +1,7 @@
 "use client";
-import { Address, getAddress, isAddress } from "viem";
+
+// TODO: This component will be used for public profiles when we add reputation
+import { type Address, getAddress, isAddress } from "viem";
 import type { FUser } from "@/types/neynar";
 import { fetchFarcasterUsers } from "@/lib/api/fetchFarcasterUsers";
 import { useEffect, useMemo, useState } from "react";
@@ -13,10 +15,7 @@ export type User = {
     username: string;
     display_name: string;
 }
-const addressToFUserMap = new Map<
-  string,
-  Pick<FUser, "fid" | "username" | "display_name">
-    >();
+const addressToFUserMap = new Map<string, FUser>();
 
     function decodeUser(data: Record<string, User>): User | null {
       const entries = Object.entries(data);
@@ -59,7 +58,6 @@ export default function Profile({ address }: { address: string }) {
               fid: decodedUser?.fid || 0,
               username: decodedUser?.username || "",
               display_name: decodedUser?.display_name || "",
-              custody_address: address,
           }
         setFUser(user);
       }
@@ -76,9 +74,9 @@ export default function Profile({ address }: { address: string }) {
       <h1 className="text-xl font-bold mb-4">Profile</h1>
       <div className="flex flex-col gap-4">
         {loading && <div>Loading Farcaster…</div>}
-        <UserCard user={fUser} address={normalized as Address} />
+        {fUser && <UserCard user={fUser} address={normalized as Address} />}
         <TokenWithdraw address={normalized as Address} />
-              <YourPots />
+              <YourPots type="created" />
               <Reputation />
         </div>
     </div>

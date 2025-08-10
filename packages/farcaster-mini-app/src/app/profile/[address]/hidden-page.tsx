@@ -22,7 +22,7 @@ export default async function ProfilePage({ params }: ProfileProps) {
   }
 
   return (
-    <div id={"pot-page"} className={"page-transition"}>
+    <div id={"profile-page"} className={"page-transition"}>
       <Profile address={address} />
     </div>
   );
