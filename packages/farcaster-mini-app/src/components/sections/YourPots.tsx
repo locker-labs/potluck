@@ -11,12 +11,11 @@ import { SectionHeading } from '@/components/ui/SectionHeading';
 
 let _fetchPotsEffectFlag = true; // prevent multiple fetches
 
-export default function YourPots({ type }: { type: 'created' | 'joined' }) {
+export default function YourPots({ type, address: addressWithCheckSum, isConnectedAddress }: { type: 'created' | 'joined', address: Address | undefined, isConnectedAddress: boolean }) {
   const { handleJoinPot, joiningPotId, joinedPotId, tokenBalance } =
     useJoinPot();
   const {
     isConnected,
-    address: addressWithCheckSum,
   } = useAccount();
   const address = addressWithCheckSum?.toLowerCase() as Address | undefined;
 
@@ -84,7 +83,7 @@ export default function YourPots({ type }: { type: 'created' | 'joined' }) {
       key="your-pots"
     >
       <div>
-        <SectionHeading className={'mx-4'}>{type === "joined" ? "Active" : "My"} Pots</SectionHeading>
+        <SectionHeading className={'mx-4'}>{type === "joined" ? "Active" : isConnectedAddress ? "My" : "Created"} Pots</SectionHeading>
         <div className="px-4 flex flex-row overflow-x-scroll gap-[12px] md:grid-cols-2 lg:grid-cols-3">
           {pots.map((pot: TPotObject) => (
             <YourPotCard

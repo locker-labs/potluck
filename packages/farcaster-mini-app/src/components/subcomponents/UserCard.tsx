@@ -4,20 +4,21 @@ import { GradientCard2 } from "../ui/GradientCard";
 import { formatAddress } from "@/lib/address";
 import type { FUser } from "@/types/neynar";
 import Image from "next/image";
+import { fallbackPfpUrl } from "@/lib/constants";
 
 interface UserCardProps {
-	user: FUser;
-	address: Address | undefined;
+	user: FUser | null;
+	address: Address;
 }
 
 const UserCard: React.FC<UserCardProps> = ({ user, address }) => {
 	return (
 		<GradientCard2 className="gap-4">
-			{user ? (
+			{user?.username && user.display_name ? (
 				<div className="grid grid-cols-[48px_1fr] gap-3">
 					<div>
 						<Image
-							src={user.pfpUrl || "/pfp_100px.webp"}
+							src={user.pfp_url || fallbackPfpUrl}
 							alt="Logo"
 							width={48}
 							height={48}
@@ -29,12 +30,35 @@ const UserCard: React.FC<UserCardProps> = ({ user, address }) => {
 						<p className="font-bold text-xl">{user.display_name}</p>
 						<div className="flex justify-between items-center">
 							<p className="text-sm">@{user.username}</p>
-							<p className="font-bold text-sm">{formatAddress(address)}</p>
+							<button
+								type="button"
+								className="font-bold text-sm cursor-pointer"
+								onClick={async () => {
+									if (address) {
+										await navigator.clipboard.writeText(address);
+									}
+								}}
+							>
+								{formatAddress(address)}
+							</button>
 						</div>
 					</div>
 				</div>
 			) : (
-				<p className="font-bold text-lg mb-1">{formatAddress(address)}</p>
+				<div className="flex gap-2">
+					<p className="font-medium text-xl">Address:</p>
+					<button
+						type="button"
+						className="font-bold text-xl cursor-pointer"
+						onClick={async () => {
+							if (address) {
+								await navigator.clipboard.writeText(address);
+							}
+						}}
+					>
+						{formatAddress(address)}
+					</button>
+				</div>
 			)}
 		</GradientCard2>
 	);

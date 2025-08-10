@@ -26,6 +26,8 @@ export function MyProfilePage() {
 
 	const user: UserContext = context.user;
 
+	if (!address) return null;
+
 	return (
 		<motion.div initial={initialDown} animate={animate} transition={transition}>
 			<div>
@@ -37,19 +39,17 @@ export function MyProfilePage() {
 								fid: user.fid,
 								username: user.username || "",
 								display_name: user.displayName || "",
-								pfpUrl: user.pfpUrl,
+								pfp_url: user.pfpUrl || "",
 							}}
 							address={address}
 						/>
 					</div>
 
-					{address ? (
-						<div className="px-4">
-							<TokenWithdraw address={address} />
-						</div>
-					) : null}
+					<div className="px-4">
+						<TokenWithdraw address={address} isMyAddress={true} />
+					</div>
 
-					{address ? <YourPots type="created" /> : null}
+					<YourPots type="created" address={address} isConnectedAddress={true} />
 
 					<div className="px-4">
 						<Reputation />
