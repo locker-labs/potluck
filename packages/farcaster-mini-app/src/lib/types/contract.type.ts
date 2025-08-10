@@ -17,6 +17,8 @@ export type TPotObject = {
   // derived properties
   periodString: string; // e.g., "daily", "weekly", "monthly"
   deadlineString: string; // e.g., "5h", "2d", "1w"
+  deadlinePassed: boolean;
+  ended: boolean;
   totalPool: string; // total pool = number of participants * entry amount
   creator: Address;
   nextDrawAt: Date;
@@ -41,6 +43,8 @@ export const mockPotObject: TPotObject = {
   isPublic: true,
   periodString: "daily",
   deadlineString: "5h",
+  deadlinePassed: false,
+  ended: false,
   creator: "0x1234567890abcdef1234567890abcdef12345678",
   totalPool: "1",
   nextDrawAt: new Date(),

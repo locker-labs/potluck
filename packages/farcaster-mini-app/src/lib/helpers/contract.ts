@@ -19,6 +19,7 @@ export const periodSecondsMap = {
   monthly: BigInt(monthSeconds),
 };
 
+/**
 function getPeriodInText(period: bigint): string {
   for (const [key, value] of Object.entries(periodSecondsMap)) {
     if (period === value) {
@@ -82,13 +83,14 @@ export async function fetchPot(potIdBigInt: bigint): Promise<TPot> {
     args: [potIdBigInt],
   })) as TPot;
 }
+*/
 
-// Dead code
+
 export async function getPotParticipants(potIdBigInt: bigint): Promise<Address[]> {
   return (await publicClient.readContract({
     address: contractAddress,
     abi: abi,
-    functionName: 'getParticipants',
+    functionName: "getParticipants",
     args: [potIdBigInt],
   })) as Address[];
 }
@@ -124,5 +126,17 @@ export async function getParticipantFee(): Promise<bigint> {
     address: contractAddress,
     abi: abi,
     functionName: 'participantFee',
+  })) as bigint;
+}
+
+export async function getTokenBalance(
+  user: Address,
+  token: Address
+): Promise<bigint> {
+  return (await publicClient.readContract({
+    address: contractAddress,
+    abi: abi,
+    functionName: "withdrawalBalances",
+    args: [user, token],
   })) as bigint;
 }

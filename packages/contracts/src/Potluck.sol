@@ -34,6 +34,7 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
     error NotPotCreator(address sender, uint256 potId);
     error NotAllowed(address user, uint256 potId);
     error NotAllParticipantsWon(uint256 potId);
+    error TokenNotAllowed(address token);
 
     //––––––––––––––––––––
     // STATE
@@ -57,16 +58,9 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
     uint16 public requestConfirmations;
     uint32 public callbackGasLimit;
 
-    enum RequestStatus {
-        Active,
-        Completed,
-        Cancelled
-    }
-
     struct PotRequest {
         address requestor;
         uint256 timestamp;
-        RequestStatus status;
     }
 
     struct Pot {
@@ -88,10 +82,11 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
     mapping(uint256 => Pot) public pots;
     mapping(bytes32 => bool) public hasJoinedRound; // keccak(pot,round,user)
     mapping(bytes32 => bool) public hasWon; // keccak(pot,user)
-
+    mapping(address => bool) public allowedTokens; // Allowed tokens for pot entry
     // Simple allow-list: potId => participant => allowed
     mapping(uint256 => mapping(address => bool)) public isAllowed;
     mapping(uint256 => PotRequest[]) public requestedParticipants;
+    mapping(address => mapping(address => uint256)) public withdrawalBalances; // user => token => balance
 
     // Maps chainlink requestId to potId and round
     mapping(uint256 => uint256) public requestToPot;
@@ -144,6 +139,7 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
     ) external payable nonReentrant {
         if (entryAmount == 0) revert EntryAmountZero();
         if (periodSeconds < 1 hours) revert PeriodTooShort();
+        if (!allowedTokens[token]) revert TokenNotAllowed(token);
 
         // Initialize the pot
         uint256 potId = potCount++;
@@ -210,9 +206,7 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
     /// @notice Request to be allowed to join a private pot
     /// @param potId ID of the pot to request access to
     function requestPotAllow(uint256 potId) external {
-        requestedParticipants[potId].push(
-            PotRequest({requestor: msg.sender, timestamp: block.timestamp, status: RequestStatus.Active})
-        );
+        requestedParticipants[potId].push(PotRequest({requestor: msg.sender, timestamp: block.timestamp}));
         emit PotAllowRequested(potId, msg.sender);
     }
 
@@ -261,7 +255,7 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
     /// @param potId ID of the pot to join
     /// @param participant Address of the participant to join on behalf of
     /// @dev This can only be called if the participant is allowed to join the pot and has already joined the previous round.
-    function joinOnBehalf(uint256 potId, address participant) public {
+    function joinOnBehalf(uint256 potId, address participant) public nonReentrant {
         Pot storage p = pots[potId];
         if (p.balance == 0) revert PotDoesNotExist(potId);
         if (block.timestamp >= p.deadline) revert RoundEnded(p.deadline, block.timestamp);
@@ -290,7 +284,7 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
     //––––––––––––––––––––
     /// @notice Trigger the payout for the current round of a pot.
     /// @param potId ID of the pot to trigger payout for
-    function triggerPotPayout(uint256 potId) public nonReentrant {
+    function triggerPotPayout(uint256 potId) public {
         Pot storage p = pots[potId];
         if (p.balance == 0) revert PotDoesNotExist(potId);
         if (block.timestamp < p.deadline) revert RoundNotReady(p.deadline, block.timestamp);
@@ -326,30 +320,18 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
         address token = p.token;
         uint256 entryAmount = p.entryAmount;
         for (uint256 i = 0; i < p.participants.length; i++) {
-            IERC20(token).safeTransfer(p.participants[i], entryAmount);
+            withdrawalBalances[p.participants[i]][token] += entryAmount;
         }
         emit PotEnded(potId);
     }
 
-    //––––––––––––––––––––
-    // BATCH OPERATIONS
-    //––––––––––––––––––––
-    function triggerBatchPayout(uint256[] calldata potIds) external {
-        for (uint256 i = 0; i < potIds.length; i++) {
-            triggerPotPayout(potIds[i]);
-        }
-    }
-
-    function endBatch(uint256[] calldata potIds) external {
-        for (uint256 i = 0; i < potIds.length; i++) {
-            endPot(potIds[i]);
-        }
-    }
-
-    function triggerBatchJoinOnBehalf(uint256 potId, address[] calldata participants) external {
-        for (uint256 i = 0; i < participants.length; i++) {
-            joinOnBehalf(potId, participants[i]);
-        }
+    /// @dev Withdraw tokens from the contract
+    /// @param token The address of the token to withdraw
+    /// @param amount The amount of tokens to withdraw
+    function withdraw(address token, uint256 amount) public nonReentrant {
+        require(withdrawalBalances[msg.sender][token] >= amount, "Insufficient balance");
+        withdrawalBalances[msg.sender][token] -= amount;
+        IERC20(token).safeTransfer(msg.sender, amount);
     }
 
     /// @dev Chainlink will call this with random words
@@ -368,7 +350,7 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
         uint256 prize = p.balance - rollover;
 
         emit PotPayout(potId, winner, prize, round);
-        IERC20(p.token).safeTransfer(winner, prize);
+        withdrawalBalances[winner][p.token] += prize;
 
         if (round == p.totalParticipants - 1) {
             p.balance = 0;
@@ -431,6 +413,13 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
         uint256 balance = address(this).balance;
         require(balance > 0, "No balance to withdraw");
         payable(treasury).transfer(balance);
+    }
+
+    /// @notice Allow a token for use in the potluck
+    /// @param token The address of the token to allow
+    function setTokenStatus(address token, bool status) external onlyPotluckOwner {
+        require(token != address(0), "Invalid token address");
+        allowedTokens[token] = status;
     }
 
     //––––––––––––––––––––

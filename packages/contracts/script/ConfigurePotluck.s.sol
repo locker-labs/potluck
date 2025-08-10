@@ -5,7 +5,7 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 import "../src/Potluck.sol";
 
-contract ConfigureChainlink is Script {
+contract ConfigurePotluck is Script {
     function run() external {
         // --- load from environment ---
         uint256 deployerKey = vm.envUint("PRIVATE_KEY");
@@ -14,6 +14,7 @@ contract ConfigureChainlink is Script {
         uint256 subscriptionId = 75130548142902775054364512190156145280145330302373548095325666767511337251427;
         uint16 requestConfirmations = 15;
         uint32 callbackGasLimit = 2400000;
+        address token = address(0x036CbD53842c5426634e7929541eC2318f3dCF7e);
 
         // --- broadcast the transaction ---
         vm.startBroadcast(deployerKey);
@@ -23,6 +24,7 @@ contract ConfigureChainlink is Script {
 
         console.log("=== Chainlink VRF Configuration Set ===");
 
+        Potluck(potluckAddr).setTokenStatus(token, true);
         // Configue the contract in Chainlink subscription dashboard
         // --- end broadcast ---
         vm.stopBroadcast();

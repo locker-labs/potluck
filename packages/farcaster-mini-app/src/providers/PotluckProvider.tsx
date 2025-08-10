@@ -1,8 +1,9 @@
-import { contractAddress, tokenAddress, tokenDecimals } from "@/config";
+import { abi, contractAddress, tokenAddress, tokenDecimals } from "@/config";
 import {
 	usePlatformFee,
 	type UsePlatformFeeReturnType,
 } from "@/hooks/usePlatformFee";
+import { useNeynar } from "@/hooks/useNeynar";
 import type {
 	RefetchOptions,
 	QueryObserverResult,
@@ -17,6 +18,7 @@ import {
 } from "wagmi";
 import { erc20Abi, formatUnits } from "viem";
 import type { Address, GetBalanceErrorType, ReadContractErrorType } from "viem";
+import type { FUser } from "@/types/neynar";
 
 type PotluckContextType = Pick<
 	UsePlatformFeeReturnType,
@@ -40,11 +42,13 @@ type PotluckContextType = Pick<
 		| undefined;
 	tokenBalance: bigint | undefined;
 	tokenAllowance: bigint | undefined;
+	withdrawBalance: bigint | undefined;
 	isLoading: boolean;
 	isLoadingFee: boolean;
 	isLoadingNativeBalance: boolean;
 	isLoadingTokenAllowance: boolean;
 	isLoadingTokenBalance: boolean;
+	isLoadingWithdrawBalance: boolean;
 	isPendingApproveTokens: boolean;
 	approveTokens: (amount: bigint) => Promise<void>;
 	refetch: () => Promise<void>;
@@ -66,6 +70,11 @@ type PotluckContextType = Pick<
 	refetchTokenBalance: (
 		options?: RefetchOptions,
 	) => Promise<QueryObserverResult<bigint, ReadContractErrorType>>;
+	refetchWithdrawBalance: (
+		options?: RefetchOptions | undefined,
+	) => Promise<QueryObserverResult<bigint, ReadContractErrorType>>;
+	users: Record<Address, FUser | null>;
+	fetchUsers: (addresses: Address[]) => void;
 };
 
 const PotluckContext = createContext<PotluckContextType | null>(null);
@@ -114,6 +123,17 @@ export const PotluckProvider = ({ children }: { children: ReactNode }) => {
 		query: { enabled: !!address, refetchInterval: 5000 },
 	});
 	const {
+		data: withdrawBalance,
+		isLoading: isLoadingWithdrawBalance,
+		refetch: refetchWithdrawBalance,
+	} = useReadContract({
+		address: tokenAddress,
+		abi: abi,
+		functionName: "withdrawalBalances",
+		args: [address, tokenAddress],
+		query: { enabled: !!address },
+	});
+	const {
 		platformFeeWei,
 		participantFeeWei,
 		platformFeeEth,
@@ -123,6 +143,7 @@ export const PotluckProvider = ({ children }: { children: ReactNode }) => {
 		calculateCreatorFee,
 		calculateJoineeFee,
 	} = usePlatformFee();
+	const { users, fetchUsers } = useNeynar();
 
 	const { writeContractAsync, isPending: isPendingApproveTokens } =
 		useWriteContract();
@@ -192,6 +213,13 @@ export const PotluckProvider = ({ children }: { children: ReactNode }) => {
 				approveTokens,
 				isPendingApproveTokens,
 				refetch,
+				users,
+				fetchUsers,
+				isLoadingWithdrawBalance,
+				withdrawBalance: withdrawBalance as bigint | undefined,
+				refetchWithdrawBalance: refetchWithdrawBalance as (
+					options?: RefetchOptions,
+				) => Promise<QueryObserverResult<bigint, ReadContractErrorType>>,
 			}}
 		>
 			{children}

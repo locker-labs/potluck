@@ -35,11 +35,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, users: [] });
     }
 
-    const usersMap: Record<string, Pick<FUser, 'fid' | 'username' | 'display_name'>> = {};
+    const usersMap: Record<string, FUser> = {};
 
     for (const key of Object.keys(users)) {
       const user = users[key][0];
-      usersMap[key] = { fid: user.fid, username: user.username, display_name: user.display_name };
+      usersMap[key] = { fid: user.fid, username: user.username, display_name: user.display_name, pfp_url: user.pfp_url };
     }
 
     return NextResponse.json({ success: true, users: usersMap });

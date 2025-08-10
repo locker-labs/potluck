@@ -50,8 +50,6 @@ export function AvailablePotsCard({
 
 	// DERIVED STATE
 	const isRoundZero: boolean = pot.round === 0;
-	const deadlinePassed: boolean =
-		pot.deadline < BigInt(Math.floor(Date.now() / 1000));
 
 	return (
 		<GradientCard key={pot.id} className="py-5">
@@ -102,9 +100,11 @@ export function AvailablePotsCard({
 							<div className=" flex items-center justify-center gap-1">
 								<Clock5 size={14} color="#14b6d3" className="shrink-0" />
 								<span className="font-bold text-[14px]">
-									{deadlinePassed
-										? "Awaiting Payout"
-										: `Closes in ${pot.deadlineString}`}
+									{pot.ended
+										? "Ended"
+										: pot.deadlinePassed
+											? "Awaiting Payout"
+											: `Closes in ${pot.deadlineString}`}
 								</span>
 							</div>
 						</div>

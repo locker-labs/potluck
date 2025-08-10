@@ -11,11 +11,13 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 interface MotionButtonProps extends HTMLMotionProps<"button"> {
 	children: ReactNode;
 	className?: string;
+  outerDivStyle?: React.CSSProperties;
 }
 
 export function MotionButton({
 	children,
 	className = "",
+  outerDivStyle = {},
 	...props
 }: MotionButtonProps) {
 	return (
@@ -34,6 +36,7 @@ export function MotionButton({
 				padding: 0,
 				transition: "none",
 				width: "fit-content",
+        ...outerDivStyle
 			}}
 		>
 			<motion.button

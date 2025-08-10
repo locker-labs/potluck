@@ -47,23 +47,24 @@ export function YourPotCard({
 	const initialLoading: boolean = false;
 	const insufficientBalance: boolean =
 		tokenBalance !== undefined && tokenBalance < pot.entryAmount;
-	const deadlinePassed: boolean =
-		pot.deadline < BigInt(Math.floor(Date.now() / 1000));
 
 	const disabled: boolean =
+		pot.ended ||
 		isJoiningPot ||
 		hasJoinedRound ||
 		initialLoading ||
 		insufficientBalance ||
-		deadlinePassed;
+		pot.deadlinePassed;
 
 	const joinButtonText = initialLoading
 		? "Loading"
+		: pot.ended
+			? "Ended"
 		: hasJoinedRound
 			? "Joined"
 			: isJoiningPot
 				? "Joining"
-				: deadlinePassed
+				: pot.deadlinePassed
 					? "Expired ⌛"
 					: insufficientBalance
 						? "Insufficient Balance 💰"
@@ -85,11 +86,7 @@ export function YourPotCard({
 			className={`min-w-[315px] max-w-full p-[12px] ${className}`}
 		>
 			<div className={"flex justify-end"}>
-				<NextDrawPill
-					deadline={pot.deadline}
-					deadlinePassed={deadlinePassed}
-					className={"text-[15px]"}
-				/>
+				<NextDrawPill pot={pot} className={"text-[15px]"} />
 			</div>
 			<p className="text-[18px] font-bold leading-[1.2] line-clamp-1">
 				{pot.name}
