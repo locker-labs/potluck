@@ -4,11 +4,16 @@ import { createPublicClient, createWalletClient, http } from 'viem';
 import { readContract, waitForTransactionReceipt, writeContract } from 'viem/actions';
 import { baseSepolia } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
-import { contractAddress, abi as potluckAbi } from '@/config';
-import { RPC_URL } from '@/lib/constants';
-import { env } from '@/app/api/env';
-import type { Address } from 'viem';
-import { sendReminderNotificationForPot } from '@/lib/helpers/notifications';
+import {
+  contractAddress,
+  abi as potluckAbi,
+  batcherAbi,
+  batcherAddress,
+} from "@/config";
+import { RPC_URL } from "@/lib/constants";
+import { env } from "@/app/api/env";
+import type { Address } from "viem";
+import { sendReminderNotificationForPot } from "@/lib/helpers/notifications";
 
 // Object interface for easier access
 interface PotObject {
@@ -88,93 +93,91 @@ export async function GET() {
     potCacheTimestamp = Date.now();
     console.log("🔔 Pot state cache cleared after one hour");
   }
-   try {
-     const potCount = Number(
-       await readContract(publicClient, {
-         address: contractAddress,
-         abi: potluckAbi,
-         functionName: "potCount",
-       })
-     );
+  try {
+    const potCount = Number(
+      await readContract(publicClient, {
+        address: contractAddress,
+        abi: potluckAbi,
+        functionName: "potCount",
+      })
+    );
 
-     const now = BigInt(Math.floor(Date.now() / 1000));
-     const eligiblePayoutPots: bigint[] = [];
-     const eligibleEndPots: bigint[] = [];
-     console.log(`🔔 Checking ${potCount} pots for payouts...`);
-     // 1) Find all eligible pots
-     for (let i = 0; i < potCount; i++) {
-       // i is pot id
-       if (potStateCache.has(i)) {
-         const potState = potStateCache.get(i);
-         if (potState && now >= potState.deadline && potState.balance > 0n) {
-           const toEnd = await toEndPot(i);
-           if (toEnd) {
-             eligibleEndPots.push(BigInt(i));
-           } else {
-             eligiblePayoutPots.push(BigInt(i));
-           }
-         }
-         continue;
-       }
+    const now = BigInt(Math.floor(Date.now() / 1000));
+    const eligiblePayoutPots: bigint[] = [];
+    const eligibleEndPots: bigint[] = [];
+    console.log(`🔔 Checking ${potCount} pots for payouts...`);
+    // 1) Find all eligible pots
+    for (let i = 0; i < potCount; i++) {
+      // i is pot id
+      if (potStateCache.has(i)) {
+        const potState = potStateCache.get(i);
+        if (potState && now >= potState.deadline && potState.balance > 0n) {
+          const toEnd = await toEndPot(i);
+          if (toEnd) {
+            eligibleEndPots.push(BigInt(i));
+          } else {
+            eligiblePayoutPots.push(BigInt(i));
+          }
+        }
+        continue;
+      }
 
-       const p = await readContract(publicClient, {
-         address: contractAddress,
-         abi: potluckAbi,
-         functionName: "pots",
-         args: [BigInt(i)],
-       });
+      const p = await readContract(publicClient, {
+        address: contractAddress,
+        abi: potluckAbi,
+        functionName: "pots",
+        args: [BigInt(i)],
+      });
 
-       const pot = potArrayToObject(p);
-       const currentDeadline = pot.deadline;
-       if (now >= currentDeadline && pot.balance > 0n) {
-         const toEnd = await toEndPot(i);
-         if (toEnd) {
-           eligibleEndPots.push(BigInt(i));
-         } else {
-           eligiblePayoutPots.push(BigInt(i));
-         }
-       }
-     }
+      const pot = potArrayToObject(p);
+      const currentDeadline = pot.deadline;
+      if (now >= currentDeadline && pot.balance > 0n) {
+        const toEnd = await toEndPot(i);
+        if (toEnd) {
+          eligibleEndPots.push(BigInt(i));
+        } else {
+          eligiblePayoutPots.push(BigInt(i));
+        }
+      }
+    }
 
-     // ToDo: Add batching for more than n (maybe 10/100) pots
-     if (eligiblePayoutPots.length > 0) {
-       const txHash = await writeContract(walletClient, {
-         address: contractAddress,
-         abi: potluckAbi,
-         functionName: "triggerBatchPayout",
-         args: [eligiblePayoutPots],
-       });
-       console.log(
-         `🔔 triggering batch payout for ${eligiblePayoutPots.length} pots`
-       );
-       await waitForTransactionReceipt(publicClient, { hash: txHash });
+    // ToDo: Add batching for more than n (maybe 10/100) pots
+    if (eligiblePayoutPots.length > 0) {
+      const txHash = await writeContract(walletClient, {
+        address: batcherAddress,
+        abi: batcherAbi,
+        functionName: "triggerBatchPayout",
+        args: [eligiblePayoutPots],
+      });
+      console.log(
+        `🔔 triggering batch payout for ${eligiblePayoutPots.length} pots`
+      );
+      await waitForTransactionReceipt(publicClient, { hash: txHash });
 
-       // send new round reminder + winner announcement notifications to pot participants
-       for (const potId of eligiblePayoutPots) {
-         await sendReminderNotificationForPot(potId);
-       }
-     }
-     if (eligibleEndPots.length > 0) {
-       const txHash = await writeContract(walletClient, {
-         address: contractAddress,
-         abi: potluckAbi,
-         functionName: "endBatch",
-         args: [eligibleEndPots],
-       });
-       console.log(
-         `🔔 triggering batch end for ${eligibleEndPots.length} pots`
-       );
-       await waitForTransactionReceipt(publicClient, { hash: txHash });
-     }
-     return NextResponse.json({
-       triggered: eligiblePayoutPots.length,
-       ended: eligibleEndPots.length,
-       success: true,
-       checked: potCount,
-     });
-     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-   } catch (err: any) {
-     console.error("Cron error:", err);
-     return NextResponse.json({ error: err.message }, { status: 500 });
-   }
+      // send new round reminder + winner announcement notifications to pot participants
+      for (const potId of eligiblePayoutPots) {
+        await sendReminderNotificationForPot(potId);
+      }
+    }
+    if (eligibleEndPots.length > 0) {
+      const txHash = await writeContract(walletClient, {
+        address: batcherAddress,
+        abi: batcherAbi,
+        functionName: "endBatch",
+        args: [eligibleEndPots],
+      });
+      console.log(`🔔 triggering batch end for ${eligibleEndPots.length} pots`);
+      await waitForTransactionReceipt(publicClient, { hash: txHash });
+    }
+    return NextResponse.json({
+      triggered: eligiblePayoutPots.length,
+      ended: eligibleEndPots.length,
+      success: true,
+      checked: potCount,
+    });
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  } catch (err: any) {
+    console.error("Cron error:", err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
 }
