@@ -2,7 +2,7 @@ export interface FUser {
   fid: number;
   username: string;
   display_name: string;
-  pfpUrl?: string;
+  pfp_url: string;
   // custody_address: string;
 }
 

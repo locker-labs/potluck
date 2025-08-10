@@ -20,6 +20,7 @@ export interface TokenBalance {
 
 interface TokenWithdrawProps {
 	address: Address;
+	isMyAddress: boolean;
 }
 
 const tokenWithdrawSchema = ({
@@ -65,7 +66,7 @@ const tokenWithdrawSchema = ({
 	});
 };
 
-const TokenWithdraw: React.FC<TokenWithdrawProps> = ({ address }) => {
+const TokenWithdraw: React.FC<TokenWithdrawProps> = ({ address, isMyAddress }) => {
 	const [tokens, setTokens] = useState<TokenBalance[]>([
 		{
 			symbol: "USDC",
@@ -190,7 +191,7 @@ const TokenWithdraw: React.FC<TokenWithdrawProps> = ({ address }) => {
 					)}
 				</div>
 
-				{token ? (
+				{isMyAddress && token ? (
 					<div className="mt-2 flex flex-col gap-1">
 						<div>
 							<label htmlFor="enrty-amount" className="block mb-2.5">
@@ -232,7 +233,7 @@ const TokenWithdraw: React.FC<TokenWithdrawProps> = ({ address }) => {
 					</div>
 				) : null}
 
-				{tokens.length > 0 && (
+				{isMyAddress && token && (
 					<GradientButton
 						className="mt-4 w-full"
 						onClick={onClick}

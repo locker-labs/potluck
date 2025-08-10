@@ -45,3 +45,5 @@ export const NEYNAR_WEBHOOK_URL = env.NEYNAR_WEBHOOK_URL;
 export const ALLOWED_ORIGINS = env.ALLOWED_ORIGINS
   ? env.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
   : [];
+
+export const fallbackPfpUrl = "/pfp_100px.webp";

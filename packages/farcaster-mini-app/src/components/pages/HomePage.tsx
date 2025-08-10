@@ -17,7 +17,7 @@ export default function HomePage() {
         transition={transition}
     >
       <AnimatePresence>
-        {isConnected && !!address ? <YourPots type='joined' /> : null}
+        {isConnected && !!address ? <YourPots type='joined' address={address} isConnectedAddress={true} /> : null}
       </AnimatePresence>
         <div className={'px-4'}>
           <Hero />
