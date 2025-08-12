@@ -16,6 +16,7 @@ import { initialDown, transition, animate } from "@/lib/pageTransition";
 import { CreatePotSuccessDialog } from '@/components/subcomponents/CreatePotSuccessDialog';
 import { daySeconds, weekSeconds, monthSeconds } from '@/lib/helpers/contract';
 import { usePotluck } from '@/providers/PotluckProvider';
+import { truncateDecimals } from '@/lib/helpers/math';
 
 const emojis = ["🎯", "🏆", "🔥", "🚀", "💪", "⚡", "🎬", "🎓", "🍕", "☕"];
 
@@ -212,7 +213,7 @@ export default function CreatePotPage() {
   const showError = (key: string) => (clickedSubmit || touched[key]) && errors[key];
   const showInsufficientNativeBalance = (clickedSubmit || touched.maxParticipants) && isInsufficientNativeBalance;
 
-  const disabled = isLoading || isCreatingPot || ((clickedSubmit || hasTouched) && hasErrors) || showInsufficientNativeBalance;
+  const disabled = isLoading || isCreatingPot || (clickedSubmit && hasErrors) || showInsufficientNativeBalance;
 
   return (
       <motion.div
@@ -362,13 +363,13 @@ export default function CreatePotPage() {
                   whileTap={{ scale: 0.97 }}
                   type="button"
                   className={`absolute right-2 top-1/2 text-white px-3 py-1 rounded-md text-sm font-bold
-                    ${tokenBalance !== undefined && amount === Number(formatUnits(tokenBalance, 6)).toFixed(2) ? "bg-app-cyan/20 outline-app-cyan" : "bg-app-light/20 outline-app-light"}
+                    ${tokenBalance !== undefined && amount === truncateDecimals(formatUnits(tokenBalance, 6), 2) ? "bg-app-cyan/20 outline-app-cyan" : "bg-app-light/20 outline-app-light"}
                     outline outline-2
                     `}
                   disabled={tokenBalance === undefined}
                   onClick={() => {
                     if (tokenBalance !== undefined) {
-                    const fullBalance = Number(formatUnits(tokenBalance, 6)).toFixed(2);
+                    const fullBalance = truncateDecimals(formatUnits(tokenBalance, 6), 2);
                     setAmount(fullBalance);
                     validate({ amount: fullBalance });
                     }
@@ -381,7 +382,7 @@ export default function CreatePotPage() {
             {tokenBalance !== undefined && <div className="mt-2 flex items-center text-xs">
               Balance:&nbsp;
                 <span className="font-semibold">
-                  {Number(formatUnits(tokenBalance, 6)).toFixed(4)} USDC
+                  {truncateDecimals(formatUnits(tokenBalance, 6), 2)} USDC
                 </span>
             </div>}
           </div>
@@ -528,7 +529,7 @@ export default function CreatePotPage() {
                 }
               }}
               placeholder="Default is 255"
-              className={`mt-2 w-full ${showError('maxParticipants') ? "outline-red-500 ring ring-red-500" : null}`}
+              className={`mt-2 w-full ${showError('maxParticipants') || showInsufficientNativeBalance ? "outline-red-500 ring ring-red-500" : null}`}
             />
           </div>
           
@@ -559,10 +560,10 @@ export default function CreatePotPage() {
                 <p className="text-sm font-normal">{totalFee ? `${totalFee.formatted} ETH` : '-'}</p>
               </div>
 
-              {(clickedSubmit || touched.maxParticipants) && isInsufficientNativeBalance && <div className="mb-2 w-full flex items-start justify-between">
+              {showInsufficientNativeBalance && <div className="mb-2 w-full flex items-start justify-between">
                 <p className="text-sm font-medium text-red-500">Insufficient Balance:</p>
                 <p className="text-sm font-medium text-red-500">
-                  {Number(formatEther(dataNativeBalance.value)).toFixed(4)} ETH
+                  {truncateDecimals(formatEther(dataNativeBalance.value), 4)} ETH
                 </p>
               </div>}
 
