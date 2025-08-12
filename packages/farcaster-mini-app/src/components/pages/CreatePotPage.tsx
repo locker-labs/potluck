@@ -381,7 +381,7 @@ export default function CreatePotPage() {
             {tokenBalance !== undefined && <div className="mt-2 flex items-center text-xs">
               Balance:&nbsp;
                 <span className="font-semibold">
-                  {Number(Number(formatUnits(tokenBalance, 6)).toFixed(4))} USDC
+                  {Number(formatUnits(tokenBalance, 6)).toFixed(4)} USDC
                 </span>
             </div>}
           </div>
@@ -562,7 +562,7 @@ export default function CreatePotPage() {
               {(clickedSubmit || touched.maxParticipants) && isInsufficientNativeBalance && <div className="mb-2 w-full flex items-start justify-between">
                 <p className="text-sm font-medium text-red-500">Insufficient Balance:</p>
                 <p className="text-sm font-medium text-red-500">
-                  {Number(Number(formatEther(dataNativeBalance.value)).toFixed(4))} ETH
+                  {Number(formatEther(dataNativeBalance.value)).toFixed(4)} ETH
                 </p>
               </div>}
 
