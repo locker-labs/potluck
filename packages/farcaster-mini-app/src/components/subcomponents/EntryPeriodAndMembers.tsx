@@ -33,7 +33,7 @@ export function EntryPeriodAndMembers({
 				</span>
 			</div>
 			{/* Entry Period and Amount */}
-			<div className="flex items-end justify-start gap-1">
+			<div className="flex items-end justify-start gap-0">
 				<DollarSign
 					strokeWidth="1.25px"
 					size={18}

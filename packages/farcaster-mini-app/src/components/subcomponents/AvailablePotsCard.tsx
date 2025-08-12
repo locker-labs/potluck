@@ -8,6 +8,9 @@ import { useUserPotJoinInfo } from "@/hooks/useUserPotJoinInfo";
 import { TransitionLink } from "@/components/TransitionLink";
 import { DeadlinePill } from "./DeadlinePill";
 import { PotInfo } from "./PotInfo";
+import { formatAddress } from "@/lib/address";
+import { AtSign } from "lucide-react";
+import { UsernameOrAddress } from "./UsernameOrAddress";
 
 export function AvailablePotsCard({
 	pot,
@@ -19,6 +22,7 @@ export function AvailablePotsCard({
 	handleRequest,
 	requestingPotId,
 	requestedPotId,
+	username,
 }: {
 	pot: TPotObject;
 	isLoadingJoinPot: boolean;
@@ -30,6 +34,7 @@ export function AvailablePotsCard({
 	handleRequest: (potId: bigint) => Promise<void>;
 	requestingPotId: bigint | null;
 	requestedPotId: bigint | null;
+	username: string | undefined;
 }) {
 	const { address: addressWithCheckSum } = useAccount();
 	const address = addressWithCheckSum?.toLowerCase() as Address | undefined;
@@ -59,7 +64,11 @@ export function AvailablePotsCard({
 				<div className="flex justify-end items-start">
 					<DeadlinePill pot={pot} style="normal" prefixText="Closes in" />
 				</div>
-				<p className="text-[24px] font-normal break-all line-clamp-1">{pot.name}</p>
+				<p className="text-[24px] font-normal break-all line-clamp-1">
+					{pot.name}
+				</p>
+
+				<UsernameOrAddress username={username} address={pot.creator} />
 
 				<PotInfo pot={pot} />
 
