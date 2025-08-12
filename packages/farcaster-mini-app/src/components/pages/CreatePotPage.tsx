@@ -329,33 +329,54 @@ export default function CreatePotPage() {
                 className={`font-medium text-xs text-red-500 ${showError('amount') ? "visible" : "hidden"}`}
               >{`${errors.amount}`}</span>
             </label>
-            <Input
-              className={`w-full ${showError('amount') ? "outline-red-500 ring ring-red-500" : null}`}
-              id="enrty-amount"
-              type="number"
-              value={amount}
-              onChange={(e) => {
-                // Prevent negative values
-                const value = e.target.value;
-                // Only allow up to two decimal places
-                if (
-                  value === "" ||
-                  (/^\d*(\.\d{0,2})?$/.test(value) &&
-                    Number.parseFloat(value) >= 0)
-                ) {
-                  setTouched((prev) => ({ ...prev, amount: true }));
-                  setAmount(value);
-                  validate({ amount: value });
-                }
-              }}
-              onKeyDown={(e) => {
-                // Prevent typing minus sign
-                if (e.key === "-" || e.key === "e") {
-                  e.preventDefault();
-                }
-              }}
-              placeholder="20"
-            />
+            <div className="relative">
+              <Input
+                className={`w-full pr-16 ${showError('amount') ? "outline-red-500 ring ring-red-500" : null}`}
+                id="enrty-amount"
+                type="number"
+                value={amount}
+                onChange={(e) => {
+                  // Prevent negative values
+                  const value = e.target.value;
+                  // Only allow up to two decimal places
+                  if (
+                    value === "" ||
+                    (/^\d*(\.\d{0,2})?$/.test(value) &&
+                      Number.parseFloat(value) >= 0)
+                  ) {
+                    setTouched((prev) => ({ ...prev, amount: true }));
+                    setAmount(value);
+                    validate({ amount: value });
+                  }
+                }}
+                onKeyDown={(e) => {
+                  // Prevent typing minus sign
+                  if (e.key === "-" || e.key === "e") {
+                    e.preventDefault();
+                  }
+                }}
+                placeholder="20"
+              />
+                <motion.button
+                  initial={{ scale: 1, translateY: '-50%' }}
+                  whileTap={{ scale: 0.97 }}
+                  type="button"
+                  className={`absolute right-2 top-1/2 text-white px-3 py-1 rounded-md text-sm font-bold
+                    ${tokenBalance !== undefined && amount === Number(formatUnits(tokenBalance, 6)).toFixed(2) ? "bg-app-cyan/20 outline-app-cyan" : "bg-app-light/20 outline-app-light"}
+                    outline outline-2
+                    `}
+                  disabled={tokenBalance === undefined}
+                  onClick={() => {
+                    if (tokenBalance !== undefined) {
+                    const fullBalance = Number(formatUnits(tokenBalance, 6)).toFixed(2);
+                    setAmount(fullBalance);
+                    validate({ amount: fullBalance });
+                    }
+                  }}
+                >
+                  Max
+                </motion.button>
+            </div>
             {/* Display token balance */}
             {tokenBalance !== undefined && <div className="mt-2 flex items-center text-xs">
               Balance:&nbsp;
