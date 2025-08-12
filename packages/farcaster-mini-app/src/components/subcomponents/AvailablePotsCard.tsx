@@ -7,7 +7,6 @@ import { useUserPotRequestInfo } from "@/hooks/useUserPotRequestInfo";
 import { useUserPotJoinInfo } from "@/hooks/useUserPotJoinInfo";
 import { TransitionLink } from "@/components/TransitionLink";
 import { DeadlinePill } from "./DeadlinePill";
-import { EntryPeriodAndMembers } from "./EntryPeriodAndMembers";
 import { PotInfo } from "./PotInfo";
 
 export function AvailablePotsCard({
@@ -60,7 +59,7 @@ export function AvailablePotsCard({
 				<div className="flex justify-end items-start">
 					<DeadlinePill pot={pot} style="normal" prefixText="Closes in" />
 				</div>
-				<p className="text-[24px] font-normal line-clamp-1">{pot.name}</p>
+				<p className="text-[24px] font-normal break-all line-clamp-1">{pot.name}</p>
 
 				<PotInfo pot={pot} />
 

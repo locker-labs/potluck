@@ -90,7 +90,7 @@ export function YourPotCard({
 			<div className={"flex justify-end"}>
 				<DeadlinePill pot={pot} className={"text-[15px]"} />
 			</div>
-			<p className="text-[18px] font-bold leading-[1.2] line-clamp-1">
+			<p className="text-[18px] font-bold leading-[1.2] break-all line-clamp-1">
 				{pot.name}
 			</p>
 

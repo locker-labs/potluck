@@ -130,7 +130,7 @@ export default function PotPage({ id }: { id: string }) {
           </GradientButton3>
           <div className="flex items-center justify-start gap-2">
             <div className="w-full">
-              <p className="text-2xl font-bold line-clamp-2">{pot.name}</p>
+              <p className="text-2xl font-bold break-all line-clamp-2">{pot.name}</p>
             </div>
             <ShareDropdown pot={pot} />
           </div>
