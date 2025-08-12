@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
 import type { Address } from "viem";
 import type { FUser } from "@/types/neynar";
 import { fetchFarcasterUsers } from "@/lib/api/fetchFarcasterUsers";
@@ -8,12 +8,14 @@ export function useNeynar() {
 	const [isFetching, setIsFetching] = useState(false);
 	const [fetchingAddresses, setFetchingAddresses] = useState<Address[]>([]);
 	const [pendingAddresses, setPendingAddresses] = useState<Address[]>([]); // request queue
+	const [retryCount, setRetryCount] = useState<number>(0);
 
 	console.log("useNeynar", {
 		isFetching,
 		users,
 		fetchingAddresses,
 		pendingAddresses,
+		retryCount,
 	});
 
 	const fetchAndStoreFarcasterUsers = async (addresses: Address[]) => {
@@ -23,17 +25,28 @@ export function useNeynar() {
 
 		if (newAddrs.length === 0) return;
 
+		const newUsersMap: Record<Address, FUser | null> = {};
+
+		if (retryCount > 5) {
+			for (const addr of newAddrs) {
+				newUsersMap[addr] = null;
+			}
+			setUsers((prev) => ({ ...prev, ...newUsersMap }));
+			return;
+		}
+
 		setIsFetching(true);
 		const { data: dataNewUsers, error } = await fetchFarcasterUsers({
 			addresses: newAddrs,
 		});
-		const newUsersMap: Record<Address, FUser | null> = {};
 
 		if (dataNewUsers && !error) {
 			for (const addr of newAddrs) {
-				newUsersMap[addr] = dataNewUsers[addr] ?? null;
+				newUsersMap[addr] = dataNewUsers?.[addr] ?? null;
 			}
 			setUsers((prev) => ({ ...prev, ...newUsersMap }));
+		} else {
+			setRetryCount((prev) => prev + 1);
 		}
 
 		// Remove the fetched addresses from fetchingAddresses and pendingAddresses
