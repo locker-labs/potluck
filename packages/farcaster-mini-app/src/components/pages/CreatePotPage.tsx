@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { formatEther, parseUnits } from 'viem';
-import { MoveLeft, Loader2 } from 'lucide-react';
-import Image from 'next/image';
+import { MoveLeft, Loader2, Info } from 'lucide-react';
 import { GradientButton, GradientButton3 } from '../ui/Buttons';
 import { useCreatePot } from '@/hooks/useCreatePot';
 import { formatUnits } from 'viem';
@@ -553,14 +552,8 @@ export default function CreatePotPage() {
                 <p className="text-sm font-bold">{amountTokenFormatted} USDC</p>
               </div>
 
-              <div className="mt-2 mb-3 w-full flex items-start justify-between border border-[#FFB300] rounded-[8px] bg-[#45412E] py-2 px-4">
-                <Image
-                  className="mr-3"
-                  src="/warning.png"
-                  alt="warning"
-                  width={32}
-                  height={32}
-                />
+              <div className="mt-2 mb-3 p-2 w-full flex gap-1.5 items-start justify-between border border-[#FFB300] rounded-[8px] bg-[#45412E]">
+                <Info className="text-[#FFB300]" size={18} strokeWidth={1.25} />
                 <p className="w-full text-left text-xs font-normal text-[#FFB300]">
                   You will be asked to approve tokens for all rounds and to confirm a wallet transaction.
                 </p>
