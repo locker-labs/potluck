@@ -7,6 +7,8 @@ import type { TPotObject } from "@/lib/types";
 import { Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRequestPot } from "@/hooks/useRequestPot";
+import type { Address } from "viem";
+import { usePotluck } from "@/providers/PotluckProvider";
 
 let _fetchPotsEffectFlag = true; // prevent multiple fetches
 
@@ -19,6 +21,7 @@ export default function AvailablePots() {
 		tokenBalance,
 	} = useJoinPot();
 	const { handleRequest, requestingPotId, requestedPotId } = useRequestPot();
+	const { users, fetchUsers } = usePotluck();
 
 	// ------
 	// STATES
@@ -49,6 +52,19 @@ export default function AvailablePots() {
 			_fetchPotsEffectFlag = true;
 		})();
 	}, []);
+
+	
+	
+	  // biome-ignore lint/correctness/useExhaustiveDependencies: only tracking pots
+	  useEffect(() => {
+		const addressSet = new Set<Address>();
+	
+		for (const p of pots) {
+		  addressSet.add(p.creator.toLowerCase() as Address);
+		}
+	
+		fetchUsers(Array.from(addressSet));
+	  }, [pots]);
 
 	// ---------
 	// RENDERING
@@ -96,8 +112,9 @@ export default function AvailablePots() {
 				</div>
 			) : (
 				<div className="grid gap-[22px] md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 4xl:grid-cols-5 6xl:grid-cols-6 7xl:grid-cols-7">
-					{filteredPots.map((pot: TPotObject) => (
-						<AvailablePotsCard
+					{filteredPots.map((pot: TPotObject) => {
+						const username = users[pot.creator.toLowerCase() as Address]?.username;
+						return (<AvailablePotsCard
 							key={pot.id}
 							pot={pot}
                             loadingPot={loading}
@@ -109,8 +126,9 @@ export default function AvailablePots() {
                             handleRequest={handleRequest}
                             requestingPotId={requestingPotId}
                             requestedPotId={requestedPotId}
+							username={username}
 						/>
-					))}
+					)})}
 				</div>
 			)}
 			{loading ? (

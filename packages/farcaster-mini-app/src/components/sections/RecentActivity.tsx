@@ -9,6 +9,7 @@ import { getTransactionLink } from "@/lib/helpers/blockExplorer";
 import type { LogEntry } from "@/lib/graphQueries";
 import type { Address } from "viem";
 import type { FUser } from "@/types/neynar";
+import { getProfileLink } from "@/lib/helpers/links";
 
 export function RecentActivity({
   logsState,
@@ -136,9 +137,13 @@ export function RecentActivity({
 															>
 																{action}
 															</p>
-															<p className="leading-none text-xs font-normal text-gray-200">
-																{username}
-															</p>
+															<Link
+																href={getProfileLink(userAddr)}
+															>
+																<p className="leading-none text-xs font-normal text-gray-200">
+																	{username}
+																</p>
+															</Link>
 														</div>
 													</div>
 
