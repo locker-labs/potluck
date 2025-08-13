@@ -123,6 +123,10 @@ export function useFrame() {
         amplitudeUserId,
       );
 
+      if (sdk && isSDKLoaded) {
+        await sdk.back.disableWebNavigation();
+      }
+
       // Set up event listeners
       sdk.on('frameAdded', ({ notificationDetails }) => {
         console.log('Frame added', notificationDetails);
