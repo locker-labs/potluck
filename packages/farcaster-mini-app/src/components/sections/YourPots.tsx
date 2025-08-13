@@ -102,7 +102,7 @@ export default function YourPots({ type, creator }: { type: 'created' | 'joined'
       key="your-pots"
     >
       <div>
-        <SectionHeading className={'mx-4'}>{type === "joined" ? "Active" : isCreator ? "My" : "Created"} Pots</SectionHeading>
+        <SectionHeading className={'mx-4'}>{type === "joined" ? "Active" : isCreator ? "My" : "Joined"} Pots</SectionHeading>
         <div className="px-4 flex flex-row overflow-x-scroll gap-[12px] md:grid-cols-2 lg:grid-cols-3">
           {pots.map((pot: TPotObject) => (
             <YourPotCard
