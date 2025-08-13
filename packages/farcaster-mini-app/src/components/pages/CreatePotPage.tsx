@@ -395,14 +395,14 @@ export default function CreatePotPage() {
             >
               Join Mode
             </label>
-            <AnimatePresence initial={false} mode="wait">
+            <AnimatePresence initial={false} mode="popLayout">
               {isPublic ? (
                 <motion.p
                   key={"participation-public"}
                   className="text-xs text-gray-500"
-                  initial={{ x: 40, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  exit={{ x: 40, opacity: 0 }}
+                  initial={{ y: 40, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: 40, opacity: 0 }}
                   transition={{
                     type: "spring",
                     stiffness: 400,
@@ -416,9 +416,9 @@ export default function CreatePotPage() {
                 <motion.p
                   key={"participation-private"}
                   className="text-xs text-gray-500"
-                  initial={{ x: -40, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  exit={{ x: -40, opacity: 0 }}
+                  initial={{ y: -40, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: -40, opacity: 0 }}
                   transition={{
                     type: "spring",
                     stiffness: 400,
