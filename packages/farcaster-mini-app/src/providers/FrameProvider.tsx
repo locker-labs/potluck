@@ -124,7 +124,9 @@ export function useFrame() {
       );
 
       if (sdk && isSDKLoaded) {
-        await sdk.back.disableWebNavigation();
+        try {
+          await sdk.back.enableWebNavigation();
+        } catch {}
       }
 
       // Set up event listeners
