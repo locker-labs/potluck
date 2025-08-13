@@ -395,7 +395,7 @@ export default function CreatePotPage() {
             >
               Join Mode
             </label>
-            <AnimatePresence mode="popLayout">
+            <AnimatePresence initial={false} mode="wait">
               {isPublic ? (
                 <motion.p
                   key={"participation-public"}
