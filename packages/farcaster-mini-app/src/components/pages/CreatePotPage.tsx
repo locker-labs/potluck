@@ -218,13 +218,13 @@ export default function CreatePotPage() {
 
   return (
       <motion.div
-          className={'pt-2 px-4'}
+          className={'px-4'}
           initial={initialDown}
           animate={animate}
           transition={transition}
       >
       <div>
-        <div className="w-full flex items-center justify-start gap-4 mb-6">
+        <div className="w-full flex items-center justify-start gap-2 mb-6">
           <BackButton />
           <div className="w-full">
             <p className="text-2xl font-bold">Create Pot</p>

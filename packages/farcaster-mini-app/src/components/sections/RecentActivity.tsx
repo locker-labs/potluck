@@ -83,7 +83,7 @@ export function RecentActivity({
 					{sortedDates.map((date, dateIndex) => (
 						<AccordionItem key={date} value={date} className="border-0">
 							<AccordionTrigger
-								className={`px-4 ${dateIndex === 0 ? "" : "border-t"} border-gray-500`}
+								className={`px-4 ${dateIndex === 0 ? "" : "border-t"} border-gray-500 h-[48px]`}
 							>
 								{new Date(date).toLocaleDateString("en-US", {
 									day: "2-digit",

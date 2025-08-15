@@ -1,14 +1,18 @@
 import React from "react";
-import { GradientButton3 } from "../ui/Buttons";
-import { MoveLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-const BackButton = () => {
+const BackButton = ({ className = "" }: { className?: string }) => {
 	const router = useRouter();
 	return (
-		<GradientButton3 onClick={() => router.back()} className="text-sm">
-			<MoveLeft size={20} />
-		</GradientButton3>
+		<button
+			type="button"
+			className={`text-gray-400 hover:text-white py-2 pr-2 transition-colors duration-150 ${className}`}
+			onClick={() => router.back()}
+			aria-label="Share options"
+		>
+			<ArrowLeft size={20} />
+		</button>
 	);
 };
 

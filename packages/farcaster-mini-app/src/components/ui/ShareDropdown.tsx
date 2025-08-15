@@ -1,10 +1,11 @@
 'use client';
 
-import { Share2, Link as LinkIcon, MessageSquare } from 'lucide-react';
+import { Link as LinkIcon, MessageSquare } from 'lucide-react';
 import { useState } from 'react';
 import { useCopyInviteLink } from '@/hooks/useCopyInviteLink';
 import { useCreateCast } from '@/hooks/useCreateCast';
 import type { TPotObject } from '@/lib/types';
+import ShareButton from '../subcomponents/ShareButton';
 
 type ShareDropdownProps = {
   pot: TPotObject;
@@ -22,20 +23,7 @@ export function ShareDropdown({ pot, className = '' }: ShareDropdownProps) {
 
   return (
     <div className={`relative inline-block text-left bg-transparent ${className}`}>
-      <button
-        type='button'
-        className='text-gray-400 hover:text-white rounded-full p-2'
-        onClick={() => setIsOpen(!isOpen)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            setIsOpen(!isOpen);
-          }
-        }}
-        aria-label='Share options'
-      >
-        <Share2 className='h-5 w-5' />
-      </button>
+      <ShareButton onClick={() => setIsOpen(!isOpen)} />
 
       {isOpen && (
         <>

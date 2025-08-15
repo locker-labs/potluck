@@ -24,6 +24,8 @@ import { motion } from "motion/react";
 import { animate, initialDown, transition } from "@/lib/pageTransition";
 import { usePotluck } from '@/providers/PotluckProvider';
 import { PotInfo } from '../subcomponents/PotInfo';
+import BackButton from '../subcomponents/BackButton';
+import { Pill } from '../ui/Pill';
 
 const defaultLogsState = { loading: true, error: null, logs: [] };
 
@@ -120,33 +122,24 @@ export default function PotPage({ id }: { id: string }) {
       animate={animate}
       transition={transition}
     >
-      <div className="w-full flex items-center justify-between gap-4 mb-4">
-        <div className="flex items-cener justify-center gap-4">
-          <GradientButton3
-            onClick={() => router.push("/")}
-            className="text-sm h-9 flex items-center rounded-[10px]"
-          >
-            <MoveLeft size={20} />
-          </GradientButton3>
-          <div className="flex items-center justify-start gap-2">
-            <div className="w-full">
-              <p className="text-2xl font-bold break-all line-clamp-2">{pot.name}</p>
-            </div>
-            <ShareDropdown pot={pot} />
-          </div>
+      <div className="w-full flex items-start justify-between gap-2 mb-4">
+        <BackButton />
+        <div className="w-full">
+          <p className="text-2xl font-bold break-all line-clamp-2">{pot.name}</p>
         </div>
-        {hasJoinedBefore || hasJoinedRound ? (
-          <div className="bg-green-500/30 text-green-500 h-[24px] px-[10px] flex items-center justify-center rounded-[10px] border border-green-500">
-            <p className="text-xs font-light">joined</p>
-          </div>
-        ) : null}
+        <ShareDropdown pot={pot} />
       </div>
 
       {/*  TODO: Create a reusable component  */}
       <GradientCard2 className="w-full">
         <div>
-          <div className="flex">
+          <div className="flex items-start justify-between">
             <DeadlinePill pot={pot} />
+            {hasJoinedBefore || hasJoinedRound ? (
+              <Pill className='bg-green-500/40 text-green-500'>
+                <p className="text-xs font-medium">Joined</p>
+              </Pill>
+            ) : null}
           </div>
         </div>
 
