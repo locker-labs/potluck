@@ -1,7 +1,7 @@
 "use client";
 
 import { type Address, getAddress, isAddress } from "viem";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import UserCard from "../subcomponents/UserCard";
 import TokenWithdraw from "../subcomponents/TokenWithdraw";
 import YourPots from "../sections/YourPots";
@@ -12,8 +12,11 @@ import { motion } from "motion/react";
 import { initialDown, animate, transition } from "@/lib/pageTransition";
 import { fallbackPfpUrl } from "@/lib/constants";
 import { usePotluck } from "@/providers/PotluckProvider";
+import BackButton from "../subcomponents/BackButton";
+import ShareButton from "../subcomponents/ShareButton";
 
 export default function Profile({ address: rawAddress }: { address: Address }) {
+	const [copied, setCopied] = useState(false);
 	const { address: connectedAddress } = useAccount();
 	const { users, fetchUsers } = usePotluck();
 	const { context } = useFrame();
@@ -56,9 +59,37 @@ export default function Profile({ address: rawAddress }: { address: Address }) {
 	return (
 		<motion.div initial={initialDown} animate={animate} transition={transition}>
 			<div>
-				{/* <SectionHeading className="mx-4">My Profile</SectionHeading> */}
+				<div className="px-4 w-full flex items-start justify-start gap-2 mb-4">
+					<BackButton />
+					<div className="w-full">
+						<p className="text-2xl font-bold">Profile</p>
+						{/* <p className="text-sm font-light">Manage your profile settings</p> */}
+					</div>
+					<ShareButton
+						onClick={() => {
+							const shareData = {
+								title: "Potluck Profile",
+								text: "Check out this Potluck profile!",
+								url: window.location.href.split("?")[0],
+							};
+							if (navigator.share) {
+								navigator.share(shareData).catch(() => {});
+							} else {
+								if (!copied) {
+									navigator.clipboard.writeText(
+										window.location.href.split("?")[0],
+									);
+									setCopied(true);
+									setTimeout(() => setCopied(false), 2000);
+								}
+							}
+						}}
+						copied={copied}
+					/>
+				</div>
+
 				<div className="flex flex-col gap-6">
-					<div className="mt-4 px-4">
+					<div className="px-4">
 						<UserCard user={user} address={address} />
 					</div>
 
@@ -66,10 +97,7 @@ export default function Profile({ address: rawAddress }: { address: Address }) {
 						<TokenWithdraw address={address} isMyAddress={isMyAddress} />
 					</div>
 
-					<YourPots
-						type="created"
-						creator={address}
-					/>
+					<YourPots type="created" creator={address} />
 
 					<div className="px-4">
 						<Reputation />

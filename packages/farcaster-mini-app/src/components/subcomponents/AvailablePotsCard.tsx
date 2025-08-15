@@ -8,8 +8,6 @@ import { useUserPotJoinInfo } from "@/hooks/useUserPotJoinInfo";
 import { TransitionLink } from "@/components/TransitionLink";
 import { DeadlinePill } from "./DeadlinePill";
 import { PotInfo } from "./PotInfo";
-import { formatAddress } from "@/lib/address";
-import { AtSign } from "lucide-react";
 import { UsernameOrAddress } from "./UsernameOrAddress";
 
 export function AvailablePotsCard({
@@ -64,7 +62,7 @@ export function AvailablePotsCard({
 				<div className="flex justify-end items-start">
 					<DeadlinePill pot={pot} style="normal" prefixText="Closes in" />
 				</div>
-				<p className="text-[24px] font-normal break-all line-clamp-1">
+				<p className="text-[24px] font-medium break-all line-clamp-1">
 					{pot.name}
 				</p>
 
