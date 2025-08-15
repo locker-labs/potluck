@@ -6,7 +6,7 @@ import { useMemo, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { formatEther, parseUnits } from 'viem';
 import { MoveLeft, Loader2, Info } from 'lucide-react';
-import { GradientButton, GradientButton3 } from '../ui/Buttons';
+import { GradientButton } from '../ui/Buttons';
 import { useCreatePot } from '@/hooks/useCreatePot';
 import { formatUnits } from 'viem';
 import { z } from 'zod';
@@ -17,6 +17,7 @@ import { CreatePotSuccessDialog } from '@/components/subcomponents/CreatePotSucc
 import { daySeconds, weekSeconds, monthSeconds } from '@/lib/helpers/contract';
 import { usePotluck } from '@/providers/PotluckProvider';
 import { truncateDecimals } from '@/lib/helpers/math';
+import BackButton from '../subcomponents/BackButton';
 
 const emojis = ["🎯", "🏆", "🔥", "🚀", "💪", "⚡", "🎬", "🎓", "🍕", "☕"];
 
@@ -224,9 +225,7 @@ export default function CreatePotPage() {
       >
       <div>
         <div className="w-full flex items-center justify-start gap-4 mb-6">
-          <GradientButton3 onClick={() => router.push("/")} className="text-sm">
-            <MoveLeft size={20} />
-          </GradientButton3>
+          <BackButton />
           <div className="w-full">
             <p className="text-2xl font-bold">Create Pot</p>
             <p className="text-sm font-light">
