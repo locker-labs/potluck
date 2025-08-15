@@ -8,8 +8,6 @@ import { useUserPotJoinInfo } from "@/hooks/useUserPotJoinInfo";
 import { TransitionLink } from "@/components/TransitionLink";
 import { DeadlinePill } from "./DeadlinePill";
 import { PotInfo } from "./PotInfo";
-import { formatAddress } from "@/lib/address";
-import { AtSign } from "lucide-react";
 import { UsernameOrAddress } from "./UsernameOrAddress";
 
 export function AvailablePotsCard({
