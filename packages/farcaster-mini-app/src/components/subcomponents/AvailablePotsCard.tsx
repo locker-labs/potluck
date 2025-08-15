@@ -64,7 +64,7 @@ export function AvailablePotsCard({
 				<div className="flex justify-end items-start">
 					<DeadlinePill pot={pot} style="normal" prefixText="Closes in" />
 				</div>
-				<p className="text-[24px] font-normal break-all line-clamp-1">
+				<p className="text-[24px] font-medium break-all line-clamp-1">
 					{pot.name}
 				</p>
 
