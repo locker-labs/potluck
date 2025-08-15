@@ -23,9 +23,9 @@ function WelcomeDialog({
 }: { open: boolean; onOpenChange: (open: boolean) => void }) {
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent>
+			<DialogContent className='rounded-2xl' showClose={false}>
 				<DialogHeader>
-					<DialogTitle>Welcome to Potluck!</DialogTitle>
+					<DialogTitle className="text-white">Welcome to Potluck!</DialogTitle>
 				</DialogHeader>
 				<div className="mb-4 text-gray-200">
 					<p>
