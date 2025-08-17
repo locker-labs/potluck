@@ -169,7 +169,9 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
         IERC20(token).safeTransferFrom(msg.sender, address(this), entryAmount);
 
         //  Collect fee to treasury
-        uint256 requiredFee = getCreatorFee(maxParticipants);
+        uint256 slots = maxParticipants == 0 ? type(uint8).max : maxParticipants;
+        uint256 requiredFee = platformFee + participantFee * slots;
+
         if (msg.value < requiredFee) {
             revert InsufficientFundsForAutoJoin(msg.value, requiredFee);
         }
@@ -228,7 +230,8 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
         if (p.round == 0) {
             p.totalParticipants++;
             //  Collect fee to treasury
-            uint256 requiredFee = getParticipantFee(p.maxParticipants);
+            uint256 slots = p.maxParticipants == 0 ? type(uint8).max : p.maxParticipants;
+            uint256 requiredFee = participantFee * slots;
             if (msg.value < requiredFee) {
                 revert InsufficientFundsForAutoJoin(msg.value, requiredFee);
             }
@@ -317,6 +320,7 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
             }
         }
         p.balance = 0;
+        p.round++;
         address token = p.token;
         uint256 entryAmount = p.entryAmount;
         for (uint256 i = 0; i < p.participants.length; i++) {
@@ -341,9 +345,21 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
         uint32 round = requestToRound[requestId];
         Pot storage p = pots[potId];
 
+        require(p.round == round, "Payout already triggered");
+
         uint256 len = p.participants.length;
-        uint256 idx = randomWords[0] % len;
-        address winner = p.participants[idx];
+        uint256 idx = randomWords[0];
+
+        // find a non-winner
+        address winner;
+        for (uint256 i = 0; i < len; i++) {
+            address cand = p.participants[(idx + i) % len];
+            if (!hasWon[keccak256(abi.encodePacked(potId, cand))]) {
+                winner = cand;
+                break;
+            }
+        }
+        if (winner == address(0)) revert NoEligibleParticipants();
 
         hasWon[keccak256(abi.encodePacked(potId, winner))] = true;
         uint256 rollover = (round == p.totalParticipants - 1) ? 0 : p.entryAmount;
@@ -432,15 +448,5 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
 
     function getRequests(uint256 potId) external view returns (PotRequest[] memory) {
         return requestedParticipants[potId];
-    }
-
-    function getCreatorFee(uint8 maxParticipants) public view returns (uint256) {
-        uint256 slots = maxParticipants == 0 ? type(uint8).max : maxParticipants;
-        return platformFee + participantFee * slots;
-    }
-
-    function getParticipantFee(uint8 maxParticipants) public view returns (uint256) {
-        uint256 slots = maxParticipants == 0 ? type(uint8).max : maxParticipants;
-        return participantFee * slots;
     }
 }
