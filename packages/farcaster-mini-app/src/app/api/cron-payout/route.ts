@@ -322,7 +322,7 @@ export async function GET() {
         winnerName = addressToFuserMap.get(winnerAddr)?.username ?? 'Someone';
       }
       const participants = potIdToParticipantsMap.get(potId) || [];
-						const targetFids = participants
+      const targetFids = participants
 							.map((participant) => addressToFuserMap.get(participant)?.fid)
 							.filter((fid): fid is number => fid !== undefined);
 
