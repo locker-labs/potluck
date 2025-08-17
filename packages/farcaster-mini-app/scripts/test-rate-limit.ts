@@ -1,4 +1,3 @@
-"use server"
 
 import { getUserFidsByAddresses } from "@/lib/neynar/getUserFidsByAddresses";
 
