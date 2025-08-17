@@ -10,7 +10,7 @@ import {
   batcherAbi,
   batcherAddress,
 } from "@/config";
-import { RPC_URL } from "@/lib/constants";
+import { RPC_URL, NEYNAR_ADDRESSES_LIMIT } from "@/lib/constants";
 import { env } from "@/app/api/env";
 import type { Address } from "viem";
 import { getPotRoundParticipants } from "@/lib/graphQueries";
@@ -18,7 +18,6 @@ import { getPotParticipants } from "@/lib/helpers/contract";
 import type { BulkUsersByAddressResponse, FUser } from '@/types/neynar';
 import {
 	fetchFarcasterUsersInBulk,
-	NEYNAR_ADDRESSES_LIMIT,
 	sendDepositReminderNotification,
 } from "@/lib/neynar";
 

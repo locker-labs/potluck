@@ -3,8 +3,6 @@
 import { env } from "@/lib/env";
 import type { BulkUsersByAddressResponse } from "@/types/neynar";
 
-export const NEYNAR_ADDRESSES_LIMIT = 350;
-
 /**
  * Fetches Farcaster users by their Ethereum addresses (atmost NEYNAR_ADDRESSES_LIMIT at once)
  * Learn More: https://docs.neynar.com/reference/fetch-bulk-users-by-eth-or-sol-address
