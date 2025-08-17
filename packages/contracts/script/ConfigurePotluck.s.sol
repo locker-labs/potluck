@@ -9,7 +9,7 @@ contract ConfigurePotluck is Script {
     function run() external {
         // --- load from environment ---
         uint256 deployerKey = vm.envUint("PRIVATE_KEY");
-        address potluckAddr = address(0x712f260ee23C69Fc9C548c5c807B087d1C91DfE3);
+        address potluckAddr = address(0x55d6eE3D0ebbB82D58E7437FC905Fc19229Be424);
         bytes32 keyHash = bytes32(0x9e1344a1247c8a1785d0a4681a27152bffdb43666ae5bf7d14d24a5efd44bf71);
         uint256 subscriptionId = 75130548142902775054364512190156145280145330302373548095325666767511337251427;
         uint16 requestConfirmations = 15;
