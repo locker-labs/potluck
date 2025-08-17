@@ -14,6 +14,7 @@ import { fallbackPfpUrl } from "@/lib/constants";
 import { usePotluck } from "@/providers/PotluckProvider";
 import BackButton from "../subcomponents/BackButton";
 import ShareButton from "../subcomponents/ShareButton";
+import { getProfileLink } from "@/lib/helpers/links";
 
 export default function Profile({ address: rawAddress }: { address: Address }) {
 	const [copied, setCopied] = useState(false);
@@ -70,15 +71,13 @@ export default function Profile({ address: rawAddress }: { address: Address }) {
 							const shareData = {
 								title: "Potluck Profile",
 								text: "Check out this Potluck profile!",
-								url: window.location.href.split("?")[0],
+								url: getProfileLink(address),
 							};
 							if (navigator.share) {
 								navigator.share(shareData).catch(() => {});
 							} else {
 								if (!copied) {
-									navigator.clipboard.writeText(
-										window.location.href.split("?")[0],
-									);
+									navigator.clipboard.writeText(getProfileLink(address));
 									setCopied(true);
 									setTimeout(() => setCopied(false), 2000);
 								}

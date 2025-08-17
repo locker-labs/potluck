@@ -1,3 +1,5 @@
+import { MINI_APP_URL } from '@/lib/constants';
+
 export const getProfileLink = (address: string) => {
-  return `/profile/${address}`;
+  return `${MINI_APP_URL}/profile/${address}`;
 };
