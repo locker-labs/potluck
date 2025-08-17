@@ -6,6 +6,7 @@ import type { Address } from "viem";
 import { getPotAllowedUsers, getPotPendingRequests } from "@/lib/graphQueries";
 import type { FUser } from "@/types/neynar";
 import { formatAddress } from "@/lib/address";
+import { DropDown } from "../subcomponents/DropDown";
 
 interface JoinRequestsProps {
   potId: bigint;
@@ -15,7 +16,6 @@ interface JoinRequestsProps {
 
 export function JoinRequests({ potId, users, fetchUsers }: JoinRequestsProps) {
   const [requests, setRequests] = useState<string[]>([]);
-  const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const { handleAllow, pendingApproval } = useAllowPotRequest();
@@ -60,79 +60,59 @@ export function JoinRequests({ potId, users, fetchUsers }: JoinRequestsProps) {
   };
 
   return (
-    <div className="bg-gray-800 rounded-xl overflow-hidden">
-      {/* Header */}
-      <GradientButton3
-        className="w-full flex justify-between items-center text-left px-4 py-3"
-        onClick={() => setOpen((v) => !v)}
-      >
-        <div className="flex items-center gap-2">
+    <DropDown
+      header={
+        <>
           <UsersIcon className="w-5 h-5 text-app-cyan" />
           <span className="font-semibold text-white">Join Requests</span>
-        </div>
-        <span className="text-sm text-gray-400">
-          {requests.length} request{requests.length !== 1 ? "s" : ""}
-        </span>
-        {open ? (
-          <ChevronUp className="w-5 h-5 text-gray-400" />
-        ) : (
-          <ChevronDown className="w-5 h-5 text-gray-400" />
-        )}
-      </GradientButton3>
-
-      {/* Body */}
-      {open && (
-        <>
-          <div
-            className="overflow-y-auto border-t border-gray-700"
-            style={{ maxHeight: "12.5rem" }}
-          >
-            {requests.length > 0 ? (
-              requests.map((address) => {
-                const addr = address.toLowerCase() as Address;
-                const nameOrAddress =
-                  users[addr]?.username ?? formatAddress(addr);
-
-                return (
-                  <label
-                    key={addr}
-                    className="flex items-center justify-between px-4 py-2 hover:bg-gray-700 transition"
-                  >
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={selected.has(addr)}
-                        onChange={() => toggleSelect(addr)}
-                        className="h-4 w-4 text-app-cyan bg-gray-600 border-gray-500 rounded focus:ring-app-cyan"
-                      />
-                      <span className="text-sm text-gray-200">
-                        {nameOrAddress}
-                      </span>
-                    </div>
-                  </label>
-                );
-              })
-            ) : (
-              <div className="px-4 py-3 text-sm text-gray-400">
-                No pending requests
-              </div>
-            )}
-          </div>
-
-          {/* Footer with batch action */}
-          {requests.length > 0 && (
-            <div className="px-4 py-3 border-t border-gray-700 bg-gray-900">
-              <BorderButton
-                className="w-full"
-                onClick={handleBatchApprove}
-                disabled={selected.size === 0}
-              >
-                {loading ? "Loading..." : `Approve Selected (${selected.size})`}
-              </BorderButton>
-            </div>
-          )}
+          <span className="ml-auto text-sm text-gray-400">
+            {requests.length} request{requests.length !== 1 ? "s" : ""}
+          </span>
         </>
+      }
+    >
+      <div className="overflow-y-auto" style={{ maxHeight: "12.5rem" }}>
+        {requests.length > 0 ? (
+          requests.map((address) => {
+            const addr = address.toLowerCase() as Address;
+            const nameOrAddress = users[addr]?.username ?? formatAddress(addr);
+
+            return (
+              <label
+                key={addr}
+                className="flex items-center justify-between px-4 py-2 hover:bg-gray-700 transition"
+              >
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(addr)}
+                    onChange={() => toggleSelect(addr)}
+                    className="h-4 w-4 text-app-cyan bg-gray-600 border-gray-500 rounded focus:ring-app-cyan"
+                  />
+                  <span className="text-sm text-gray-200">{nameOrAddress}</span>
+                </div>
+              </label>
+            );
+          })
+        ) : (
+          <div className="px-4 py-3 text-sm text-gray-400">
+            No pending requests
+          </div>
+        )}
+      </div>
+
+      {requests.length > 0 && (
+        <div className="px-4 py-3 border-t border-gray-700 bg-gray-900">
+          <BorderButton
+            className="w-full"
+            onClick={handleBatchApprove}
+            disabled={selected.size === 0}
+          >
+            {loading ? "Loading..." : `Approve Selected (${selected.size})`}
+          </BorderButton>
+        </div>
       )}
-    </div>
+    </DropDown>
   );
 }
+
