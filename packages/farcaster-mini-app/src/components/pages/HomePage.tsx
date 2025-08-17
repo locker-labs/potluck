@@ -23,7 +23,7 @@ function WelcomeDialog({
 }: { open: boolean; onOpenChange: (open: boolean) => void }) {
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className='rounded-2xl' showClose={false}>
+			<DialogContent className='rounded-2xl max-w-md' showClose={false}>
 				<DialogHeader>
 					<DialogTitle className="text-white">Welcome to Potluck!</DialogTitle>
 				</DialogHeader>
