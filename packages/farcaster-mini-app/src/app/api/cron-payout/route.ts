@@ -327,8 +327,8 @@ export async function GET() {
       }
       const participants = potIdToParticipantsMap.get(potId) || [];
       const targetFids = participants
-							.map((participant) => addressToFuserMap.get(participant)?.fid)
-							.filter((fid): fid is number => fid !== undefined);
+        .map((participant) => addressToFuserMap.get(participant)?.fid)
+				.filter((fid): fid is number => fid !== undefined);
 
       if (targetFids.length > 0) {
         try {
