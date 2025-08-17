@@ -13,7 +13,7 @@ import {
     sendRequestNotification
 } from '@/lib/neynar';
 import {fetchPotMiniInfo} from "@/lib/graphQueries";
-import {TPotObjectMini} from "@/lib/types";
+import type { TPotObjectMini } from "@/lib/types";
 import type {BulkUsersByAddressResponse, FUser} from "@/types/neynar";
 
 export async function sendReminderNotificationForPot(potId: bigint) {
