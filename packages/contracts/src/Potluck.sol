@@ -170,7 +170,7 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
 
         //  Collect fee to treasury
         uint256 slots = maxParticipants == 0 ? type(uint8).max : maxParticipants;
-        uint256 requiredFee =  platformFee + participantFee * slots;
+        uint256 requiredFee = platformFee + participantFee * slots;
 
         if (msg.value < requiredFee) {
             revert InsufficientFundsForAutoJoin(msg.value, requiredFee);
@@ -449,5 +449,4 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
     function getRequests(uint256 potId) external view returns (PotRequest[] memory) {
         return requestedParticipants[potId];
     }
-
 }
