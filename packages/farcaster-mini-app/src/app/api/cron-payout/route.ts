@@ -219,7 +219,7 @@ export async function GET() {
       } catch (error) {
         // TODO: handle rpc rate limiting
         console.error(`Error fetching participants for pot #${potId}:`, error, "Skipping reminder notification");
-        return;
+        continue;
       }
     }
 
@@ -253,7 +253,7 @@ export async function GET() {
       } catch (error) {
         // TODO: handle rpc rate limiting
         console.error(`Error fetching participants for pot #${potId}:`, error, "Skipping reminder notification");
-        return;
+        continue;
       }
     }
 
