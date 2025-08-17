@@ -16,7 +16,11 @@ import type { Address } from "viem";
 import { getPotRoundParticipants } from "@/lib/graphQueries";
 import { getPotParticipants } from "@/lib/helpers/contract";
 import type { BulkUsersByAddressResponse, FUser } from '@/types/neynar';
-import { fetchFarcasterUsersInBulk, sendDepositReminderNotification } from '@/lib/neynar';
+import {
+	fetchFarcasterUsersInBulk,
+	NEYNAR_ADDRESSES_LIMIT,
+	sendDepositReminderNotification,
+} from "@/lib/neynar";
 
 // Object interface for easier access
 interface PotObject {
@@ -260,10 +264,10 @@ export async function GET() {
     // A case where for a pot id, potIdToParticipantsMap has values
     // but potIdToWinnerMap does not and vice versa (in case of rpc rate limiting)
 
-    // Fetch Farcaster users for all addresses in batches of 350 (neynar api limit)
+    // Fetch Farcaster users for all addresses in batches of NEYNAR_ADDRESSES_LIMIT
     const addressList = Array.from(addressSet);
-    for (let i = 0; i < addressList.length; i += 350) {
-      const batch = addressList.slice(i, i + 350);
+    for (let i = 0; i < addressList.length; i += NEYNAR_ADDRESSES_LIMIT) {
+      const batch = addressList.slice(i, i + NEYNAR_ADDRESSES_LIMIT);
       if (batch.length === 0) break;
       let batchData: BulkUsersByAddressResponse | null = null;
 

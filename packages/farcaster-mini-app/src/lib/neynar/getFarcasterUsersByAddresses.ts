@@ -3,8 +3,10 @@
 import { env } from "@/lib/env";
 import type { BulkUsersByAddressResponse } from "@/types/neynar";
 
+export const NEYNAR_ADDRESSES_LIMIT = 350;
+
 /**
- * Fetches Farcaster users by their Ethereum addresses (atmost 350 at once)
+ * Fetches Farcaster users by their Ethereum addresses (atmost NEYNAR_ADDRESSES_LIMIT at once)
  * Learn More: https://docs.neynar.com/reference/fetch-bulk-users-by-eth-or-sol-address
  * @param addresses - Array of Ethereum addresses to look up
  * @returns Promise<BulkUsersByAddressResponse> - Object mapping addresses to their Farcaster user data
@@ -28,7 +30,7 @@ export async function getFarcasterUsersByAddresses(
 }
 
 /**
- * Fetches Farcaster users by their Ethereum addresses (atmost 350 at once)
+ * Fetches Farcaster users by their Ethereum addresses (atmost NEYNAR_ADDRESSES_LIMIT at once)
  * Learn More: https://docs.neynar.com/reference/fetch-bulk-users-by-eth-or-sol-address
  * @param addresses - Array of Ethereum addresses to look up
  * @param addressTypes - Optional array specifying which address types to search ('custody_address' | 'verified_address')
