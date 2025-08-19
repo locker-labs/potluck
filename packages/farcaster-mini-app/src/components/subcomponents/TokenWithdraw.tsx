@@ -74,7 +74,7 @@ const TokenWithdraw: React.FC<TokenWithdrawProps> = ({ address, isMyAddress }) =
       address: USDC,
     },
   ]);
-  const [token, setToken] = useState<TokenBalance | undefined>({
+  const [token, setToken] = useState<TokenBalance>({
     symbol: "USDC",
     decimals: 6,
     address: USDC,
@@ -91,7 +91,11 @@ const TokenWithdraw: React.FC<TokenWithdrawProps> = ({ address, isMyAddress }) =
     isWithdrawing,
     handleWithdraw,
     withdrawBalance,
-  } = useWithdraw(address, token!.address);
+  } = useWithdraw({
+    address,
+    token: token.address,
+    onSuccess: () => { setAmount("") }
+  });
 
   const validationSchema = useMemo(
     () =>

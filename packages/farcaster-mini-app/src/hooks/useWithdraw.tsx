@@ -1,7 +1,7 @@
 import { publicClient } from '@/clients/viem';
 import { contractAddress, abi } from '@/config';
 import { useState, useEffect } from 'react';
-import { useAccount, useWriteContract, useReadContract } from "wagmi";
+import { useWriteContract, useReadContract } from "wagmi";
 import { toast } from "sonner";
 import { getTransactionLink } from "@/lib/helpers/blockExplorer";
 import { useConnection } from "@/hooks/useConnection";
@@ -17,10 +17,11 @@ interface UseWithdrawReturn {
   refetchWithdrawBalance: () => void;
 }
 
-export function useWithdraw(
-  address: Address,
-  token: Address
-): UseWithdrawReturn {
+export function useWithdraw({ address, token, onSuccess } : {
+  address: Address;
+  token: Address;
+  onSuccess?: () => void;
+}): UseWithdrawReturn {
   const [hash, setHash] = useState<Address | null>(null);
   const [isWithdrawing, setIsWithdrawing] = useState<boolean>(false);
 
@@ -68,6 +69,7 @@ export function useWithdraw(
       );
 
       setHash(txHash);
+      onSuccess?.();
     } catch (error) {
       console.error(
         `Error withdrawing token: ${token} amount: ${amount}`,
@@ -103,7 +105,7 @@ export function useWithdraw(
       return;
     }
 
-    if (Number(withdrawBalance) < amount) {
+    if ((withdrawBalance as bigint) < amount) {
       toast.error("Insufficient withdraw balance");
       return;
     }
