@@ -15,6 +15,7 @@ import {
 import {fetchPotMiniInfo} from "@/lib/graphQueries";
 import type { TPotObjectMini } from "@/lib/types";
 import type {BulkUsersByAddressResponse, FUser} from "@/types/neynar";
+import { formatAddress } from '../address';
 
 export async function sendReminderNotificationForPot(potId: bigint) {
     console.log(`Processing pot #${potId} for reminder notification`);
@@ -168,6 +169,7 @@ export async function sendRequestNotificationForPot(potId: bigint, addresses: Ad
     const fids: number[] = [];
 
     if (addresses.length > 0) {
+        requesterUsername = formatAddress(addresses[0]);
         // adding requestor to address list
         addressList.push(addresses[0]);
     }

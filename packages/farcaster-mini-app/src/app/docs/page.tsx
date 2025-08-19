@@ -2,15 +2,13 @@ import type { Metadata } from "next";
 import { getMetadata } from "@/app/metadata";
 import Docs from "@/components/pages/Docs";
 
-export const revalidate = 300;
-
 export async function generateMetadata(): Promise<Metadata> {
-  return getMetadata({ path: "/create" });
+  return getMetadata();
 }
 
 export default function Create() {
   return (
-    <div id={"create-page"} className={"page-transition"}>
+    <div id={"docs-page"} className={"page-transition"}>
       <Docs />
     </div>
   );

@@ -20,6 +20,7 @@ import {
 	fetchFarcasterUsersInBulk,
 	sendDepositReminderNotification,
 } from "@/lib/neynar";
+import { formatAddress } from '@/lib/address';
 
 // Object interface for easier access
 interface PotObject {
@@ -222,7 +223,6 @@ export async function GET() {
       } catch (error) {
         // TODO: handle rpc rate limiting
         console.error(`Error fetching participants for pot #${potId}:`, error, "Skipping reminder notification");
-        continue;
       }
     }
 
@@ -256,7 +256,6 @@ export async function GET() {
       } catch (error) {
         // TODO: handle rpc rate limiting
         console.error(`Error fetching participants for pot #${potId}:`, error, "Skipping reminder notification");
-        continue;
       }
     }
 
@@ -322,7 +321,7 @@ export async function GET() {
       let winnerName = 'Someone';
       const winnerAddr: Address | undefined = potIdToWinnerMap.get(potId);
       if (winnerAddr) {
-        winnerName = addressToFuserMap.get(winnerAddr)?.username ?? 'Someone';
+        winnerName = addressToFuserMap.get(winnerAddr)?.username ?? formatAddress(winnerAddr);
       }
       const participants = potIdToParticipantsMap.get(potId) || [];
       const targetFids = participants

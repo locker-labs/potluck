@@ -102,7 +102,7 @@ export function JoinRequests({ potId, users, fetchUsers }: JoinRequestsProps) {
       </div>
 
       {requests.length > 0 && (
-        <div className="px-4 py-3 border-t border-gray-700 bg-gray-900">
+        <div className="pt-3 border-t border-gray-700 bg-gray-900">
           <BorderButton
             className="w-full"
             onClick={handleBatchApprove}
