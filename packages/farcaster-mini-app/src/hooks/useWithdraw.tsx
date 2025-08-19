@@ -1,42 +1,47 @@
 import { publicClient } from '@/clients/viem';
 import { contractAddress, abi } from '@/config';
 import { useState, useEffect } from 'react';
-import { useAccount, useWriteContract } from 'wagmi';
-import { toast } from 'sonner';
-import { getTransactionLink } from '@/lib/helpers/blockExplorer';
-import { useConnection } from '@/hooks/useConnection';
-import { useFrame } from '@/providers/FrameProvider';
-import { usePotluck } from '@/providers/PotluckProvider';
-import type { Address } from 'viem';
+import { useAccount, useWriteContract, useReadContract } from "wagmi";
+import { toast } from "sonner";
+import { getTransactionLink } from "@/lib/helpers/blockExplorer";
+import { useConnection } from "@/hooks/useConnection";
+import { useFrame } from "@/providers/FrameProvider";
+import type { Address } from "viem";
 
-export function useWithdraw() {
+interface UseWithdrawReturn {
+  isWithdrawing: boolean;
+  handleWithdraw: (amount: bigint) => Promise<void>;
+  hash: Address | null;
+  isLoading: boolean;
+  withdrawBalance: bigint | undefined;
+  refetchWithdrawBalance: () => void;
+}
+
+export function useWithdraw(
+  address: Address,
+  token: Address
+): UseWithdrawReturn {
   const [hash, setHash] = useState<Address | null>(null);
   const [isWithdrawing, setIsWithdrawing] = useState<boolean>(false);
 
   const { checkAndAddMiniApp } = useFrame();
   const { ensureConnection } = useConnection();
-  const {
-				dataNativeBalance,
-				isLoadingNativeBalance,
-        refetchNativeBalance,
-        refetchTokenBalance,
-        withdrawBalance,
-        isLoadingWithdrawBalance,
-        refetchWithdrawBalance
-  } = usePotluck();
-  const { address } = useAccount();
   const { writeContractAsync } = useWriteContract();
+  const {
+    data: withdrawBalance,
+    isLoading,
+    refetch: refetchWithdrawBalance,
+  } = useReadContract({
+    address: contractAddress,
+    abi: abi,
+    functionName: "withdrawalBalances",
+    args: [address, token],
+    query: { enabled: !!address },
+  });
 
-  const isLoading = isLoadingNativeBalance || isLoadingWithdrawBalance;
-
-  const withdraw = async (
-    token: Address,
-    amount: bigint  ): Promise<void> => {
+  const withdraw = async (amount: bigint): Promise<void> => {
     try {
-      const args = [
-        token,
-        amount,
-      ];
+      const args = [token, amount];
 
       // broadcast transaction
       const txHash = await writeContractAsync({
@@ -64,15 +69,15 @@ export function useWithdraw() {
 
       setHash(txHash);
     } catch (error) {
-      console.error(`Error withdrawing token: ${token} amount: ${amount}`, error);
+      console.error(
+        `Error withdrawing token: ${token} amount: ${amount}`,
+        error
+      );
       throw error;
     }
   };
 
-  const handleWithdraw = async (
-    token: Address,
-    amount: bigint
-  ) => {
+  const handleWithdraw = async (amount: bigint) => {
     await checkAndAddMiniApp();
     setIsWithdrawing(true);
 
@@ -88,23 +93,17 @@ export function useWithdraw() {
 
     // TODO: estimate gas fee
 
-
     // if (gasFee === undefined) {
     //   toast.error("Unable to estimate gas fee. Please try again");
     //   return;
     // }
-
-    if (dataNativeBalance === undefined) {
-      toast.error("Unable to fetch native balance. Please try again");
-      return;
-    }
 
     if (withdrawBalance === undefined) {
       toast.error("Unable to fetch withdraw balance. Please try again");
       return;
     }
 
-    if (withdrawBalance < amount) {
+    if (Number(withdrawBalance) < amount) {
       toast.error("Insufficient withdraw balance");
       return;
     }
@@ -117,7 +116,7 @@ export function useWithdraw() {
     setIsWithdrawing(true);
 
     try {
-      await withdraw(token, amount);
+      await withdraw(amount);
     } catch (error) {
       toast.error("Failed to withdraw", {
         description:
@@ -133,8 +132,6 @@ export function useWithdraw() {
   // Refetch native token balance on withdraw
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
-    refetchTokenBalance();
-    refetchNativeBalance();
     refetchWithdrawBalance();
   }, [isWithdrawing]);
 
@@ -143,8 +140,7 @@ export function useWithdraw() {
     handleWithdraw,
     hash,
     isLoading,
-    dataNativeBalance,
-    withdrawBalance,
-    refetchWithdrawBalance
+    withdrawBalance: withdrawBalance as bigint | undefined,
+    refetchWithdrawBalance,
   };
 }
