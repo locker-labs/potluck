@@ -48,3 +48,5 @@ export const ALLOWED_ORIGINS = env.ALLOWED_ORIGINS
 
 export const fallbackPfpUrl = "/pfp_100px.webp";
 export const DOCS = "https://docs.potluck.locker.money";
+
+export const NEYNAR_ADDRESSES_LIMIT = 350;
