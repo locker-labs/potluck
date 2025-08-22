@@ -14,12 +14,13 @@ let _fetchPotsEffectFlag = true; // prevent multiple fetches
 
 export default function AvailablePots() {
 	const {
-		isLoading: isLoadingJoinPot,
-		joinedPotId,
-		handleJoinPot,
-		joiningPotId,
-		tokenBalance,
-	} = useJoinPot();
+    isLoading: isLoadingJoinPot,
+    joinedPotId,
+    handleJoinPot,
+    joiningPotId,
+    tokenBalance,
+    DisclaimerModal,
+  } = useJoinPot();
 	const { handleRequest, requestingPotId, requestedPotId } = useRequestPot();
 	const { users, fetchUsers } = usePotluck();
 
@@ -77,65 +78,73 @@ export default function AvailablePots() {
 			: pots.filter((pot) => pot.period === periodSecondsMap[selectedPeriod]);
 
 	return (
-		<div>
-			<h2 className="text-2xl font-bold">Available Pots</h2>
-			{/* Filter Tabs */}
-				<div className="mt-3 mb-4 flex gap-4">
-					{["all", "daily", "weekly", "monthly"].map((tab) => (
-						<GradientTransitionButton2
-							key={tab}
-							onClick={() => {
-								if (selectedPeriod !== tab)
-									setSelectedPeriod(tab as typeof selectedPeriod);
-							}}
-							isActive={selectedPeriod === tab}
-							className={'h-[40px] font-bold flex items-center text-[12px] rounded-full'}
-							//   ${selectedPeriod === tab
-							// 	? tab === "all"
-							// 		? "px-[21px]"
-							// 		: "px-[17px]"
-							// 	: tab === "all"
-							// 		? "px-[20px]"
-							// 		: "px-[16px]"
-							// }
-						>
-							{tab.charAt(0).toUpperCase() + tab.slice(1)}
-						</GradientTransitionButton2>
-					))}
-				</div>
-			{/* End Filter Tabs */}
-			{!loading && filteredPots.length === 0 ? (
-				<div className="text-center py-10 rounded-xl">
-					No pots available.
-					<br />
-					Be the first to create one!
-				</div>
-			) : (
-				<div className="grid gap-[22px] md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 4xl:grid-cols-5 6xl:grid-cols-6 7xl:grid-cols-7">
-					{filteredPots.map((pot: TPotObject) => {
-						const username = users[pot.creator.toLowerCase() as Address]?.username;
-						return (<AvailablePotsCard
-							key={pot.id}
-							pot={pot}
-                            loadingPot={loading}
-                            isLoadingJoinPot={isLoadingJoinPot}
-							joiningPotId={joiningPotId}
-							joinedPotId={joinedPotId}
-							handleJoinPot={handleJoinPot}
-							tokenBalance={tokenBalance}
-                            handleRequest={handleRequest}
-                            requestingPotId={requestingPotId}
-                            requestedPotId={requestedPotId}
-							username={username}
-						/>
-					)})}
-				</div>
-			)}
-			{loading ? (
-				<div className="mt-4 w-full flex justify-center">
-					<Loader2 className="animate-spin" color="#7C65C1" size={32} />
-				</div>
-			) : null}
-		</div>
-	);
+    <div>
+      <h2 className="text-2xl font-bold">Available Pots</h2>
+      {/* Filter Tabs */}
+      <div className="mt-3 mb-4 flex gap-4">
+        {["all", "daily", "weekly", "monthly"].map((tab) => (
+          <GradientTransitionButton2
+            key={tab}
+            onClick={() => {
+              if (selectedPeriod !== tab)
+                setSelectedPeriod(tab as typeof selectedPeriod);
+            }}
+            isActive={selectedPeriod === tab}
+            className={
+              "h-[40px] font-bold flex items-center text-[12px] rounded-full"
+            }
+            //   ${selectedPeriod === tab
+            // 	? tab === "all"
+            // 		? "px-[21px]"
+            // 		: "px-[17px]"
+            // 	: tab === "all"
+            // 		? "px-[20px]"
+            // 		: "px-[16px]"
+            // }
+          >
+            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+          </GradientTransitionButton2>
+        ))}
+      </div>
+      {/* End Filter Tabs */}
+      {!loading && filteredPots.length === 0 ? (
+        <div className="text-center py-10 rounded-xl">
+          No pots available.
+          <br />
+          Be the first to create one!
+        </div>
+      ) : (
+        <>
+          <div className="grid gap-[22px] md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 4xl:grid-cols-5 6xl:grid-cols-6 7xl:grid-cols-7">
+            {filteredPots.map((pot: TPotObject) => {
+              const username =
+                users[pot.creator.toLowerCase() as Address]?.username;
+              return (
+                <AvailablePotsCard
+                  key={pot.id}
+                  pot={pot}
+                  loadingPot={loading}
+                  isLoadingJoinPot={isLoadingJoinPot}
+                  joiningPotId={joiningPotId}
+                  joinedPotId={joinedPotId}
+                  handleJoinPot={handleJoinPot}
+                  tokenBalance={tokenBalance}
+                  handleRequest={handleRequest}
+                  requestingPotId={requestingPotId}
+                  requestedPotId={requestedPotId}
+                  username={username}
+                />
+              );
+            })}
+          </div>
+          <DisclaimerModal />
+        </>
+      )}
+      {loading ? (
+        <div className="mt-4 w-full flex justify-center">
+          <Loader2 className="animate-spin" color="#7C65C1" size={32} />
+        </div>
+      ) : null}
+    </div>
+  );
 }

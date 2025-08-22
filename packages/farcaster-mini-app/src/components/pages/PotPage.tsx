@@ -55,6 +55,7 @@ export default function PotPage({ id }: { id: string }) {
     joiningPotId,
     joinedPotId,
     tokenBalance,
+    DisclaimerModal,
   } = useJoinPot();
   const { hasJoinedBefore, hasJoinedRound } = useUserPotJoinInfo({
     pot,
@@ -117,7 +118,7 @@ export default function PotPage({ id }: { id: string }) {
   // 2️⃣ Main content
   return (
     <motion.div
-      className={'mt-2 px-4'}
+      className={"mt-2 px-4"}
       initial={initialDown}
       animate={animate}
       transition={transition}
@@ -125,7 +126,9 @@ export default function PotPage({ id }: { id: string }) {
       <div className="w-full flex items-start justify-between gap-2 mb-4">
         <BackButton />
         <div className="w-full">
-          <p className="text-2xl font-bold break-all line-clamp-2">{pot.name}</p>
+          <p className="text-2xl font-bold break-all line-clamp-2">
+            {pot.name}
+          </p>
         </div>
         <ShareDropdown pot={pot} />
       </div>
@@ -136,7 +139,7 @@ export default function PotPage({ id }: { id: string }) {
           <div className="flex items-start justify-between">
             <DeadlinePill pot={pot} />
             {hasJoinedBefore || hasJoinedRound ? (
-              <Pill className='bg-green-500/40 text-green-500'>
+              <Pill className="bg-green-500/40 text-green-500">
                 <p className="text-xs font-medium">Joined</p>
               </Pill>
             ) : null}
@@ -161,6 +164,7 @@ export default function PotPage({ id }: { id: string }) {
           userPotRequestInfo={userPotRequestInfo}
           handleRequest={handleRequest}
         />
+        <DisclaimerModal />
       </GradientCard2>
 
       <div className="mt-4 grid grid-cols-2 gap-4">
@@ -191,9 +195,11 @@ export default function PotPage({ id }: { id: string }) {
           <p className="text-sm">Total Won</p>
         </div>
       </div>
-      {showRequests && <div className='mt-4'>
-        <JoinRequests potId={pot.id} users={users} fetchUsers={fetchUsers} />
-        </div>}
+      {showRequests && (
+        <div className="mt-4">
+          <JoinRequests potId={pot.id} users={users} fetchUsers={fetchUsers} />
+        </div>
+      )}
 
       <div className="mt-4 border border-gray-500 rounded-xl">
         <div className="flex items-center gap-2 px-4 pt-4 pb-3">
@@ -201,7 +207,11 @@ export default function PotPage({ id }: { id: string }) {
           <p>Recent Activities</p>
         </div>
         <hr className="border-gray-500" />
-        <RecentActivity logsState={logsState} users={users} fetchUsers={fetchUsers} />
+        <RecentActivity
+          logsState={logsState}
+          users={users}
+          fetchUsers={fetchUsers}
+        />
       </div>
     </motion.div>
   );
