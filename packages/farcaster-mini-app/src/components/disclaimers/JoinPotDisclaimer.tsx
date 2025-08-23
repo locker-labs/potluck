@@ -21,7 +21,7 @@ const DISCLAIMER_TEXTS: Record<
  ⚠️ Important: Missing your contribution in any round will negatively impact your reputation and lead to being excluded from other pots in the future. Build your reputation with honest behaviour.`,
   },
   private: {
-    title: " Private Pot Disclaimer",
+    title: "Private Pot Disclaimer",
     body: `Private pots are approval-only. Join with your friends and people you trust. All contributions and withdrawals are transparent on-chain.
 
  ⚠️ Important: Missing your contribution in any round will negatively impact your reputation and lead to being excluded from other pots in the future. Build your reputation with honest behaviour.`,
