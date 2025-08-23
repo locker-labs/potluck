@@ -7,3 +7,7 @@ export function getInviteLink(potId: bigint): string {
 export const getProfileLink = (address: string) => {
   return `/profile/${address}`;
 };
+
+export const getProfileInviteLink = (address: string) => {
+  return `${MINI_APP_URL}/profile/${address}`;
+};
