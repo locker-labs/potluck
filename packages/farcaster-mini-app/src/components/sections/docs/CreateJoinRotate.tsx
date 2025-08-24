@@ -4,28 +4,33 @@ import { DropDown } from "@/components/subcomponents/DropDown";
 
 export function CreateJoinRotate() {
   return (
-    <DropDown header="Potluck Actions"
-      contentClassName="flex flex-col gap-2 p-2" innerClassName="" defaultOpen>
+    <DropDown
+      header="Potluck Actions"
+      contentClassName="flex flex-col gap-2 p-2"
+      innerClassName=""
+      defaultOpen
+    >
       {/* Nested: Create a Pot */}
       <div className="p-0">
         <DropDown header="Create a Pot">
           <p className="mb-2">
             Choose a Public or Private pot and configure the rules:
           </p>
+
           <ul className="list-disc list-inside">
             <li>Contribution Amount</li>
             <li>Cycle Duration (e.g., weekly, monthly)</li>
             <li>Number of Participants</li>
             <li>Chain Selection</li>
-            <li>Fees (if any)</li>
           </ul>
+
           <p className="mt-2">
             Public pots are listed for everyone to see and join; private pots
             require invite by wallet address or secure link and aren’t publicly
             visible.
           </p>
           <p className="mt-2">
-            Finalize by deploying the pot to the smart contract.
+            Creating a pot deploys a custom on-chain smart contract.
           </p>
         </DropDown>
       </div>
@@ -49,7 +54,6 @@ export function CreateJoinRotate() {
           <p className="mb-2 font-medium text-white">Requirements</p>
           <ul className="list-disc list-inside">
             <li>Supported wallet</li>
-            <li>Meet eligibility (e.g., minimum balance, correct chain)</li>
           </ul>
         </DropDown>
       </div>
@@ -59,12 +63,8 @@ export function CreateJoinRotate() {
         <DropDown header="Automated Actions (Rotation & Payouts)">
           <h4 className="mb-2 font-semibold text-white">Rotation & Payouts</h4>
           <ul className="list-disc list-inside">
-            <li>
-              Standard Rotation: Pre-set order until all have received payouts
-            </li>
-            <li>
-              Randomized (optional for Public Pots): Order may change each cycle
-            </li>
+            <li>Standard Rotation: Pre-set order until all have received payouts</li>
+            <li>Randomized (optional for Public Pots): Order may change each cycle</li>
             <li>Private Pots: Admin chooses rotation type</li>
           </ul>
 
@@ -81,7 +81,7 @@ export function CreateJoinRotate() {
         </DropDown>
       </div>
 
-      {/* Optional: Tips as a small nested dropdown or keep outside */}
+      {/* Tips */}
       <div className="mt-4 p-0">
         <DropDown header="Tips">
           <ul className="list-disc list-inside">

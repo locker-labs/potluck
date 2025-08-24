@@ -28,7 +28,6 @@ const timePeriods = [
 ];
 
 const modes = [
-  // value is for isPublic boolean
   { value: true, label: "Public" },
   { value: false, label: "Private" },
 ];
@@ -36,88 +35,51 @@ const modes = [
 // Zod schema for form validation
 const createPotSchema = ({
   tokenBalance,
-  // dataNativeBalance,
-  // calculateCreatorFee
 }: {
   tokenBalance: bigint | undefined;
-  // dataNativeBalance: { value: bigint } | undefined;
-  // calculateCreatorFee: (maxParticipants: number) => undefined | {
-  //   value: bigint;
-  //   formatted: string;
-  // }
 }) => {
   return z.object({
-  name: z.string().min(1, "is required"),
-  amount: z
-    .string()
-    .refine(
-      (val) => val !== "" && !Number.isNaN(Number(val)) && Number(val) >= 0.01,
-      {
-        message: "must be at least 0.01",
-      }
-    )
-    .refine(
-      (val) => {
-        // Accept only up to two decimal places
+    name: z.string().min(1, "is required"),
+    amount: z
+      .string()
+      .refine(
+        (val) => val !== "" && !Number.isNaN(Number(val)) && Number(val) >= 0.01,
+        { message: "must be at least 0.01" }
+      )
+      .refine((val) => {
         if (val === "") return true;
         const decimals = val.split('.');
         if (decimals.length < 2) return true;
         return decimals[1].length <= 2;
-      },
-      {
-        message: "Only 2 decimal places allowed",
-      }
-    )
-    .refine(
-      (val) => {
+      }, { message: "Only 2 decimal places allowed" })
+      .refine((val) => {
         if (val === "") return true;
         const amountBigInt = BigInt(parseUnits(val, 6));
-        const isInsufficientTokenBalance = tokenBalance !== undefined && amountBigInt > tokenBalance;
-        console.log({ isInsufficientTokenBalance })
-        return !Number.isNaN(Number(val)) && !isInsufficientTokenBalance},
-      {
-        message: "exceeds your balance",
-      }
-    ),
-  maxParticipants: z
-    .string()
-    .refine((val) => !Number.isNaN(Number(val)), {
-      message: "must be a number",
-    })
-    .refine(
-      (val) => Number(val) <= MAX_PARTICIPANTS,
-      {
+        const isInsufficientTokenBalance =
+          tokenBalance !== undefined && amountBigInt > tokenBalance;
+        return !Number.isNaN(Number(val)) && !isInsufficientTokenBalance;
+      }, { message: "exceeds your balance" }),
+    maxParticipants: z
+      .string()
+      .refine((val) => !Number.isNaN(Number(val)), { message: "must be a number" })
+      .refine((val) => Number(val) <= MAX_PARTICIPANTS, {
         message: `should not exceed ${MAX_PARTICIPANTS}`,
-      }
-    )
-    .refine((val) => Number(val) !== 1, {
-      message: "should be more than 1",
-    }),
-    // .refine(
-    //   (val) => {
-    //     const maxParticipantsInt = Number.parseInt(val || "0", 10);
-    //     const validMaxParticipants = maxParticipantsInt !== 1 && maxParticipantsInt <= MAX_PARTICIPANTS;
-    //     const totalFee = validMaxParticipants ? calculateCreatorFee(maxParticipantsInt) : undefined;
-    //     const isInsufficientNativeBalance = dataNativeBalance !== undefined && totalFee !== undefined && totalFee.value > dataNativeBalance.value;
-    //     return !isInsufficientNativeBalance;
-    //   },
-    //   {
-    //     message: "Insufficient Balance",
-    //   }
-    // ),
-  emoji: z.string().min(1, "is required"),
-  timePeriod: z.bigint(),
-});
-}
+      })
+      .refine((val) => Number(val) !== 1, { message: "should be more than 1" }),
+    emoji: z.string().min(1, "is required"),
+    timePeriod: z.bigint(),
+  });
+};
 
 export default function CreatePotPage() {
-  // Form Input State
+  // Form Input State (UPDATED DEFAULTS)
   const [emoji, setEmoji] = useState<string>(emojis[0]);
   const [name, setName] = useState<string>("");
-  const [timePeriod, setTimePeriod] = useState<bigint>(timePeriods[0].value);
-  const [amount, setAmount] = useState("");
-  const [maxParticipants, setMaxParticipants] = useState("");
+  const [timePeriod, setTimePeriod] = useState<bigint>(timePeriods[1].value); // Weekly
+  const [amount, setAmount] = useState("1.00"); // 1.00 USDC
+  const [maxParticipants, setMaxParticipants] = useState("4"); // 4 members
   const [isPublic, setIsPublic] = useState(true);
+
   // Form Action State
   const [touched, setTouched] = useState<{ [k: string]: boolean }>({});
   const [errors, setErrors] = useState<{ [k: string]: string }>({});
@@ -136,29 +98,18 @@ export default function CreatePotPage() {
     hash,
   } = useCreatePot();
   const {
-			calculateCreatorFee,
-			tokenBalance,
-			dataNativeBalance,
-      refetch,
-		} = usePotluck();
-  
+    calculateCreatorFee,
+    tokenBalance,
+    dataNativeBalance,
+    refetch,
+  } = usePotluck();
+
   const validationSchema = useMemo(
-			() =>
-				createPotSchema({
-					tokenBalance,
-					// dataNativeBalance,
-          // calculateCreatorFee
-        }),
-			[
-        tokenBalance,
-        // dataNativeBalance,
-        // calculateCreatorFee
-      ],
-		);
+    () => createPotSchema({ tokenBalance }),
+    [tokenBalance],
+  );
 
   // FUNCTIONS
-  // Accepts overrides for latest values
-  // Only for input validation
   const validate = (
     override?: Partial<{
       name: string;
@@ -202,27 +153,32 @@ export default function CreatePotPage() {
     );
   };
 
-  // These are only for rendering
+  // Rendering helpers
   const amountTokenFormatted: string = formatUnits(amountBigInt, 6);
-  const validMaxParticipants = maxParticipantsInt !== 1 && maxParticipantsInt <= MAX_PARTICIPANTS;
-  // const totalGasFee = validMaxParticipants ? calculateJoineeFee(maxParticipantsInt) : undefined;
+  const validMaxParticipants =
+    maxParticipantsInt !== 1 && maxParticipantsInt <= MAX_PARTICIPANTS;
   const totalFee = validMaxParticipants ? calculateCreatorFee(maxParticipantsInt) : undefined;
-  const isInsufficientNativeBalance = dataNativeBalance !== undefined && totalFee !== undefined && totalFee.value > dataNativeBalance.value;
+  const isInsufficientNativeBalance =
+    dataNativeBalance !== undefined &&
+    totalFee !== undefined &&
+    totalFee.value > dataNativeBalance.value;
 
   const hasErrors = Object.keys(errors).length > 0;
   const hasTouched = Object.keys(touched).length > 0;
   const showError = (key: string) => (clickedSubmit || touched[key]) && errors[key];
-  const showInsufficientNativeBalance = (clickedSubmit || touched.maxParticipants) && isInsufficientNativeBalance;
+  const showInsufficientNativeBalance =
+    (clickedSubmit || touched.maxParticipants) && isInsufficientNativeBalance;
 
-  const disabled = isLoading || isCreatingPot || (clickedSubmit && hasErrors) || showInsufficientNativeBalance;
+  const disabled =
+    isLoading || isCreatingPot || (clickedSubmit && hasErrors) || showInsufficientNativeBalance;
 
   return (
-      <motion.div
-          className={'px-4'}
-          initial={initialDown}
-          animate={animate}
-          transition={transition}
-      >
+    <motion.div
+      className={'px-4'}
+      initial={initialDown}
+      animate={animate}
+      transition={transition}
+    >
       <div>
         <div className="w-full flex items-center justify-start gap-2 mb-6">
           <BackButton />
@@ -235,17 +191,15 @@ export default function CreatePotPage() {
         </div>
 
         <form onSubmit={handleSubmit} className='space-y-5'>
-
           {/* Name */}
           <div>
-            <label
-              htmlFor="pot-name"
-              className="block"
-            >
-              <span className='text-base font-bold'>Goal {" "}</span>
+            <label htmlFor="pot-name" className="block">
+              <span className='text-base font-bold'>Goal{" "}</span>
               <span
                 className={`text-xs text-red-500 font-medium ${showError('name') ? "visible" : "hidden"}`}
-              >{`${errors.name}`}</span>
+              >
+                {`${errors.name}`}
+              </span>
             </label>
             <Input
               id="pot-name"
@@ -259,19 +213,14 @@ export default function CreatePotPage() {
               }}
               placeholder="DeFi Warriors"
               className={`mt-2 w-full ${
-                showError('name')
-                  ? "outline-red-500 ring ring-red-500"
-                  : null
+                showError('name') ? "outline-red-500 ring ring-red-500" : null
               }`}
             />
           </div>
 
           {/* Choose Emoji */}
           <div>
-            <label
-              htmlFor="choose-emoji"
-              className="block text-base font-bold"
-            >
+            <label htmlFor="choose-emoji" className="block text-base font-bold">
               Icon
             </label>
             <div className="mt-2 grid grid-cols-5 gap-2">
@@ -294,16 +243,13 @@ export default function CreatePotPage() {
 
           {/* Choose Time Period */}
           <div>
-            <label
-              htmlFor="time-period"
-              className="block text-base font-bold mb-2.5"
-            >
-              Frequency
+            <label htmlFor="time-period" className="block text-base font-bold mb-2.5">
+              Pot Jackpot Frequency
             </label>
             <div className="grid grid-cols-3 gap-2.5">
               {timePeriods.map((period) => (
                 <button
-                  key={period.value}
+                  key={period.value.toString()}
                   type="button"
                   className={`w-full p-2 flex items-center justify-center text-base font-bold rounded-lg transition-colors outline ${
                     period.value === timePeriod
@@ -320,14 +266,13 @@ export default function CreatePotPage() {
 
           {/* Entry Amount */}
           <div>
-            <label
-              htmlFor="enrty-amount"
-              className="block mb-2.5"
-            >
-              <span className='text-base font-bold'>Amount{" "}</span>
+            <label htmlFor="enrty-amount" className="block mb-2.5">
+              <span className='text-base font-bold'>Individual Contribution Per Round{" "}</span>
               <span
                 className={`font-medium text-xs text-red-500 ${showError('amount') ? "visible" : "hidden"}`}
-              >{`${errors.amount}`}</span>
+              >
+                {`${errors.amount}`}
+              </span>
             </label>
             <div className="relative">
               <Input
@@ -336,13 +281,10 @@ export default function CreatePotPage() {
                 type="number"
                 value={amount}
                 onChange={(e) => {
-                  // Prevent negative values
                   const value = e.target.value;
-                  // Only allow up to two decimal places
                   if (
                     value === "" ||
-                    (/^\d*(\.\d{0,2})?$/.test(value) &&
-                      Number.parseFloat(value) >= 0)
+                    (/^\d*(\.\d{0,2})?$/.test(value) && Number.parseFloat(value) >= 0)
                   ) {
                     setTouched((prev) => ({ ...prev, amount: true }));
                     setAmount(value);
@@ -350,48 +292,43 @@ export default function CreatePotPage() {
                   }
                 }}
                 onKeyDown={(e) => {
-                  // Prevent typing minus sign
-                  if (e.key === "-" || e.key === "e") {
-                    e.preventDefault();
-                  }
+                  if (e.key === "-" || e.key === "e") e.preventDefault();
                 }}
-                placeholder="20"
+                placeholder="1.00"
               />
-                <motion.button
-                  initial={{ scale: 1, translateY: '-50%' }}
-                  whileTap={{ scale: 0.97 }}
-                  type="button"
-                  className={`absolute right-2 top-1/2 text-white px-3 py-1 rounded-md text-sm font-bold
-                    ${tokenBalance !== undefined && amount === truncateDecimals(formatUnits(tokenBalance, 6), 2) ? "bg-app-cyan/20 outline-app-cyan" : "bg-app-light/20 outline-app-light"}
-                    outline outline-2
-                    `}
-                  disabled={tokenBalance === undefined}
-                  onClick={() => {
-                    if (tokenBalance !== undefined) {
+              <motion.button
+                initial={{ scale: 1, translateY: '-50%' }}
+                whileTap={{ scale: 0.97 }}
+                type="button"
+                className={`absolute right-2 top-1/2 text-white px-3 py-1 rounded-md text-sm font-bold
+                  ${tokenBalance !== undefined && amount === truncateDecimals(formatUnits(tokenBalance, 6), 2) ? "bg-app-cyan/20 outline-app-cyan" : "bg-app-light/20 outline-app-light"}
+                  outline outline-2
+                `}
+                disabled={tokenBalance === undefined}
+                onClick={() => {
+                  if (tokenBalance !== undefined) {
                     const fullBalance = truncateDecimals(formatUnits(tokenBalance, 6), 2);
                     setAmount(fullBalance);
                     validate({ amount: fullBalance });
-                    }
-                  }}
-                >
-                  Max
-                </motion.button>
+                  }
+                }}
+              >
+                Max
+              </motion.button>
             </div>
-            {/* Display token balance */}
-            {tokenBalance !== undefined && <div className="mt-2 flex items-center text-xs">
-              Balance:&nbsp;
+            {tokenBalance !== undefined && (
+              <div className="mt-2 flex items-center text-xs">
+                Balance:&nbsp;
                 <span className="font-semibold">
                   {truncateDecimals(formatUnits(tokenBalance, 6), 2)} USDC
                 </span>
-            </div>}
+              </div>
+            )}
           </div>
 
           {/* Participation Type */}
           <div>
-            <label
-              htmlFor="participation-type"
-              className="block text-base font-bold"
-            >
+            <label htmlFor="participation-type" className="block text-base font-bold">
               Join Mode
             </label>
             <AnimatePresence initial={false} mode="popLayout">
@@ -402,12 +339,7 @@ export default function CreatePotPage() {
                   initial={{ y: 40, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: 40, opacity: 0 }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 400,
-                    damping: 30,
-                    duration: 0.1,
-                  }}
+                  transition={{ type: "spring", stiffness: 400, damping: 30, duration: 0.1 }}
                 >
                   Anyone can join
                 </motion.p>
@@ -418,12 +350,7 @@ export default function CreatePotPage() {
                   initial={{ y: -40, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: -40, opacity: 0 }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 400,
-                    damping: 30,
-                    duration: 0.1,
-                  }}
+                  transition={{ type: "spring", stiffness: 400, damping: 30, duration: 0.1 }}
                 >
                   Only approved participants can join
                 </motion.p>
@@ -447,62 +374,19 @@ export default function CreatePotPage() {
             </div>
           </div>
 
-
-          {/* Commented out for previewing buttons */}
-          {/* Participation Type */}
-          {/* <div className='mt-5'>
-            <div className="flex items-center justify-between">
-              <p className="block text-base font-bold">Participation</p>
-              <div className="flex items-center gap-4">
-                <span
-                  className={`w-[40px] text-right leading-none transition-all duration-250 ${
-                    isPublic
-                      ? "text-white font-medium text-sm"
-                      : "text-gray-400 font-normal text-xs pr-[0.75px]"
-                  }`}
-                >
-                  Public
-                </span>
-
-                <label className="relative inline-block w-14 h-7 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    checked={!isPublic}
-                    onChange={() => setIsPublic(!isPublic)}
-                  />
-                  <span className="absolute inset-0 bg-gray-700 rounded-full peer-checked:bg-app-cyan transition-colors" />
-                  <span className="absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow transition-all peer-checked:left-8" />
-                </label>
-
-                <span
-                  className={`w-[44px] leading-none transition-all duration-250 ${
-                    !isPublic
-                      ? "text-white font-medium text-sm"
-                      : "text-gray-400 font-normal text-xs"
-                  }`}
-                >
-                  Private
-                </span>
-              </div>
-            </div>
-          </div> */}
-
-
-
           {/* Max Participants */}
           <div>
-            <label
-              htmlFor="max-participants"
-              className="block"
-            >
-              <span className='text-base font-bold'>Max Members {" "}</span>
-              {/* Max participants validation error */}
+            <label htmlFor="max-participants" className="block">
+              <span className='text-base font-bold'>Max pot members{" "}</span>
               <span
                 className={`text-xs font-medium text-red-500 mt-1 ${showError('maxParticipants') ? "visible" : "hidden"}`}
-              >{errors.maxParticipants}</span>
+              >
+                {errors.maxParticipants}
+              </span>
             </label>
-            <p className="font-medium text-xs text-gray-500">Total rounds will be same as number of members</p>
+            <p className="font-medium text-xs text-gray-500">
+              Total rounds will be same as number of members
+            </p>
             <Input
               id="max-participants"
               type="number"
@@ -510,61 +394,50 @@ export default function CreatePotPage() {
               step="1"
               value={maxParticipants}
               onChange={(e) => {
-                // Only allow whole numbers >= 1
                 const value = e.target.value;
-                if (
-                  value === "" ||
-                  (/^\d+$/.test(value) && Number.parseInt(value, 10) >= 1)
-                ) {
+                if (value === "" || (/^\d+$/.test(value) && Number.parseInt(value, 10) >= 1)) {
                   setTouched((prev) => ({ ...prev, maxParticipants: true }));
                   setMaxParticipants(value);
                   validate({ maxParticipants: value });
                 }
               }}
               onKeyDown={(e) => {
-                // Prevent typing minus sign, decimal, or e
-                if (e.key === "-" || e.key === "." || e.key === "e") {
-                  e.preventDefault();
-                }
+                if (e.key === "-" || e.key === "." || e.key === "e") e.preventDefault();
               }}
-              placeholder="Default is 255"
-              className={`mt-2 w-full ${showError('maxParticipants') || showInsufficientNativeBalance ? "outline-red-500 ring ring-red-500" : null}`}
+              placeholder="4"
+              className={`mt-2 w-full ${
+                showError('maxParticipants') || showInsufficientNativeBalance
+                  ? "outline-red-500 ring ring-red-500"
+                  : null
+              }`}
             />
           </div>
-          
+
           {/* Payment Summary */}
           <div className="border border-gray-700 rounded-[12px] px-3 pt-4">
             <div>
-              <p className="block text-base font-bold mb-2">
-                Payment Summary
-              </p>
+              <p className="block text-base font-bold mb-2">Payment Summary</p>
 
               <div className="mb-2 mt-5 w-full flex items-start justify-between">
                 <p className="text-sm font-normal">Join Amount:</p>
                 <p className="text-sm font-normal">{amountTokenFormatted} USDC</p>
               </div>
 
-              {/* <div className="mb-2 w-full flex items-start justify-between">
-                <p className="text-sm font-normal">Platform Fee:</p>
-                <p className="text-sm font-normal">{platformFeeEth ? `${platformFeeEth} ETH` : '-'}</p>
-              </div>
-
               <div className="mb-2 w-full flex items-start justify-between">
-                <p className="text-sm font-normal">Total Gas Fee{roundsForFee ? ` (${roundsForFee} rounds)` : null}:</p>
-                <p className="text-sm font-normal">{totalGasFee ? `${totalGasFee.formatted} ETH` : '-'}</p>
-              </div> */}
-
-              <div className="mb-2 w-full flex items-start justify-between">
-                <p className="text-sm font-normal">Platform Fee{validMaxParticipants ? ` (${maxParticipantsInt || MAX_PARTICIPANTS} Rounds)` : null}:</p>
+                <p className="text-sm font-normal">
+                  Platform Fee{validMaxParticipants ? ` (${maxParticipantsInt || MAX_PARTICIPANTS} Rounds)` : null}:
+                </p>
                 <p className="text-sm font-normal">{totalFee ? `${totalFee.formatted} ETH` : '-'}</p>
               </div>
 
-              {showInsufficientNativeBalance && <div className="mb-2 w-full flex items-start justify-between">
-                <p className="text-sm font-medium text-red-500">Insufficient Balance:</p>
-                <p className="text-sm font-medium text-red-500">
-                  {truncateDecimals(formatEther(dataNativeBalance.value), 4)} ETH
-                </p>
-              </div>}
+              {showInsufficientNativeBalance && (
+                <div className="mb-2 w-full flex items-start justify-between">
+                  <p className="text-sm font-medium text-red-500">Insufficient Balance:</p>
+                  <p className="text-sm font-medium text-red-500">
+                    {truncateDecimals(formatEther(dataNativeBalance.value), 4)} ETH
+                  </p>
+                </div>
+              )}
 
               <hr />
 
@@ -586,11 +459,8 @@ export default function CreatePotPage() {
           <GradientButton type="submit" className="w-full" disabled={disabled}>
             <span className={"flex items-center justify-center gap-2"}>
               <span>{isLoading ? "Loading" : "Create"}</span>
-              {isLoading || isCreatingPot ? (
-                <Loader2
-                  className="animate-spin h-5 w-5 text-white"
-                  size={20}
-                />
+              {(isLoading || isCreatingPot) ? (
+                <Loader2 className="animate-spin h-5 w-5 text-white" size={20} />
               ) : null}
             </span>
           </GradientButton>
