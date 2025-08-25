@@ -29,10 +29,8 @@ function WelcomeDialog({
 				</DialogHeader>
 				<div className="mb-4 text-gray-200">
 					<p>
-						Potluck lets you join, create, and manage onchain pots for saving
-						with friends. Connect your wallet to get started, join available
-						pots, or create your own. Enjoy secure, transparent, and fun group
-						savings!
+						Potluck lets you pool money into pots with friends. Connect your wallet to get started. Join available
+						pots, or create your own.
 					</p>
 				</div>
 				<DialogFooter>

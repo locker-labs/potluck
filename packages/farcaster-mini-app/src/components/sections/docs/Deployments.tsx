@@ -15,8 +15,8 @@ export function Deployments() {
         </div>
 
         <div>
-          <p className="font-medium text-white">Required Chains</p>
-          <p>[list]</p>
+          <p className="font-medium text-white">Supported Chains</p>
+          <p>Base only</p>
         </div>
 
         <div>
