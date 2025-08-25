@@ -1,15 +1,13 @@
 import { publicClient } from '@/clients/viem';
-import { contractAddress, abi, tokenAddress, PotCreatedEventSignatureHash } from '@/config';
+import { contractAddress, abi, tokenAddress, PotCreatedEventSignatureHash, MAX_PARTICIPANTS } from '@/config';
 import { useState, useEffect } from 'react';
 import { useAccount, useWriteContract } from 'wagmi';
 import { toast } from 'sonner';
-import { useApproveTokens } from '@/hooks/useApproveTokens';
-import { useTokenBalance } from '@/hooks/useTokenBalance';
 import { getTransactionLink } from '@/lib/helpers/blockExplorer';
 import { useConnection } from '@/hooks/useConnection';
-import { usePlatformFee } from '@/hooks/usePlatformFee';
-import { type Address, toHex } from 'viem';
-import { useFrame } from '@/components/providers/FrameProvider';
+import { useFrame } from '@/providers/FrameProvider';
+import { usePotluck } from '@/providers/PotluckProvider';
+import { type Address, formatEther, formatUnits, toHex } from 'viem';
 
 let _potName: string;
 let _amount: bigint;
@@ -25,26 +23,36 @@ export function useCreatePot() {
 
   const { checkAndAddMiniApp } = useFrame();
   const { ensureConnection } = useConnection();
-  const { data: tokenBalance, isLoading: isLoadingBalance } = useTokenBalance();
-  const { fee, feeUsdc, isLoading: isLoadingFee } = usePlatformFee();
   const {
-    allowance,
-    isLoadingAllowance,
-    approveTokensAsync,
-    refetchAllowance,
-  } = useApproveTokens();
+				platformFeeWei,
+        platformFeeEth,
+				participantFeeWei,
+        participantFeeEth,
+				calculateCreatorFee,
+        calculateJoineeFee,
+				isLoadingFee,
+				dataNativeBalance,
+				isLoadingNativeBalance,
+				tokenBalance,
+				isLoadingTokenBalance,
+				tokenAllowance,
+				isLoadingTokenAllowance,
+				refetchTokenAllowance,
+        refetch,
+				approveTokens,
+  } = usePotluck();
   const { address } = useAccount();
   const { writeContractAsync } = useWriteContract();
 
-  const isLoading: boolean =
-    isLoadingBalance || isLoadingAllowance || isLoadingFee;
+  const isLoading: boolean = isLoadingTokenBalance || isLoadingTokenAllowance || isLoadingFee || isLoadingNativeBalance;
 
   const createPot = async (
     potName: string,
     amountBigInt: bigint,
     maxParticipants: number,
     timePeriod: bigint,
-    isPublic: boolean
+    isPublic: boolean,
+    fee: bigint
   ): Promise<bigint> => {
     try {
       const args = [
@@ -55,24 +63,15 @@ export function useCreatePot() {
         timePeriod,
         isPublic,
       ];
-      console.log("Creating pot with args:", args);
-      console.log("Creating pot with args:", {
-        potName,
-        tokenAddress,
-        amount: amountBigInt.toString(),
-        maxParticipants,
-        timePeriod: timePeriod.toString(),
-        fee: toHex(0),
-      });
-      console.log("contractAddress", contractAddress);
+
       // broadcast transaction
       const txHash = await writeContractAsync({
         address: contractAddress,
         abi,
         functionName: "createPot",
         args,
+        value: fee,
       });
-      console.log(txHash);
 
       // wait for confirmation
       const receipt = await publicClient.waitForTransactionReceipt({
@@ -103,7 +102,7 @@ export function useCreatePot() {
       setPotId(id);
       return id;
     } catch (error) {
-      console.error("Error creating potluck:", error);
+      console.error("Error creating pot:", error);
       throw error;
     }
   };
@@ -111,10 +110,12 @@ export function useCreatePot() {
   const handleCreatePot = async (
     potName: string,
     amount: bigint,
-    maxParticipants: number,
+    maxMembers: number,
     timePeriod: bigint,
     isPublic: boolean
   ) => {
+    const maxParticipants = maxMembers || MAX_PARTICIPANTS;
+
     await checkAndAddMiniApp();
 
     _potName = potName;
@@ -129,7 +130,6 @@ export function useCreatePot() {
       try {
         await ensureConnection();
       } catch {
-        console.error("Failed to connect wallet:");
         toast.error("Failed to connect wallet");
         return;
       }
@@ -137,43 +137,61 @@ export function useCreatePot() {
       return;
     }
 
-    if (fee === undefined) {
-      toast.error("Unable to fetch platform fee. Please try again.");
+    if (maxParticipants === 1) {
+      toast.error("Max members should not be 1");
       return;
     }
 
-    if (allowance === undefined) {
-      toast.error("Unable to fetch token allowance. Please try again.");
+    if (maxParticipants > MAX_PARTICIPANTS) {
+      toast.error(`Max members should be less than ${1 + MAX_PARTICIPANTS}`);
+      return;
+    }
+
+    const dataFee = calculateCreatorFee(maxParticipants);
+
+    if (dataFee === undefined) {
+      toast.error("Unable to fetch platform fee. Please try again");
+      return;
+    }
+
+    if (tokenAllowance === undefined) {
+      toast.error("Unable to fetch token allowance. Please try again");
+      return;
+    }
+
+    if (dataNativeBalance === undefined) {
+      toast.error("Unable to fetch native balance. Please try again");
       return;
     }
 
     if (tokenBalance === undefined) {
-      toast.error("Unable to fetch token balance. Please try again.");
+      toast.error("Unable to fetch token balance. Please try again");
       return;
     }
 
-    if (amount + fee > tokenBalance) {
-      toast.error("You do not have enough USDC.");
+    if (dataFee.value > dataNativeBalance.value) {
+      toast.error(`You do not have enough native tokens. Balance: ${Number(Number(formatEther(dataNativeBalance.value, "wei")).toFixed(4))} ETH`);
+      return;
+    }
+
+    if (amount > tokenBalance) {
+      toast.error(`You do not have enough USDC. Balance: ${Number(Number(formatUnits(tokenBalance, 6)).toFixed(4))} USDC`);
       return;
     }
 
     setIsCreatingPot(true);
 
     try {
-      const payAmount = amount + fee;
-      if (payAmount >= BigInt(allowance)) {
-        await approveTokensAsync(payAmount);
-        await refetchAllowance();
-      }
+      const approveAmount = amount * BigInt(maxParticipants);
+      await approveTokens(tokenAllowance + approveAmount);
 
-      await createPot(potName, amount, maxParticipants, timePeriod, isPublic);
+      await createPot(potName, amount, maxParticipants, timePeriod, isPublic, dataFee.value);
     } catch (error) {
-      console.error("Error creating potluck:", error);
       toast.error("Error creating potluck", {
         description:
           error instanceof Error
             ? error.message?.split(".")?.[0]
-            : "Something went wrong. Please try again.",
+            : "Something went wrong. Please try again",
       });
     } finally {
       setIsCreatingPot(false);
@@ -184,9 +202,10 @@ export function useCreatePot() {
   useEffect(() => {
     if (
       isPending &&
-      allowance !== undefined &&
+      tokenAllowance !== undefined &&
       tokenBalance !== undefined &&
-      fee !== undefined
+      platformFeeWei !== undefined &&
+      participantFeeWei !== undefined
     ) {
       handleCreatePot(
         _potName,
@@ -199,24 +218,27 @@ export function useCreatePot() {
         .catch();
       setIsPending(false);
     }
-  }, [isPending, allowance, tokenBalance, fee]);
+  }, [isPending, tokenAllowance, tokenBalance, platformFeeWei, participantFeeWei]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
-    refetchAllowance();
+    refetch();
   }, [isCreatingPot]);
 
   return {
     potId,
     setPotId,
     isCreatingPot,
-    createPot,
     handleCreatePot,
     hash,
     isLoading,
     tokenBalance,
-    refetchAllowance,
-    fee,
-    feeUsdc,
+    dataNativeBalance,
+    calculateCreatorFee,
+    calculateJoineeFee,
+    platformFeeWei,
+    participantFeeWei,
+    platformFeeEth,
+    participantFeeEth,
   };
 }

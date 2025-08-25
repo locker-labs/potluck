@@ -1,6 +1,6 @@
 'use client';
 
-import { TrendingUp, Loader2, UsersRound } from 'lucide-react';
+import { TrendingUp, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { TPotObject } from "@/lib/types/contract.type";
 import { GradientButton3 } from "@/components/ui/Buttons";
@@ -8,19 +8,24 @@ import { GradientCard2 } from "@/components/ui/GradientCard";
 import { useAccount } from "wagmi";
 import { useRouter } from "next/navigation";
 import { MoveLeft } from "lucide-react";
-import { timeFromNow } from "@/lib/helpers/time";
-import { DurationPill } from "@/components/ui/Pill";
 import { RecentActivity } from "@/components/sections/RecentActivity";
 import { ShareDropdown } from "@/components/ui/ShareDropdown";
 import { JoinRequests } from "@/components/sections/PotRequests";
 import { fetchPotInfo, type LogEntry } from "@/lib/graphQueries";
 import { JoinPotButton } from '@/components/buttons/JoinPotButton';
-import { UserContributionProgressBar } from '@/components/subcomponents/UserContributionProgressBar';
 import { useJoinPot } from "@/hooks/useJoinPot";
 import { useRequestPot } from "@/hooks/useRequestPot";
 import { useUserPotRequestInfo } from '@/hooks/useUserPotRequestInfo';
 import { useUserPotJoinInfo } from '@/hooks/useUserPotJoinInfo';
 import type { Address } from 'viem';
+import { PotProgressBar } from '../subcomponents/PotProgressBar';
+import { DeadlinePill } from '../subcomponents/DeadlinePill';
+import { motion } from "motion/react";
+import { animate, initialDown, transition } from "@/lib/pageTransition";
+import { usePotluck } from '@/providers/PotluckProvider';
+import { PotInfo } from '../subcomponents/PotInfo';
+import BackButton from '../subcomponents/BackButton';
+import { Pill } from '../ui/Pill';
 
 const defaultLogsState = { loading: true, error: null, logs: [] };
 
@@ -42,12 +47,15 @@ export default function PotPage({ id }: { id: string }) {
     logs: LogEntry[];
   }>(defaultLogsState);
 
+  const { users, fetchUsers } = usePotluck();
+
   const {
     handleJoinPot,
     isLoading: isLoadingJoinPot,
     joiningPotId,
     joinedPotId,
     tokenBalance,
+    DisclaimerModal,
   } = useJoinPot();
   const { hasJoinedBefore, hasJoinedRound } = useUserPotJoinInfo({
     pot,
@@ -107,86 +115,41 @@ export default function PotPage({ id }: { id: string }) {
     );
   }
 
-  
-
-  // DERIVED STATE
-  const isRoundZero: boolean = pot.round === 0;
-  const deadlinePassed: boolean =
-    pot.deadline < BigInt(Math.floor(Date.now() / 1000));
-
   // 2️⃣ Main content
   return (
-    <div>
-      <div className="w-full flex items-center justify-between gap-4 mb-8">
-        <div className="flex items-cener justify-center gap-4">
-          <GradientButton3
-            onClick={() => router.push("/")}
-            className="text-sm h-9 flex items-center rounded-[10px]"
-          >
-            <MoveLeft size={20} />
-          </GradientButton3>
-          <div className="flex items-center justify-start gap-2">
-            <div className="w-full">
-              <p className="text-2xl font-bold line-clamp-2">{pot.name}</p>
-            </div>
-            <ShareDropdown pot={pot} />
-          </div>
+    <motion.div
+      className={"mt-2 px-4"}
+      initial={initialDown}
+      animate={animate}
+      transition={transition}
+    >
+      <div className="w-full flex items-start justify-between gap-2 mb-4">
+        <BackButton />
+        <div className="w-full">
+          <p className="text-2xl font-bold break-all line-clamp-2">
+            {pot.name}
+          </p>
         </div>
-        {hasJoinedBefore || hasJoinedRound ? (
-          <div className="bg-green-500/30 text-green-500 h-[24px] px-[10px] flex items-center justify-center rounded-[10px] border border-green-500">
-            <p className="text-xs font-light">joined</p>
-          </div>
-        ) : null}
+        <ShareDropdown pot={pot} />
       </div>
 
       {/*  TODO: Create a reusable component  */}
-      <GradientCard2 className="w-full mt-4 pb-4">
+      <GradientCard2 className="w-full">
         <div>
-          <div className="flex">
-            <DurationPill
-              text={
-                deadlinePassed
-                  ? "Awaiting payout"
-                  : `Next draw in: ${timeFromNow(Number(pot.deadline))}`
-              }
-            />
+          <div className="flex items-start justify-between">
+            <DeadlinePill pot={pot} />
+            {hasJoinedBefore || hasJoinedRound ? (
+              <Pill className="bg-green-500/40 text-green-500">
+                <p className="text-xs font-medium">Joined</p>
+              </Pill>
+            ) : null}
           </div>
         </div>
 
-        {/* Total Pool amount, Participants, Entry amount, Total pool text */}
-        <div className="mt-2 grid grid-cols-5">
-          <div className="col-span-5">
-            <p className="w-full text-end text-cyan-400 font-bold text-[38px] leading-none">
-              ${pot.totalPool}
-            </p>
-          </div>
-          <div className="col-span-3 grid grid-cols-2">
-            <div className="flex items-center justify-start gap-1">
-              <UsersRound strokeWidth="1.25px" size={18} color="#14b6d3" />
-              <span className="font-base text-[14px]">
-                {isRoundZero
-                  ? `${String(pot.participants.length)}/${String(
-                      pot.maxParticipants
-                    )}`
-                  : `${String(pot.participants.length)}/${String(
-                      pot.totalParticipants
-                    )}`}
-              </span>
-            </div>
-            <p className="font-base text-[14px] whitespace-nowrap text-left">
-              ${pot.entryAmountFormatted} {pot.periodString}
-            </p>
-          </div>
-          <p className="col-span-2 font-base text-[14px] text-right">
-            Total Pool
-          </p>
-        </div>
+        <PotInfo pot={pot} />
 
-        {/* User contribution progress bar */}
-        <UserContributionProgressBar
-          pot={pot}
-          hasJoinedRound={hasJoinedRound ?? false}
-        />
+        {/* Pot progress bar */}
+        <PotProgressBar pot={pot} />
 
         <JoinPotButton
           style="blue"
@@ -201,6 +164,7 @@ export default function PotPage({ id }: { id: string }) {
           userPotRequestInfo={userPotRequestInfo}
           handleRequest={handleRequest}
         />
+        <DisclaimerModal />
       </GradientCard2>
 
       <div className="mt-4 grid grid-cols-2 gap-4">
@@ -231,16 +195,24 @@ export default function PotPage({ id }: { id: string }) {
           <p className="text-sm">Total Won</p>
         </div>
       </div>
-      {showRequests && <JoinRequests potId={pot.id} />}
+      {showRequests && (
+        <div className="mt-4">
+          <JoinRequests potId={pot.id} users={users} fetchUsers={fetchUsers} />
+        </div>
+      )}
 
-      <div className="mt-4 border border-gray-500 pt-6 rounded-xl">
-        <div className="flex items-center gap-2 px-4">
+      <div className="mt-4 border border-gray-500 rounded-xl">
+        <div className="flex items-center gap-2 px-4 pt-4 pb-3">
           <TrendingUp strokeWidth="2px" size={18} color="#14b6d3" />
           <p>Recent Activities</p>
         </div>
-        <hr className="mt-2 border-gray-500" />
-        <RecentActivity logsState={logsState} pot={pot} />
+        <hr className="border-gray-500" />
+        <RecentActivity
+          logsState={logsState}
+          users={users}
+          fetchUsers={fetchUsers}
+        />
       </div>
-    </div>
+    </motion.div>
   );
 }

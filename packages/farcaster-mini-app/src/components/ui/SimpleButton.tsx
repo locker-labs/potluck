@@ -11,7 +11,14 @@ export function SimpleButton({
 }: ButtonProps) {
   return (
     <button
-      className={`max-w-full block py-3 px-6 transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+      style={{
+        transitionProperty: 'background-color, background-opacity, box-shadow, color',
+        transitionDuration: '300ms, 300ms, 200ms, 150ms',
+      }}
+      className={`max-w-full block py-3 px-6
+        ease-in
+        disabled:cursor-not-allowed disabled:opacity-60
+        ${className}`}
       {...props}
     >
       {isLoading ? (

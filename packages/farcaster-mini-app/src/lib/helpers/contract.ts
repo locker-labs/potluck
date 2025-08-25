@@ -1,15 +1,25 @@
+// Dead code: This function is not used in the current codebase, but it can be useful as a fallback for future implementations.
+
 import { abi, contractAddress } from '@/config';
 import { publicClient } from '@/clients/viem';
 import type { TPot, TPotObject } from '../types';
-import { pad, formatUnits, hexToString, type Address } from 'viem';
+import { formatUnits, hexToString, type Address } from 'viem';
 import { keccak256, encodePacked } from 'viem';
 
-const periodSecondsMap = {
-  daily: BigInt(86400),
-  weekly: BigInt(604800),
-  monthly: BigInt(2592000),
+export const weekDays = 7;
+export const monthDays = 30;
+
+export const daySeconds = 86400; // 24 * 60 * 60
+export const weekSeconds = daySeconds * weekDays;
+export const monthSeconds = daySeconds * monthDays;
+
+export const periodSecondsMap = {
+  daily: BigInt(daySeconds),
+  weekly: BigInt(weekSeconds),
+  monthly: BigInt(monthSeconds),
 };
 
+/**
 function getPeriodInText(period: bigint): string {
   for (const [key, value] of Object.entries(periodSecondsMap)) {
     if (period === value) {
@@ -38,6 +48,7 @@ function getDeadlineString(deadline: bigint): string {
   return `${months}m`;
 }
 
+// Dead code
 export function potMapper(pot: TPot, participants: Address[]): TPotObject {
   return {
     id: pot[0],
@@ -63,6 +74,7 @@ export function potMapper(pot: TPot, participants: Address[]): TPotObject {
   };
 }
 
+// Dead code
 export async function fetchPot(potIdBigInt: bigint): Promise<TPot> {
   return (await publicClient.readContract({
     address: contractAddress,
@@ -71,18 +83,19 @@ export async function fetchPot(potIdBigInt: bigint): Promise<TPot> {
     args: [potIdBigInt],
   })) as TPot;
 }
+*/
+
 
 export async function getPotParticipants(potIdBigInt: bigint): Promise<Address[]> {
   return (await publicClient.readContract({
     address: contractAddress,
     abi: abi,
-    functionName: 'getParticipants',
+    functionName: "getParticipants",
     args: [potIdBigInt],
   })) as Address[];
 }
 
-export const emptyBytes32 = pad('0x', { size: 32 });
-
+// TODO: create a subgraph query to replace its usage
 export async function getHasJoinedRound(
   potIdBigInt: bigint,
   round: number,
@@ -98,10 +111,32 @@ export async function getHasJoinedRound(
   })) as boolean;
 }
 
+// TODO: create a subgraph query to replace its usage
 export async function getPlatformFee(): Promise<bigint> {
   return (await publicClient.readContract({
     address: contractAddress,
     abi: abi,
     functionName: 'platformFee',
+  })) as bigint;
+}
+
+// TODO: create a subgraph query to replace its usage
+export async function getParticipantFee(): Promise<bigint> {
+  return (await publicClient.readContract({
+    address: contractAddress,
+    abi: abi,
+    functionName: 'participantFee',
+  })) as bigint;
+}
+
+export async function getTokenBalance(
+  user: Address,
+  token: Address
+): Promise<bigint> {
+  return (await publicClient.readContract({
+    address: contractAddress,
+    abi: abi,
+    functionName: "withdrawalBalances",
+    args: [user, token],
   })) as bigint;
 }

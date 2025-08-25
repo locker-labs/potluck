@@ -20,6 +20,12 @@ body {
   font-family: "Inter", Helvetica, Arial, sans-serif;
 }
 
+.page-transition {
+  transition-property: opacity, background, transform, filter;
+  transition-timing-function: ease-out;
+  transition-duration: 300ms;
+}
+
 * {
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE and Edge */
@@ -33,4 +39,23 @@ body {
   :root {
     --radius: 0.5rem;
   }
+}
+
+.page-transition-hide {
+  opacity: 0;
+  background: black;
+  transform: translateY(-40px);
+  filter: blur(12px);
+}
+
+/* Chrome, Safari, Edge, Opera */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
 }

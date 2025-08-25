@@ -5,7 +5,9 @@ import { useWriteContract } from 'wagmi';
 import { toast } from 'sonner';
 import { getTransactionLink } from '@/lib/helpers/blockExplorer';
 import { useConnection } from '@/hooks/useConnection';
-import { useFrame } from '@/components/providers/FrameProvider';
+import { useFrame } from '@/providers/FrameProvider';
+import { sendNotification } from '@/lib/api/sendNotification';
+import { ENotificationType } from '@/enums/notification';
 
 export function useRequestPot() {
   const { checkAndAddMiniApp } = useFrame();
@@ -35,6 +37,17 @@ export function useRequestPot() {
       }
 
       console.log(`Transaction confirmed: ${getTransactionLink(receipt.transactionHash)}`);
+
+      // Send request notification
+      try {
+        await sendNotification({
+          addresses: [address],
+          potId: String(id),
+          type: ENotificationType.REQUEST,
+        });
+      } catch (notificationError) {
+        console.error('Failed to send request notification:', notificationError);
+      }
     } catch (error) {
       console.error('Error requesting pot approval:', error);
       throw error;

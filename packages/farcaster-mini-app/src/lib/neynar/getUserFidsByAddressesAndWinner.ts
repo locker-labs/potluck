@@ -66,6 +66,7 @@ export async function getUserFidsByAddressesAndWinner(
 
     // assuming the first address is the winner
     const winnerAddress = addresses[0];
+    console.log('winnerAddress', winnerAddress);
     
     return { fids, winnerUsername: data[winnerAddress]?.[0]?.username };
     

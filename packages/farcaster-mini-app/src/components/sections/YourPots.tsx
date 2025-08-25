@@ -11,12 +11,12 @@ import { SectionHeading } from '@/components/ui/SectionHeading';
 
 let _fetchPotsEffectFlag = true; // prevent multiple fetches
 
-export default function YourPots() {
+export default function YourPots({ type, creator }: { type: 'created' | 'joined', creator?: Address }) {
   const { handleJoinPot, joiningPotId, joinedPotId, tokenBalance } =
     useJoinPot();
   const {
-    isConnected,
     address: addressWithCheckSum,
+    isConnected,
   } = useAccount();
   const address = addressWithCheckSum?.toLowerCase() as Address | undefined;
 
@@ -38,7 +38,11 @@ export default function YourPots() {
 
   // Get logs from contract on mount
   useEffect(() => {
-    if (!address) return;
+    if (type === 'joined') {
+      if (!address) return;
+    } else if (type === 'created') {
+      if (!creator) return;
+    }
 
     if (!_fetchPotsEffectFlag) {
       console.log("Skipping fetch pots effect as it has already run.");
@@ -47,16 +51,36 @@ export default function YourPots() {
     _fetchPotsEffectFlag = false;
 
     (async () => {
-      const pots = await getPotsByUser(address as Address);
+      let pots: TPotObject[] = [];
+      try {
+        if (type === 'joined') {
+          pots = await getPotsByUser(address as Address);
+        } else if (type === 'created') {
+          // TODO: add a param in getPotsByUser to fetch only created pots
+          pots = await getPotsByUser(creator as Address);
+        }
+      } catch (error) {
+        console.error("Error fetching pots by user:", error);
+      }
       setPots((prevPots) => [...prevPots, ...pots]);
       setLoading(false);
       _fetchPotsEffectFlag = true;
     })();
-  }, [address]);
+  }, [address, type, creator]);
 
   // ---------
   // RENDERING
   // ---------
+
+  const isCreator =
+    type === "created" &&
+    !!creator &&
+    !!address &&
+    creator.toLowerCase() === address.toLowerCase();
+
+  if (type === 'created' && !creator) {
+    return null; // No creator provided for fetching created pots
+  }
 
   if (!address || !isConnected) {
     return null;
@@ -71,15 +95,15 @@ export default function YourPots() {
   return (
     <motion.div
       initial={{ opacity: 0, y: -40, height: 0 }}
-      animate={{ opacity: 1, y: 0, height: 270 }}
+      animate={{ opacity: 1, y: 0, height: 280 }}
       exit={{ opacity: 0, y: -40, height: 0 }}
       transition={{ duration: 0.4, ease: ["easeOut", "easeIn"] }}
       style={{ overflow: "hidden" }}
       key="your-pots"
     >
       <div>
-        <SectionHeading>Your Pots</SectionHeading>
-        <div className="flex flex-row overflow-x-scroll gap-[12px] md:grid-cols-2 lg:grid-cols-3">
+        <SectionHeading className={'mx-4'}>{type === "joined" ? "Active" : isCreator ? "My" : "Joined"} Pots</SectionHeading>
+        <div className="px-4 flex flex-row overflow-x-scroll gap-[12px] md:grid-cols-2 lg:grid-cols-3">
           {pots.map((pot: TPotObject) => (
             <YourPotCard
               key={pot.id}

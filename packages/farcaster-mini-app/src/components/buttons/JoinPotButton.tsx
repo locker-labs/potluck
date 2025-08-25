@@ -45,7 +45,6 @@ export function JoinPotButton({
 
 	// DERIVED STATE
 	const initialLoading: boolean = isLoadingJoinPot || loadingPot;
-	const isPublic: boolean = pot.isPublic;
 	const isRoundZero: boolean = pot.round === 0;
 	const isJoiningPot: boolean = joiningPotId !== null;
 	const isJoiningThisPot: boolean = isJoiningPot && joiningPotId === potId;
@@ -55,15 +54,14 @@ export function JoinPotButton({
 		isRoundZero && pot.participants.length === pot.maxParticipants;
 	const insufficientBalance: boolean =
 		tokenBalance !== undefined && tokenBalance < pot.entryAmount;
-	const deadlinePassed: boolean =
-		pot.deadline < BigInt(Math.floor(Date.now() / 1000));
 
 	const showLoader = initialLoading || isJoiningThisPot || isRequestingThisPot;
 
 	const disabled: boolean =
 		initialLoading ||
+		pot.ended ||
 		potFull ||
-		deadlinePassed ||
+		pot.deadlinePassed ||
 		(!!address &&
 			(isJoiningPot ||
 				isRequestingPot ||
@@ -75,11 +73,13 @@ export function JoinPotButton({
 
 	const buttonText = initialLoading ? (
 		"Loading"
+	) : pot.ended ? (
+		"Ended"
 	) : hasJoinedRound ? (
 		"Joined"
 	) : isJoiningThisPot ? (
 		"Joining"
-	) : deadlinePassed ? (
+	) : pot.deadlinePassed ? (
 		"Expired ⌛"
 	) : potFull ? (
 		"Pot Full 📦"
@@ -88,7 +88,7 @@ export function JoinPotButton({
 	) : insufficientBalance ? (
 		"Insufficient Balance 💰"
 	) : isRoundZero ? (
-		isPublic ? (
+		pot.isPublic ? (
 			"Join Pot"
 		) : isRequestingThisPot ? (
 			"Requesting to Join"
@@ -117,7 +117,8 @@ export function JoinPotButton({
 
 	const onClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
 		e.preventDefault();
-		if (isPublic || isAllowed) {
+		e.stopPropagation();
+		if (pot.isPublic || isAllowed) {
 			await handleJoinPot(pot);
 		} else if (!hasRequested) {
 			await handleRequest(pot.id);
@@ -137,7 +138,7 @@ export function JoinPotButton({
 		return (
 			<GradientButton2
 				isActive={true}
-				className="w-full h-[35px] flex items-center justify-center mt-3 mx-auto shadow-lg hover:shadow-xl transition-all duration-300 text-base font-bold rounded-xl"
+				className={`w-full h-[35px] flex items-center justify-center mt-3 mx-auto shadow-lg disabled:cursor-not-allowed transition-all duration-300 text-base font-bold rounded-xl ${disabled ? "" : "hover:shadow-xl"}`}
 				onClick={onClick}
 				disabled={disabled}
 			>
