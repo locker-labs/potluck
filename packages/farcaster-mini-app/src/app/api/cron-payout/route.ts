@@ -22,6 +22,7 @@ import {
 	sendDepositReminderNotification,
 } from "@/lib/neynar";
 import { formatAddress } from '@/lib/address';
+import { useReadContract } from "wagmi";
 
 // Object interface for easier access
 interface PotObject {
@@ -98,6 +99,7 @@ interface PotState {
 // pot id to state mapping
 const potStateCache = new Map<number, PotState>();
 const ONE_HOUR_MS = 60 * 60 * 1000;
+const VRF_COOLDOWN = 45 * 60; // 45 minutes
 let potCacheTimestamp = Date.now();
 
 // mapping for all participants in the latest round
@@ -154,7 +156,15 @@ export async function GET() {
           if (toEnd) {
             eligibleEndPots.push(BigInt(i));
           } else {
-            eligiblePayoutPots.push(BigInt(i));
+            const lastRequestAt = (await readContract(publicClient, {
+              address: contractAddress,
+              abi: potluckAbi,
+              functionName: "payoutRequestTimestamps",
+              args: [BigInt(i)],
+            })) as bigint;
+            if (now - lastRequestAt > VRF_COOLDOWN) {
+              eligiblePayoutPots.push(BigInt(i));
+            }
           }
         }
         continue;
@@ -174,7 +184,15 @@ export async function GET() {
         if (toEnd) {
           eligibleEndPots.push(BigInt(i));
         } else {
-          eligiblePayoutPots.push(BigInt(i));
+          const lastRequestAt = (await readContract(publicClient, {
+            address: contractAddress,
+            abi: potluckAbi,
+            functionName: "payoutRequestTimestamps",
+            args: [BigInt(i)],
+          })) as bigint;
+          if (now - lastRequestAt > VRF_COOLDOWN) {
+            eligiblePayoutPots.push(BigInt(i));
+          }
         }
       } else if (now < currentDeadline) {
         potStateCache.set(i, {
@@ -214,16 +232,25 @@ export async function GET() {
         const participants: Address[] = await getPotParticipants(potId);
         // Ideally, this should never happen
         if (participants.length === 0) {
-          console.warn(`No participants found for pot #${potId}. Skipping reminder notification.`);
+          console.warn(
+            `No participants found for pot #${potId}. Skipping reminder notification.`
+          );
           continue;
         }
-        potIdToParticipantsMap.set(potId, participants.map((part) => part.toLowerCase() as Address));
+        potIdToParticipantsMap.set(
+          potId,
+          participants.map((part) => part.toLowerCase() as Address)
+        );
         for (const participant of participants) {
           addressSet.add(participant.toLowerCase() as Address);
         }
       } catch (error) {
         // TODO: handle rpc rate limiting
-        console.error(`Error fetching participants for pot #${potId}:`, error, "Skipping reminder notification");
+        console.error(
+          `Error fetching participants for pot #${potId}:`,
+          error,
+          "Skipping reminder notification"
+        );
       }
     }
 
@@ -239,7 +266,9 @@ export async function GET() {
       console.log(
         `🔔 triggering batch payout for ${eligiblePayoutPots.length} pots`
       );
-      const receipt = await waitForTransactionReceipt(publicClient, { hash: txHash });
+      const receipt = await waitForTransactionReceipt(publicClient, {
+        hash: txHash,
+      });
       console.log(`Batch payout transaction hash: ${receipt.transactionHash}`);
     }
 
@@ -249,14 +278,20 @@ export async function GET() {
         const participants: Address[] = await getPotParticipants(potId);
         // Ideally, this should never happen
         if (participants.length === 0) {
-          console.warn(`No participants found for pot #${potId}. Skipping reminder notification.`);
+          console.warn(
+            `No participants found for pot #${potId}. Skipping reminder notification.`
+          );
           continue;
         }
         potIdToWinnerMap.set(potId, participants[0].toLowerCase() as Address);
         addressSet.add(participants[0].toLowerCase() as Address);
       } catch (error) {
         // TODO: handle rpc rate limiting
-        console.error(`Error fetching participants for pot #${potId}:`, error, "Skipping reminder notification");
+        console.error(
+          `Error fetching participants for pot #${potId}:`,
+          error,
+          "Skipping reminder notification"
+        );
       }
     }
 
@@ -271,10 +306,14 @@ export async function GET() {
       let batchData: BulkUsersByAddressResponse | null = null;
 
       try {
-        const { data, error, status, ok } = await fetchFarcasterUsersInBulk(batch);
+        const { data, error, status, ok } = await fetchFarcasterUsersInBulk(
+          batch
+        );
 
         if (status === 404) {
-          console.warn(`Farcaster user not found for addresses: ${batch.join(", ")}`);
+          console.warn(
+            `Farcaster user not found for addresses: ${batch.join(", ")}`
+          );
           console.warn("Skipping reminder notification for this batch");
         } else if (status === 429) {
           // Retry once after waiting for 65s
@@ -285,7 +324,9 @@ export async function GET() {
             console.log(`Successfully retried batch: ${batch.join(", ")}`);
             batchData = retryResponse.data;
           } else {
-            console.warn(`Failed to fetch batch after retry: ${batch.join(", ")}`);
+            console.warn(
+              `Failed to fetch batch after retry: ${batch.join(", ")}`
+            );
             console.warn("Skipping reminder notification for this batch");
           }
         } else if (!ok || error) {
@@ -305,10 +346,10 @@ export async function GET() {
         for (const [address, userData] of Object.entries(batchData)) {
           if (userData && userData.length > 0) {
             addressToFuserMap.set(address.toLowerCase() as Address, {
-                fid: userData[0].fid,
-                username: userData[0].username,
-                display_name: userData[0].display_name,
-                pfp_url: userData[0].pfp_url,
+              fid: userData[0].fid,
+              username: userData[0].username,
+              display_name: userData[0].display_name,
+              pfp_url: userData[0].pfp_url,
             });
           } else {
             console.warn(`No user data found for address: ${address}`);
@@ -319,24 +360,33 @@ export async function GET() {
 
     // Send reminder notifications for all pots
     for (const potId of eligiblePayoutPots) {
-      let winnerName = 'Someone';
+      let winnerName = "Someone";
       const winnerAddr: Address | undefined = potIdToWinnerMap.get(potId);
       if (winnerAddr) {
-        winnerName = addressToFuserMap.get(winnerAddr)?.username ?? formatAddress(winnerAddr);
+        winnerName =
+          addressToFuserMap.get(winnerAddr)?.username ??
+          formatAddress(winnerAddr);
       }
       const participants = potIdToParticipantsMap.get(potId) || [];
       const targetFids = participants
         .map((participant) => addressToFuserMap.get(participant)?.fid)
-				.filter((fid): fid is number => fid !== undefined);
+        .filter((fid): fid is number => fid !== undefined);
 
       if (targetFids.length > 0) {
         try {
-            console.log('Sending deposit reminder notification...');
-            const notificationRes = await sendDepositReminderNotification({ potId: Number(potId), targetFids, winnerName });
-            console.log('notification response', notificationRes);
-            console.log('Deposit reminder notification sent successfully');
+          console.log("Sending deposit reminder notification...");
+          const notificationRes = await sendDepositReminderNotification({
+            potId: Number(potId),
+            targetFids,
+            winnerName,
+          });
+          console.log("notification response", notificationRes);
+          console.log("Deposit reminder notification sent successfully");
         } catch (error) {
-            console.error(`Failed to send deposit reminder notification for pot #${potId}:`, error);
+          console.error(
+            `Failed to send deposit reminder notification for pot #${potId}:`,
+            error
+          );
         }
       }
     }
@@ -350,7 +400,9 @@ export async function GET() {
         args: [eligibleEndPots],
       });
       console.log(`🔔 triggering batch end for ${eligibleEndPots.length} pots`);
-      const receipt = await waitForTransactionReceipt(publicClient, { hash: txHash });
+      const receipt = await waitForTransactionReceipt(publicClient, {
+        hash: txHash,
+      });
       console.log(`Batch end transaction hash: ${receipt.transactionHash}`);
     }
 
@@ -369,7 +421,9 @@ export async function GET() {
           functionName: "triggerBatchJoinOnBehalf",
           args: [eligible.potId, eligible.users],
         });
-        const receipt = await waitForTransactionReceipt(publicClient, { hash: txHash });
+        const receipt = await waitForTransactionReceipt(publicClient, {
+          hash: txHash,
+        });
         console.log(`Batch join transaction hash: ${receipt.transactionHash}`);
       }
     }
