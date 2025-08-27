@@ -6,7 +6,7 @@ import { publicClient } from "@/clients/viem";
 import { MAX_PARTICIPANTS } from "@/config";
 
 const SUBGRAPH_URL =
-  "https://api.studio.thegraph.com/query/117923/prod-pot/version/latest";
+  "https://api.studio.thegraph.com/query/117923/potluck-base/version/latest";
 const client = new GraphQLClient(SUBGRAPH_URL);
 
 const GET_ALL_ROUND_ZERO_POTS = gql`
