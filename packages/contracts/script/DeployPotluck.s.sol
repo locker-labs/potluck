@@ -11,9 +11,9 @@ contract DeployPotluck is Script {
         // load deployer key and config from env
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address treasury = vm.envAddress("TREASURY_ADDRESS");
-        address vrfCoordinator = 0x5C210eF41CD1a72de73bF76eC39637bB0d3d7BEE;
-        uint256 platformFee = 500_000_000_000_000; // 0.0005 ETH
-        uint256 participantFee = 120_000_000_000_000; //  0.00012 ETH
+        address vrfCoordinator = 0xd5D517aBE5cF79B7e95eC98dB0f0277788aFF634;
+        uint256 platformFee = 25 * 1e13; // 0.00025 ETH
+        uint256 participantFee = 1 * 1e14; //  0.00010 ETH
 
         vm.startBroadcast(deployerPrivateKey);
 
