@@ -9,6 +9,7 @@ import {
   abi as potluckAbi,
   batcherAbi,
   batcherAddress,
+  chain,
 } from "@/config";
 import { RPC_URL, NEYNAR_ADDRESSES_LIMIT } from "@/lib/constants";
 import { env } from "@/app/api/env";
@@ -113,12 +114,12 @@ const addressToFuserMap = new Map<Address, FUser>();
 
 // clients
 const publicClient = createPublicClient({
-  chain: baseSepolia,
+  chain,
   transport: http(RPC_URL),
 });
 
 const walletClient = createWalletClient({
-  chain: baseSepolia,
+  chain,
   transport: http(RPC_URL),
   account: privateKeyToAccount(env.PAYOUT_PRIVATE_KEY as `0x${string}`),
 });
