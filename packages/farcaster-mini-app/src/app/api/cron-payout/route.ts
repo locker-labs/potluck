@@ -22,7 +22,6 @@ import {
 	sendDepositReminderNotification,
 } from "@/lib/neynar";
 import { formatAddress } from '@/lib/address';
-import { useReadContract } from "wagmi";
 
 // Object interface for easier access
 interface PotObject {
