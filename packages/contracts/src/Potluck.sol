@@ -35,6 +35,7 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
     error NotAllowed(address user, uint256 potId);
     error NotAllParticipantsWon(uint256 potId);
     error TokenNotAllowed(address token);
+    error CooldownActive(uint256 potId);
 
     //––––––––––––––––––––
     // STATE
@@ -57,6 +58,8 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
     uint256 public s_subscriptionId;
     uint16 public requestConfirmations;
     uint32 public callbackGasLimit;
+
+    uint256 public vrfCooldown = 45 minutes;
 
     struct PotRequest {
         address requestor;
@@ -91,6 +94,8 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
     // Maps chainlink requestId to potId and round
     mapping(uint256 => uint256) public requestToPot;
     mapping(uint256 => uint32) public requestToRound;
+
+    mapping(uint256 => uint256) public payoutRequestTimestamps; // potId => triggerPayout timestamp
 
     event PotCreated(uint256 indexed potId, address indexed creator);
     event PotJoined(uint256 indexed potId, uint32 roundId, address indexed user);
@@ -179,7 +184,7 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
         // Transfer the platform fee to the treasury
         if (msg.value > requiredFee) {
             // Its sender's responsibility to ensure they can accept ETH.
-            (bool success,) = msg.sender.call{value: msg.value - requiredFee}("");
+            msg.sender.call{value: msg.value - requiredFee}("");
         }
 
         emit PotCreated(potId, msg.sender);
@@ -238,7 +243,7 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
             payable(treasury).transfer(requiredFee);
             if (msg.value > requiredFee) {
                 // Its sender's responsibility to ensure they can accept ETH.
-                (bool success,) = msg.sender.call{value: msg.value - requiredFee}("");
+                msg.sender.call{value: msg.value - requiredFee}("");
             }
         } else {
             if (!hasJoinedRound[keccak256(abi.encodePacked(potId, p.round - 1, msg.sender))]) {
@@ -291,6 +296,12 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
         Pot storage p = pots[potId];
         if (p.balance == 0) revert PotDoesNotExist(potId);
         if (block.timestamp < p.deadline) revert RoundNotReady(p.deadline, block.timestamp);
+
+        if (block.timestamp - payoutRequestTimestamps[potId] < vrfCooldown) {
+            revert CooldownActive(potId);
+        }
+
+        payoutRequestTimestamps[potId] = block.timestamp;
 
         // request randomness via Chainlink VRF v2.5
         uint256 requestId = vrfCoordinator.requestRandomWords(
@@ -436,6 +447,10 @@ contract Potluck is ReentrancyGuard, VRFConsumerBaseV2Plus {
     function setTokenStatus(address token, bool status) external onlyPotluckOwner {
         require(token != address(0), "Invalid token address");
         allowedTokens[token] = status;
+    }
+
+    function setVRFCooldown(uint256 cooldown) external onlyPotluckOwner {
+        vrfCooldown = cooldown;
     }
 
     //––––––––––––––––––––

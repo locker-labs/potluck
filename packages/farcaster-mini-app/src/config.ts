@@ -10,6 +10,7 @@ import {
   PotluckArtifact,
   PotluckAddressBaseSepolia,
   PotluckBatcherArtifact,
+  PotluckAddressBase,
 } from "@potluck/contracts";
 
 if (!process.env.NEXT_PUBLIC_CHAIN_ID) {
@@ -47,10 +48,10 @@ const chainIdToContractConfig: Record<TChainId, TContractConfig> = {
   8453: {
     appKitNetwork: appKitBase,
     chain: base,
-    deploymentBlockBigInt: 0n, // Not deployed on mainnet yet
-    contractAddress: zeroAddress,
-    batcherContractAddress: zeroAddress,
-    tokenAddress: zeroAddress,
+    deploymentBlockBigInt: 34754357n,
+    contractAddress: PotluckAddressBase as Address,
+    batcherContractAddress: "0xf0604cd8eA5954A40073805c8a7Ff40bb2A490BE",
+    tokenAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
     tokenDecimals: 6,
   },
   84532: {
