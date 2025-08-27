@@ -189,7 +189,7 @@ export async function GET() {
             functionName: "payoutRequestTimestamps",
             args: [BigInt(i)],
           })) as bigint;
-          if (now - lastRequestAt > VRF_COOLDOWN) {
+          if (now - lastRequestAt > BigInt(VRF_COOLDOWN)) {
             eligiblePayoutPots.push(BigInt(i));
           }
         }
