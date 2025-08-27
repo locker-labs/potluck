@@ -18,6 +18,8 @@ import { daySeconds, weekSeconds, monthSeconds } from '@/lib/helpers/contract';
 import { usePotluck } from '@/providers/PotluckProvider';
 import { truncateDecimals } from '@/lib/helpers/math';
 import BackButton from '../subcomponents/BackButton';
+import { formatAddress } from '@/lib/address';
+import { useAccount } from 'wagmi';
 
 const emojis = ["🎯", "🏆", "🔥", "🚀", "💪", "⚡", "🎬", "🎓", "🍕", "☕"];
 
@@ -103,6 +105,8 @@ export default function CreatePotPage() {
     dataNativeBalance,
     refetch,
   } = usePotluck();
+
+  const { address, chain } = useAccount()
 
   const validationSchema = useMemo(
     () => createPotSchema({ tokenBalance }),
@@ -316,14 +320,33 @@ export default function CreatePotPage() {
                 Max
               </motion.button>
             </div>
-            {tokenBalance !== undefined && (
-              <div className="mt-2 flex items-center text-xs">
-                Balance:&nbsp;
-                <span className="font-semibold">
-                  {truncateDecimals(formatUnits(tokenBalance, 6), 2)} USDC
-                </span>
-              </div>
-            )}
+            {/* User wallet info - balance, address, chain */}
+            {tokenBalance !== undefined && <div className='mt-4 outline outline-1 outline-app-cyan rounded-xl p-2 flex w-full flex-col bg-app-gray'>
+              {tokenBalance !== undefined && (
+                <div className="flex items-center text-xs">
+                  Balance:&nbsp;
+                  <span className="font-semibold">
+                    {truncateDecimals(formatUnits(tokenBalance, 6), 2)} USDC
+                  </span>
+                </div>
+              )}
+              {address !== undefined && (
+                <div className="mt-2 flex items-center text-xs">
+                  Address:&nbsp;
+                  <span className="font-semibold">
+                    {formatAddress(address)}
+                  </span>
+                </div>
+              )}
+              {chain !== undefined && (
+                <div className="mt-2 flex items-center text-xs">
+                  Chain:&nbsp;
+                  <span className="font-semibold">
+                    {chain.name}
+                  </span>
+                </div>
+              )}
+            </div>}
           </div>
 
           {/* Participation Type */}
