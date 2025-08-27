@@ -11,6 +11,8 @@ import { SectionHeading } from '@/components/ui/SectionHeading';
 
 let _fetchPotsEffectFlag = true; // prevent multiple fetches
 
+// type = joined is for showing joined pots of connected user
+// type = created is for showing pots created by any user (creator)
 export default function YourPots({ type, creator }: { type: 'created' | 'joined', creator?: Address }) {
   const { handleJoinPot, joiningPotId, joinedPotId, tokenBalance } =
     useJoinPot();
@@ -55,6 +57,7 @@ export default function YourPots({ type, creator }: { type: 'created' | 'joined'
       try {
         if (type === 'joined') {
           pots = await getPotsByUser(address as Address);
+          pots = pots.filter(pot => !pot.deadlinePassed) // hide expired pots
         } else if (type === 'created') {
           // TODO: add a param in getPotsByUser to fetch only created pots
           pots = await getPotsByUser(creator as Address);
