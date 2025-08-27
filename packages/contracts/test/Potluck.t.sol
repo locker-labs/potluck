@@ -8,14 +8,18 @@ import {Potluck} from "../src/Potluck.sol";
 
 contract MockERC20 is ERC20 {
     constructor() ERC20("MockToken", "MTKN") {}
-    function mint(address to, uint256 amount) external { _mint(to, amount); }
+
+    function mint(address to, uint256 amount) external {
+        _mint(to, amount);
+    }
 }
 
 // A thin test-only harness to expose minimal hooks for moving to round > 0.
 // This avoids wiring a full VRF coordinator in tests.
 contract PotluckHarness is Potluck {
     constructor(uint256 _platformFee, uint256 _perPartFee, address _treasury, address _vrfCoordinator)
-        Potluck(_platformFee, _perPartFee, _treasury, _vrfCoordinator) {}
+        Potluck(_platformFee, _perPartFee, _treasury, _vrfCoordinator)
+    {}
 
     // Test-only: force set round and deadline to emulate start of next round.
     function __test_forceRound(uint256 potId, uint32 newRound, uint256 newDeadline) external {
@@ -50,7 +54,7 @@ contract PotluckGasTest is Test {
     uint256 public periodSeconds = 3600; // 1 hour
 
     address public alice = address(0xA1);
-    address public bob   = address(0xB2);
+    address public bob = address(0xB2);
 
     function setUp() public {
         token = new MockERC20();
