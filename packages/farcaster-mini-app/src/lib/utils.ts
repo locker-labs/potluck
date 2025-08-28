@@ -7,6 +7,7 @@ import {
   APP_DESCRIPTION,
   APP_ICON_URL,
   APP_NAME,
+  APP_IMAGE_URL,
   APP_OG_IMAGE_URL,
   APP_PRIMARY_CATEGORY,
   APP_SPLASH_BACKGROUND_COLOR,
@@ -14,6 +15,8 @@ import {
   APP_URL,
   APP_CHAIN_LIST,
   APP_REQUIRED_CAPABILITIES,
+  APP_VERSION,
+  NEYNAR_WEBHOOK_URL,
 } from './constants';
 import { APP_SPLASH_URL } from './constants';
 import { accountAssociations, type IAccountAssociation } from './accountAssociations';
@@ -113,16 +116,15 @@ function getAccountAssociation(): IAccountAssociation | null {
 //   };
 // }
 
-export function getFrameEmbedMetadata(options?: { ogImageUrl?: string; pathname?: string }) {
-  const ogImageUrl = options?.ogImageUrl ?? '';
+export function getFrameEmbedMetadata(options?: { pathname?: string }) {
   const pathname = options?.pathname ?? '';
   let buttonTitle = APP_BUTTON_TEXT;
   if (pathname?.includes('/pot/')) {
     buttonTitle = 'Join Pot';
   }
   return {
-    version: 'next',
-    imageUrl: ogImageUrl ?? APP_OG_IMAGE_URL,
+    version: APP_VERSION,
+    imageUrl: APP_IMAGE_URL,
     button: {
       title: buttonTitle,
       action: {
@@ -166,11 +168,11 @@ export async function getFarcasterMetadata(): Promise<FrameManifest> {
   return {
     accountAssociation: accountAssociation || undefined,
     frame: {
-      version: '1',
+      version: APP_VERSION,
       name: APP_NAME ?? 'Frames v2 Demo',
       iconUrl: APP_ICON_URL,
       homeUrl: APP_URL,
-      imageUrl: APP_OG_IMAGE_URL,
+      imageUrl: APP_IMAGE_URL,
       subtitle: APP_SUBTITLE,
       buttonTitle: APP_BUTTON_TEXT ?? 'Launch Frame',
       splashImageUrl: APP_SPLASH_URL,
@@ -184,6 +186,7 @@ export async function getFarcasterMetadata(): Promise<FrameManifest> {
       ogImageUrl: APP_OG_IMAGE_URL,
       requiredChains: APP_CHAIN_LIST,
       requiredCapabilities: APP_REQUIRED_CAPABILITIES,
+      webhookUrl: NEYNAR_WEBHOOK_URL,
     },
   };
 }

@@ -1,8 +1,18 @@
 {
-  "name": "contracts",
+  "name": "@potluck/contracts",
+  "version": "0.1.0",
   "module": "index.ts",
   "type": "module",
-  "private": true,
+  "private": false,
+  "main": "index.ts",
+  "types": "index.ts",
+  "files": [
+    "out/**/*.json"
+  ],
+  "exports": {
+    "./artifacts/*": "./out/*.sol/*.json",
+    ".": "./index.ts"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
@@ -10,7 +20,8 @@
     "typescript": "^5"
   },
   "scripts": {
-    "build": "forge fmt && forge build"
+    "build": "forge fmt && forge build",
+    "deploy": "forge script script/DeployPotluck.s.sol --rpc-url base-sepolia --broadcast"
   }
 }
 

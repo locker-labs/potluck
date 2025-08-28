@@ -12,7 +12,7 @@ export function generateDegenCast(amount: number, periodSeconds: bigint, potId: 
 It’s like a raffle — but you can’t lose.
 Onchain. No rug. Just vibes.
 
-👉 ${MINI_APP_URL}/pot/${potId}?join
+👉 ${MINI_APP_URL}/pot/${potId}
 
 #DeFi #DegenSaving #PotLuck #CryptoRaffle`;
 }
@@ -30,7 +30,7 @@ Now you can do both:
 
 It’s like group therapy… but for your wallet.
 
-👉 ${MINI_APP_URL}/pot/${potId}?join
+👉 ${MINI_APP_URL}/pot/${potId}
 
 #MemeFi #OnchainFun #PotLuck #SaveToWin`;
 }
@@ -46,7 +46,7 @@ And no one loses — you can always withdraw your savings ✅
 A little thrill. A lot of discipline.  
 It’s saving, with upside.
 
-👉 ${MINI_APP_URL}/pot/${potId}?join
+👉 ${MINI_APP_URL}/pot/${potId}
 
 #SaveTogether #OnchainSaving #PotLuck`;
 }

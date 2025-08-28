@@ -1,4 +1,4 @@
-import type { Address } from 'viem';
+import type { Address, Hex } from "viem";
 
 export type TPotObject = {
   id: bigint;
@@ -6,44 +6,55 @@ export type TPotObject = {
   round: number; // uint32
   deadline: bigint; // in seconds
   balance: bigint;
-  token: Address; // Ethereum address
+  token: Address; // ERC20 token address
   entryAmount: bigint;
+  entryAmountFormatted: string;
   period: bigint; // in seconds
   totalParticipants: number; // uint32
+  maxParticipants: number; // uint8
   participants: Address[]; // Array of Ethereum addresses
-  participantsRoot: Address; // bytes32
+  isPublic: boolean; // bool
   // derived properties
-  periodString: string; // e.g., "daily", "weekly", "biweekly", "monthly"
+  periodString: string; // e.g., "daily", "weekly", "monthly"
   deadlineString: string; // e.g., "5h", "2d", "1w"
+  deadlinePassed: boolean;
+  ended: boolean;
   totalPool: string; // total pool = number of participants * entry amount
   creator: Address;
   nextDrawAt: Date;
   createdAt: Date;
 };
 
+export type TPotObjectMini = Pick<TPotObject, "id" | "name" | "creator" | "totalPool">;
+
 export const mockPotObject: TPotObject = {
   id: 1n,
-  name: '🎯 Pot Name',
+  name: "🎯 Pot Name",
   round: 1,
   deadline: 1n,
   balance: 1n,
-  token: '0x1234567890abcdef1234567890abcdef12345678' as Address,
+  token: "0x1234567890abcdef1234567890abcdef12345678" as Address,
   entryAmount: 1n,
+  entryAmountFormatted: '0.000001',
   period: 1n,
   totalParticipants: 1,
-  participants: ['0x1234567890abcdef1234567890abcdef12345678'],
-  participantsRoot: '0x1234567890abcdef1234567890abcdef12345678',
-  periodString: 'daily',
-  deadlineString: '5h',
-  creator: '0x1234567890abcdef1234567890abcdef12345678',
-  totalPool: '1',
+  maxParticipants: 10,
+  participants: ["0x1234567890abcdef1234567890abcdef12345678"],
+  isPublic: true,
+  periodString: "daily",
+  deadlineString: "5h",
+  deadlinePassed: false,
+  ended: false,
+  creator: "0x1234567890abcdef1234567890abcdef12345678",
+  totalPool: "1",
   nextDrawAt: new Date(),
   createdAt: new Date(),
 };
 
 export type TPot = [
   bigint, // id
-  Address, // name
+  Address, // creator
+  Hex, // name
   number, // round
   bigint, // deadline
   bigint, // balance
@@ -51,6 +62,6 @@ export type TPot = [
   bigint, // entryAmount
   bigint, // period
   number, // totalParticipants
-  Address, // participants
-  Address, // participantsRoot
+  number, // maxParticipants
+  boolean // isPublic
 ];

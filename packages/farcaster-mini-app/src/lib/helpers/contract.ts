@@ -1,16 +1,25 @@
+// Dead code: This function is not used in the current codebase, but it can be useful as a fallback for future implementations.
+
 import { abi, contractAddress } from '@/config';
 import { publicClient } from '@/clients/viem';
 import type { TPot, TPotObject } from '../types';
-import { pad, formatUnits, hexToString, type Address } from 'viem';
+import { formatUnits, hexToString, type Address } from 'viem';
 import { keccak256, encodePacked } from 'viem';
 
-const periodSecondsMap = {
-  daily: BigInt(86400),
-  weekly: BigInt(604800),
-  biweekly: BigInt(1209600),
-  monthly: BigInt(2592000),
+export const weekDays = 7;
+export const monthDays = 30;
+
+export const daySeconds = 86400; // 24 * 60 * 60
+export const weekSeconds = daySeconds * weekDays;
+export const monthSeconds = daySeconds * monthDays;
+
+export const periodSecondsMap = {
+  daily: BigInt(daySeconds),
+  weekly: BigInt(weekSeconds),
+  monthly: BigInt(monthSeconds),
 };
 
+/**
 function getPeriodInText(period: bigint): string {
   for (const [key, value] of Object.entries(periodSecondsMap)) {
     if (period === value) {
@@ -39,30 +48,33 @@ function getDeadlineString(deadline: bigint): string {
   return `${months}m`;
 }
 
-export function potMapper(pot: TPot, creator: Address, participants: Address[]): TPotObject {
+// Dead code
+export function potMapper(pot: TPot, participants: Address[]): TPotObject {
   return {
     id: pot[0],
-    name: hexToString(pot[1]), // Decoded from bytes
-    round: pot[2], // uint32
-    deadline: pot[3], // in seconds
-    balance: pot[4],
-    token: pot[5], // Ethereum address
-    entryAmount: pot[6], // in wei
-    period: pot[7], // in seconds
-    totalParticipants: pot[8], // uint32
-    // TODO: parse participants from bytes32
+    creator: pot[1],
+    name: hexToString(pot[2]), // Decoded from bytes
+    round: pot[3], // uint32
+    deadline: pot[4], // in seconds
+    balance: pot[5],
+    token: pot[6], // Ethereum address
+    entryAmount: pot[7], // in wei
+    entryAmountFormatted: formatUnits(pot[7], 6), // formatted to 6 decimal places
+    period: pot[8], // in seconds
+    totalParticipants: pot[9], // uint32
+    maxParticipants: Number(pot[10]), // uint8
+    isPublic: pot[11],
     participants: participants, // Array of Ethereum addresses
-    participantsRoot: pot[10], // bytes32
     // derived properties
-    periodString: getPeriodInText(pot[7]),
-    deadlineString: getDeadlineString(pot[3]),
-    totalPool: formatUnits(BigInt(pot[8]) * pot[6], 6), // total pool = number of participants * entry amount
-    creator: creator,
-    nextDrawAt: new Date(Number(pot[3]) * 1000), // Convert seconds to milliseconds
+    periodString: getPeriodInText(pot[8]),
+    deadlineString: getDeadlineString(pot[4]),
+    totalPool: formatUnits(BigInt(pot[9]) * pot[7], 6), // total pool = number of participants * entry amount
+    nextDrawAt: new Date(Number(pot[4]) * 1000), // Convert seconds to milliseconds
     createdAt: new Date(),
   };
 }
 
+// Dead code
 export async function fetchPot(potIdBigInt: bigint): Promise<TPot> {
   return (await publicClient.readContract({
     address: contractAddress,
@@ -71,18 +83,19 @@ export async function fetchPot(potIdBigInt: bigint): Promise<TPot> {
     args: [potIdBigInt],
   })) as TPot;
 }
+*/
+
 
 export async function getPotParticipants(potIdBigInt: bigint): Promise<Address[]> {
   return (await publicClient.readContract({
     address: contractAddress,
     abi: abi,
-    functionName: 'getParticipants',
+    functionName: "getParticipants",
     args: [potIdBigInt],
   })) as Address[];
 }
 
-export const emptyBytes32 = pad('0x', { size: 32 });
-
+// TODO: create a subgraph query to replace its usage
 export async function getHasJoinedRound(
   potIdBigInt: bigint,
   round: number,
@@ -96,4 +109,34 @@ export async function getHasJoinedRound(
       keccak256(encodePacked(['uint256', 'uint32', 'address'], [potIdBigInt, round, address])),
     ],
   })) as boolean;
+}
+
+// TODO: create a subgraph query to replace its usage
+export async function getPlatformFee(): Promise<bigint> {
+  return (await publicClient.readContract({
+    address: contractAddress,
+    abi: abi,
+    functionName: 'platformFee',
+  })) as bigint;
+}
+
+// TODO: create a subgraph query to replace its usage
+export async function getParticipantFee(): Promise<bigint> {
+  return (await publicClient.readContract({
+    address: contractAddress,
+    abi: abi,
+    functionName: 'participantFee',
+  })) as bigint;
+}
+
+export async function getTokenBalance(
+  user: Address,
+  token: Address
+): Promise<bigint> {
+  return (await publicClient.readContract({
+    address: contractAddress,
+    abi: abi,
+    functionName: "withdrawalBalances",
+    args: [user, token],
+  })) as bigint;
 }

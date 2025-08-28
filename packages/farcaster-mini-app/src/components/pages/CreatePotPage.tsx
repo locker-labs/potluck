@@ -1,249 +1,242 @@
 'use client';
 
+import type { FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { Input } from '@/components/ui/input';
-import { toast } from 'sonner';
-import { parseUnits, toHex } from 'viem';
-import { useWriteContract, useAccount } from 'wagmi';
-import { MoveLeft, Copy, MessageSquarePlus, Check } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
-import Link from 'next/link';
+import { formatEther, parseUnits } from 'viem';
+import { MoveLeft, Loader2, Info } from 'lucide-react';
+import { GradientButton } from '../ui/Buttons';
+import { useCreatePot } from '@/hooks/useCreatePot';
+import { formatUnits } from 'viem';
+import { z } from 'zod';
+import { MAX_PARTICIPANTS } from '@/config';
+import { AnimatePresence, motion } from 'motion/react';
+import { initialDown, transition, animate } from "@/lib/pageTransition";
+import { CreatePotSuccessDialog } from '@/components/subcomponents/CreatePotSuccessDialog';
+import { daySeconds, weekSeconds, monthSeconds } from '@/lib/helpers/contract';
+import { usePotluck } from '@/providers/PotluckProvider';
+import { truncateDecimals } from '@/lib/helpers/math';
+import BackButton from '../subcomponents/BackButton';
 import { formatAddress } from '@/lib/address';
-import { useApproveTokens } from '@/hooks/useApproveTokens';
-import { useTokenBalance } from '@/hooks/useTokenBalance';
-import { contractAddress, abi, tokenAddress, PotCreatedEventSignatureHash } from '@/config';
-import { publicClient } from '@/clients/viem';
-import { generateRandomCast } from '@/lib/helpers/cast';
-import { GradientButton, GradientButton3 } from '../ui/Buttons';
-import { getInviteLink } from '@/lib/helpers/inviteLink';
-import { useConnection } from '@/hooks/useConnection';
-import { emptyBytes32 } from '@/lib/helpers/contract';
-import { getTransactionLink } from '@/lib/helpers/blockExplorer';
+import { useAccount } from 'wagmi';
 
-const emojis = ['🎯', '🏆', '🔥', '🚀', '💪', '⚡', '🎬', '🎓', '🍕', '☕'];
+const emojis = ["🎯", "🏆", "🔥", "🚀", "💪", "⚡", "🎬", "🎓", "🍕", "☕"];
 
 const timePeriods = [
-  { value: BigInt(86400), label: 'Daily' },
-  { value: BigInt(604800), label: 'Weekly' },
-  // { value: BigInt(1209600), label: "Biweekly" },
-  { value: BigInt(2592000), label: 'Monthly' },
+  { value: BigInt(daySeconds), label: "Daily" },
+  { value: BigInt(weekSeconds), label: "Weekly" },
+  { value: BigInt(monthSeconds), label: "Monthly" },
 ];
 
-let potId: bigint | null = null;
+const modes = [
+  { value: true, label: "Public" },
+  { value: false, label: "Private" },
+];
+
+// Zod schema for form validation
+const createPotSchema = ({
+  tokenBalance,
+}: {
+  tokenBalance: bigint | undefined;
+}) => {
+  return z.object({
+    name: z.string().min(1, "is required"),
+    amount: z
+      .string()
+      .refine(
+        (val) => val !== "" && !Number.isNaN(Number(val)) && Number(val) >= 0.01,
+        { message: "must be at least 0.01" }
+      )
+      .refine((val) => {
+        if (val === "") return true;
+        const decimals = val.split('.');
+        if (decimals.length < 2) return true;
+        return decimals[1].length <= 2;
+      }, { message: "Only 2 decimal places allowed" })
+      .refine((val) => {
+        if (val === "") return true;
+        const amountBigInt = BigInt(parseUnits(val, 6));
+        const isInsufficientTokenBalance =
+          tokenBalance !== undefined && amountBigInt > tokenBalance;
+        return !Number.isNaN(Number(val)) && !isInsufficientTokenBalance;
+      }, { message: "exceeds your balance" }),
+    maxParticipants: z
+      .string()
+      .refine((val) => !Number.isNaN(Number(val)), { message: "must be a number" })
+      .refine((val) => Number(val) <= MAX_PARTICIPANTS, {
+        message: `should not exceed ${MAX_PARTICIPANTS}`,
+      })
+      .refine((val) => Number(val) !== 1, { message: "should be more than 1" }),
+    emoji: z.string().min(1, "is required"),
+    timePeriod: z.bigint(),
+  });
+};
 
 export default function CreatePotPage() {
+  // Form Input State (UPDATED DEFAULTS)
   const [emoji, setEmoji] = useState<string>(emojis[0]);
-  const [name, setName] = useState<string>('');
-  const [timePeriod, setTimePeriod] = useState<bigint>(timePeriods[0].value);
-  const [amount, setAmount] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [name, setName] = useState<string>("");
+  const [timePeriod, setTimePeriod] = useState<bigint>(timePeriods[1].value); // Weekly
+  const [amount, setAmount] = useState("1.00"); // 1.00 USDC
+  const [maxParticipants, setMaxParticipants] = useState("4"); // 4 members
+  const [isPublic, setIsPublic] = useState(true);
 
-  const router = useRouter();
-  const { isConnected } = useAccount();
-  const { ensureConnection } = useConnection();
-  const { data: hash, isPending, writeContractAsync } = useWriteContract();
-  const { data: tokenBalanceBigInt, isLoading: isLoadingBalance } = useTokenBalance();
-  const { allowance, isLoadingAllowance, refetchAllowance, approveTokensAsync } =
-    useApproveTokens();
+  // Form Action State
+  const [touched, setTouched] = useState<{ [k: string]: boolean }>({});
+  const [errors, setErrors] = useState<{ [k: string]: string }>({});
+  const [clickedSubmit, setClickedSubmit] = useState(false);
 
   const potName = `${emoji} ${name.trim()}`;
   const amountBigInt = BigInt(parseUnits(amount, 6));
-  const allowanceBigInt = BigInt(allowance ?? 0);
+  const maxParticipantsInt = Number.parseInt(maxParticipants || '0', 10);
 
-  const initialLoading = isLoadingAllowance || isLoadingBalance;
-  const isLoading = isSubmitting || isPending;
-  const disabled =
-    !isConnected ||
-    initialLoading ||
-    isLoading ||
-    !amount ||
-    !name ||
-    Number.parseFloat(amount) <= 0;
+  const router = useRouter();
+  const {
+    potId,
+    handleCreatePot,
+    isCreatingPot,
+    isLoading,
+    hash,
+  } = useCreatePot();
+  const {
+    calculateCreatorFee,
+    tokenBalance,
+    dataNativeBalance,
+    refetch,
+  } = usePotluck();
+
+  const { address, chain } = useAccount()
+
+  const validationSchema = useMemo(
+    () => createPotSchema({ tokenBalance }),
+    [tokenBalance],
+  );
 
   // FUNCTIONS
-
-  const createPot = async (): Promise<bigint> => {
-    try {
-      const args = [toHex(potName), tokenAddress, amountBigInt, timePeriod, emptyBytes32];
-      console.log('Creating pot with args:', {
-        potName,
-        tokenAddress,
-        amount: amountBigInt.toString(),
-        timePeriod: timePeriod.toString(),
-        fee: toHex(0),
-      });
-      // broadcast transaction
-      const hash = await writeContractAsync({
-        address: contractAddress,
-        abi,
-        functionName: 'createPot',
-        args,
-      });
-
-      // wait for confirmation
-      const receipt = await publicClient.waitForTransactionReceipt({ hash, confirmations: 1 });
-
-      if (receipt.status === 'reverted') {
-        throw new Error(`Transaction reverted: ${getTransactionLink(receipt.transactionHash)}`);
+  const validate = (
+    override?: Partial<{
+      name: string;
+      amount: string;
+      maxParticipants: string;
+      emoji: string;
+      timePeriod: bigint;
+    }>
+  ) => {
+    const values = {
+      name,
+      amount,
+      maxParticipants,
+      emoji,
+      timePeriod,
+      ...override,
+    };
+    const result = validationSchema.safeParse(values);
+    if (!result.success) {
+      const fieldErrors: { [k: string]: string } = {};
+      for (const err of result.error.errors) {
+        if (err.path[0]) fieldErrors[err.path[0]] = err.message;
       }
-
-      console.log(`Transaction confirmed: ${getTransactionLink(receipt.transactionHash)}`);
-
-      // parse logs to get pot ID
-      const potCreatedEvent = receipt.logs.find(
-        (log) => log.topics[0] === PotCreatedEventSignatureHash,
-      );
-      if (!potCreatedEvent) {
-        throw new Error('PotCreated event not found in transaction logs');
-      }
-
-      potId = BigInt(potCreatedEvent.topics[1] ?? '0');
-
-      return potId;
-    } catch (error) {
-      console.error('Error creating potluck:', error);
-      throw error;
+      setErrors(fieldErrors);
+      return false;
     }
+    setErrors({});
+    return true;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-
-    if (!amount || Number.parseFloat(amount) <= 0) {
-      toast.warning('Invalid amount', {
-        description: 'Please enter a valid USDC amount greater than 0.',
-      });
-      return;
-    }
-
-    if (tokenBalanceBigInt === undefined) {
-      toast.error('Error fetching token balance', {
-        description: 'Unable to fetch your USDC balance. Please try again later.',
-      });
-      return;
-    }
-
-    if (amountBigInt > tokenBalanceBigInt) {
-      toast.error('Insufficient balance', {
-        description: 'You do not have enough USDC to create this pot.',
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    await ensureConnection();
-
-    try {
-      if (4n * amountBigInt > allowanceBigInt) {
-        await approveTokensAsync(4n * amountBigInt);
-      }
-
-      await createPot();
-
-      // Show success modal instead of toast
-      setShowSuccessModal(true);
-    } catch (error) {
-      console.error('Error creating potluck:', error);
-      toast.error('Error creating potluck', {
-        description:
-          error instanceof Error
-            ? error.message?.split('.')?.[0]
-            : 'Something went wrong. Please try again.',
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    setClickedSubmit(true);
+    if (!validate()) return;
+    await handleCreatePot(
+      potName,
+      amountBigInt,
+      maxParticipantsInt,
+      timePeriod,
+      isPublic
+    );
   };
 
-  // Handle copy invite link
-  const handleCopyLink = async () => {
-    if (potId === null) {
-      toast.error('Pot ID is not available. Please create a pot first.');
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(getInviteLink(potId));
-      toast.success('Invite link copied to clipboard!');
-    } catch (err) {
-      console.error('Failed to copy link:', err);
-      toast.error('Failed to copy link');
-    }
-  };
+  // Rendering helpers
+  const amountTokenFormatted: string = formatUnits(amountBigInt, 6);
+  const validMaxParticipants =
+    maxParticipantsInt !== 1 && maxParticipantsInt <= MAX_PARTICIPANTS;
+  const totalFee = validMaxParticipants ? calculateCreatorFee(maxParticipantsInt) : undefined;
+  const isInsufficientNativeBalance =
+    dataNativeBalance !== undefined &&
+    totalFee !== undefined &&
+    totalFee.value > dataNativeBalance.value;
 
-  // Handle casting to Farcaster
-  const handleCastOnFarcaster = () => {
-    if (!potId) {
-      toast.error('Pot ID is not available. Please create a pot first.');
-      return;
-    }
-    const castText = generateRandomCast(Number(amount), timePeriod, potId);
-    // Open Warpcast in a new tab with pre-filled message
-    const warpcastUrl = `https://farcaster.xyz/~/compose?text=${encodeURIComponent(castText)}`;
-    window.open(warpcastUrl, '_blank');
-  };
+  const hasErrors = Object.keys(errors).length > 0;
+  const hasTouched = Object.keys(touched).length > 0;
+  const showError = (key: string) => (clickedSubmit || touched[key]) && errors[key];
+  const showInsufficientNativeBalance =
+    (clickedSubmit || touched.maxParticipants) && isInsufficientNativeBalance;
 
-  // EFFECTS
-  useEffect(() => {
-    refetchAllowance();
-  }, [isSubmitting]);
-
-  // Redirect to pot page when success modal is closed
-  useEffect(() => {
-    if (!showSuccessModal && potId) {
-      router.push(`/pot/${potId}`);
-      potId = null;
-    }
-  }, [showSuccessModal]);
+  const disabled =
+    isLoading || isCreatingPot || (clickedSubmit && hasErrors) || showInsufficientNativeBalance;
 
   return (
-    <div>
+    <motion.div
+      className={'px-4'}
+      initial={initialDown}
+      animate={animate}
+      transition={transition}
+    >
       <div>
-        <div className='w-full flex items-center justify-start gap-4 mb-8'>
-          <GradientButton3 onClick={() => router.push('/')} className='text-sm'>
-            <MoveLeft size={20} />
-          </GradientButton3>
-          <div className='w-full'>
-            <p className='text-2xl font-bold'>Create Pot</p>
-            <p className='text-sm font-light'>Set up your community pot in minutes</p>
+        <div className="w-full flex items-center justify-start gap-2 mb-6">
+          <BackButton />
+          <div className="w-full">
+            <p className="text-2xl font-bold">Create Pot</p>
+            <p className="text-sm font-light">
+              Set up your community pot in minutes
+            </p>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className='space-y-6'>
+        <form onSubmit={handleSubmit} className='space-y-5'>
           {/* Name */}
           <div>
-            <label htmlFor='pot-name' className='block text-sm font-bold mb-1'>
-              Pot Name
+            <label htmlFor="pot-name" className="block">
+              <span className='text-base font-bold'>Goal{" "}</span>
+              <span
+                className={`text-xs text-red-500 font-medium ${showError('name') ? "visible" : "hidden"}`}
+              >
+                {`${errors.name}`}
+              </span>
             </label>
             <Input
-              id='pot-name'
-              name='pot-name'
-              type='text'
+              id="pot-name"
+              name="pot-name"
+              type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder='DeFi Warriors'
+              onChange={(e) => {
+                setTouched((prev) => ({ ...prev, name: true }));
+                setName(e.target.value);
+                validate({ name: e.target.value });
+              }}
+              placeholder="DeFi Warriors"
+              className={`mt-2 w-full ${
+                showError('name') ? "outline-red-500 ring ring-red-500" : null
+              }`}
             />
           </div>
 
           {/* Choose Emoji */}
           <div>
-            <label htmlFor='choose-emoji' className='block text-sm font-bold mb-1'>
-              Choose Emoji
+            <label htmlFor="choose-emoji" className="block text-base font-bold">
+              Icon
             </label>
-            <div className='grid grid-cols-5 gap-2'>
+            <div className="mt-2 grid grid-cols-5 gap-2">
               {emojis.map((emojiOption) => (
                 <button
                   key={emojiOption}
-                  type='button'
-                  className={`p-2 inline-flex items-center justify-center text-2xl rounded-2xl transition-colors ${emoji === emojiOption ? 'bg-app-cyan/20 border border-app-cyan outline outline-1 outline-app-cyan' : 'bg-app-dark border border-app-light'}`}
+                  type="button"
+                  className={`h-[50px] p-2 inline-flex items-center justify-center text-2xl rounded-2xl transition-all ease-out duration-350 ${
+                    emoji === emojiOption
+                      ? "bg-app-cyan/20 border border-app-cyan outline outline-1 outline-app-cyan text-[33px]"
+                      : "bg-app-dark border border-app-light"
+                  }`}
                   onClick={() => setEmoji(emojiOption)}
                 >
                   {emojiOption}
@@ -252,46 +245,21 @@ export default function CreatePotPage() {
             </div>
           </div>
 
-          {/* Entry Amount */}
-          <div>
-            <label htmlFor='enrty-amount' className='block text-sm font-bold mb-1'>
-              Individual Contribution Amount
-            </label>
-            <Input
-              id='enrty-amount'
-              type='number'
-              min='0.01'
-              step='0.01'
-              value={amount}
-              onChange={(e) => {
-                // Prevent negative values
-                const value = e.target.value;
-                if (value === '' || Number.parseFloat(value) >= 0) {
-                  setAmount(value);
-                }
-              }}
-              onKeyDown={(e) => {
-                // Prevent typing minus sign
-                if (e.key === '-' || e.key === 'e') {
-                  e.preventDefault();
-                }
-              }}
-              placeholder='0.00'
-              className='w-full'
-            />
-          </div>
-
           {/* Choose Time Period */}
           <div>
-            <label htmlFor='time-period' className='block text-sm font-bold mb-1'>
-              Frequency
+            <label htmlFor="time-period" className="block text-base font-bold mb-2.5">
+              Pot Jackpot Frequency
             </label>
-            <div className='grid grid-cols-3 gap-2.5'>
+            <div className="grid grid-cols-3 gap-2.5">
               {timePeriods.map((period) => (
                 <button
-                  key={period.value}
-                  type='button'
-                  className={`w-full p-2 flex items-center justify-center text-base font-bold rounded-lg transition-colors outline ${period.value === timePeriod ? 'bg-app-cyan/20 outline-2 outline-app-cyan' : 'bg-app-dark outline-1 outline-app-light'}`}
+                  key={period.value.toString()}
+                  type="button"
+                  className={`w-full p-2 flex items-center justify-center text-base font-bold rounded-lg transition-colors outline ${
+                    period.value === timePeriod
+                      ? "bg-app-cyan/20 outline-2 outline-app-cyan"
+                      : "bg-app-dark outline-1 outline-app-light"
+                  }`}
                   onClick={() => setTimePeriod(period.value)}
                 >
                   {period.label}
@@ -300,71 +268,235 @@ export default function CreatePotPage() {
             </div>
           </div>
 
-          {isConnected ? (
-            <GradientButton type='submit' className='w-full' disabled={disabled}>
-              {initialLoading ? 'Loading...' : isLoading ? 'Launching...' : 'Launch Pot'}
-            </GradientButton>
-          ) : (
-            <GradientButton
-              onClick={(e) => {
-                e.preventDefault();
-                ensureConnection();
+          {/* Entry Amount */}
+          <div>
+            <label htmlFor="enrty-amount" className="block mb-2.5">
+              <span className='text-base font-bold'>Individual Contribution Per Round{" "}</span>
+              <span
+                className={`font-medium text-xs text-red-500 ${showError('amount') ? "visible" : "hidden"}`}
+              >
+                {`${errors.amount}`}
+              </span>
+            </label>
+            <div className="relative">
+              <Input
+                className={`w-full pr-16 ${showError('amount') ? "outline-red-500 ring ring-red-500" : null}`}
+                id="enrty-amount"
+                type="number"
+                value={amount}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (
+                    value === "" ||
+                    (/^\d*(\.\d{0,2})?$/.test(value) && Number.parseFloat(value) >= 0)
+                  ) {
+                    setTouched((prev) => ({ ...prev, amount: true }));
+                    setAmount(value);
+                    validate({ amount: value });
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "-" || e.key === "e") e.preventDefault();
+                }}
+                placeholder="1.00"
+              />
+              <motion.button
+                initial={{ scale: 1, translateY: '-50%' }}
+                whileTap={{ scale: 0.97 }}
+                type="button"
+                className={`absolute right-2 top-1/2 text-white px-3 py-1 rounded-md text-sm font-bold
+                  ${tokenBalance !== undefined && amount === truncateDecimals(formatUnits(tokenBalance, 6), 2) ? "bg-app-cyan/20 outline-app-cyan" : "bg-app-light/20 outline-app-light"}
+                  outline outline-2
+                `}
+                disabled={tokenBalance === undefined}
+                onClick={() => {
+                  if (tokenBalance !== undefined) {
+                    const fullBalance = truncateDecimals(formatUnits(tokenBalance, 6), 2);
+                    setAmount(fullBalance);
+                    validate({ amount: fullBalance });
+                  }
+                }}
+              >
+                Max
+              </motion.button>
+            </div>
+            {/* User wallet info - balance, address, chain */}
+            {tokenBalance !== undefined && <div className='mt-4 outline outline-1 outline-app-cyan rounded-xl p-2 flex w-full flex-col bg-app-gray'>
+              {tokenBalance !== undefined && (
+                <div className="flex items-center text-xs">
+                  Balance:&nbsp;
+                  <span className="font-semibold">
+                    {truncateDecimals(formatUnits(tokenBalance, 6), 2)} USDC
+                  </span>
+                </div>
+              )}
+              {address !== undefined && (
+                <div className="mt-2 flex items-center text-xs">
+                  Address:&nbsp;
+                  <span className="font-semibold">
+                    {formatAddress(address)}
+                  </span>
+                </div>
+              )}
+              {chain !== undefined && (
+                <div className="mt-2 flex items-center text-xs">
+                  Chain:&nbsp;
+                  <span className="font-semibold">
+                    {chain.name}
+                  </span>
+                </div>
+              )}
+            </div>}
+          </div>
+
+          {/* Participation Type */}
+          <div>
+            <label htmlFor="participation-type" className="block text-base font-bold">
+              Join Mode
+            </label>
+            <AnimatePresence initial={false} mode="popLayout">
+              {isPublic ? (
+                <motion.p
+                  key={"participation-public"}
+                  className="text-xs text-gray-500"
+                  initial={{ y: 40, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: 40, opacity: 0 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 30, duration: 0.1 }}
+                >
+                  Anyone can join
+                </motion.p>
+              ) : (
+                <motion.p
+                  key={"participation-private"}
+                  className="text-xs text-gray-500"
+                  initial={{ y: -40, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: -40, opacity: 0 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 30, duration: 0.1 }}
+                >
+                  Only approved participants can join
+                </motion.p>
+              )}
+            </AnimatePresence>
+            <div className="mt-2.5 grid grid-cols-2 gap-2.5">
+              {modes.map((mode) => (
+                <button
+                  key={`${mode.label}-${mode.value}`}
+                  type="button"
+                  className={`w-full p-2 flex items-center justify-center text-base font-bold rounded-lg transition-colors outline ${
+                    mode.value === isPublic
+                      ? "bg-app-cyan/20 outline-2 outline-app-cyan"
+                      : "bg-app-dark outline-1 outline-app-light"
+                  }`}
+                  onClick={() => setIsPublic(mode.value)}
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Max Participants */}
+          <div>
+            <label htmlFor="max-participants" className="block">
+              <span className='text-base font-bold'>Max pot members{" "}</span>
+              <span
+                className={`text-xs font-medium text-red-500 mt-1 ${showError('maxParticipants') ? "visible" : "hidden"}`}
+              >
+                {errors.maxParticipants}
+              </span>
+            </label>
+            <p className="font-medium text-xs text-gray-500">
+              Total rounds will be same as number of members
+            </p>
+            <Input
+              id="max-participants"
+              type="number"
+              min="1"
+              step="1"
+              value={maxParticipants}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === "" || (/^\d+$/.test(value) && Number.parseInt(value, 10) >= 1)) {
+                  setTouched((prev) => ({ ...prev, maxParticipants: true }));
+                  setMaxParticipants(value);
+                  validate({ maxParticipants: value });
+                }
               }}
-              type='button'
-              className='w-full'
-            >
-              Connect
-            </GradientButton>
-          )}
+              onKeyDown={(e) => {
+                if (e.key === "-" || e.key === "." || e.key === "e") e.preventDefault();
+              }}
+              placeholder="4"
+              className={`mt-2 w-full ${
+                showError('maxParticipants') || showInsufficientNativeBalance
+                  ? "outline-red-500 ring ring-red-500"
+                  : null
+              }`}
+            />
+          </div>
+
+          {/* Payment Summary */}
+          <div className="border border-gray-700 rounded-[12px] px-3 pt-4">
+            <div>
+              <p className="block text-base font-bold mb-2">Payment Summary</p>
+
+              <div className="mb-2 mt-5 w-full flex items-start justify-between">
+                <p className="text-sm font-normal">Join Amount:</p>
+                <p className="text-sm font-normal">{amountTokenFormatted} USDC</p>
+              </div>
+
+              <div className="mb-2 w-full flex items-start justify-between">
+                <p className="text-sm font-normal">
+                  Platform Fee{validMaxParticipants ? ` (${maxParticipantsInt || MAX_PARTICIPANTS} Rounds)` : null}:
+                </p>
+                <p className="text-sm font-normal">{totalFee ? `${totalFee.formatted} ETH` : '-'}</p>
+              </div>
+
+              {showInsufficientNativeBalance && (
+                <div className="mb-2 w-full flex items-start justify-between">
+                  <p className="text-sm font-medium text-red-500">Insufficient Balance:</p>
+                  <p className="text-sm font-medium text-red-500">
+                    {truncateDecimals(formatEther(dataNativeBalance.value), 4)} ETH
+                  </p>
+                </div>
+              )}
+
+              <hr />
+
+              <div className="mt-2 mb-3 w-full flex items-start justify-between">
+                <p className="text-sm font-bold">Total:</p>
+                <p className="text-sm font-bold">{amountTokenFormatted} USDC</p>
+              </div>
+
+              <div className="mt-2 mb-3 p-2 w-full flex gap-1.5 items-start justify-between border border-[#FFB300] rounded-[8px] bg-[#45412E]">
+                <Info className="text-[#FFB300]" size={18} strokeWidth={1.25} />
+                <p className="w-full text-left text-xs font-normal text-[#FFB300]">
+                  You will be asked to approve tokens for all rounds and to confirm a wallet transaction.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Submit button */}
+          <GradientButton type="submit" className="w-full" disabled={disabled}>
+            <span className={"flex items-center justify-center gap-2"}>
+              <span>{isLoading ? "Loading" : "Create"}</span>
+              {(isLoading || isCreatingPot) ? (
+                <Loader2 className="animate-spin h-5 w-5 text-white" size={20} />
+              ) : null}
+            </span>
+          </GradientButton>
         </form>
       </div>
 
       {/* Success Dialog */}
-      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
-        <DialogContent className='sm:max-w-md rounded-2xl'>
-          <DialogHeader>
-            <DialogTitle className='text-center text-2xl font-bold'>
-              Congratulations! 🎉
-            </DialogTitle>
-            <DialogDescription className='text-center'>
-              <div className='py-4'>
-                <div className='w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4'>
-                  <Check className='h-8 w-8 text-green-500' />
-                </div>
-                <h3 className='text-xl font-bold mb-2'>Your potluck has been created!</h3>
-                <p className='mb-6'>
-                  Share with friends to start saving together. The more people that join, the more
-                  everyone saves!
-                </p>
-                {hash && (
-                  <div>
-                    Transaction Hash:{' '}
-                    <Link href={getTransactionLink(hash)}>{formatAddress(hash)}</Link>
-                  </div>
-                )}
-              </div>
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className='space-y-4 mt-2'>
-            <GradientButton3
-              className='w-full flex items-center justify-center gap-2'
-              onClick={handleCastOnFarcaster}
-            >
-              <MessageSquarePlus size={18} />
-              Cast on Farcaster
-            </GradientButton3>
-
-            <GradientButton3
-              className='w-full flex items-center justify-center gap-2'
-              onClick={handleCopyLink}
-            >
-              <Copy size={18} />
-              Copy Invite Link
-            </GradientButton3>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
+      <CreatePotSuccessDialog
+        hash={hash}
+        potId={potId}
+        amountBigInt={amountBigInt}
+        timePeriod={timePeriod}
+      />
+    </motion.div>
   );
 }
