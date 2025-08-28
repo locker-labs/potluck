@@ -1,13 +1,13 @@
-import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import type { TPotObject } from "@/lib/types";
 import type { Address } from "viem";
-import { Loader2, UsersRound } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { BorderButton, GradientButton4 } from "../ui/Buttons";
 import { GradientCard2 } from "../ui/GradientCard";
-import { timeFromNow } from "@/lib/helpers/time";
-import { DurationPill } from "@/components/ui/Pill";
-import { UserContributionProgressBar } from "./UserContributionProgressBar";
+import { DeadlinePill } from "./DeadlinePill";
+import { PotProgressBar } from "./PotProgressBar";
+import { TransitionLink } from "@/components/TransitionLink";
+import { PotInfo } from "./PotInfo";
 
 export function YourPotCard({
 	pot,
@@ -26,7 +26,6 @@ export function YourPotCard({
 	className?: string;
 	tokenBalance: bigint | undefined;
 }) {
-	const router = useRouter();
 	const [hasJoinedRound, setHasJoinedRound] = useState<boolean>(
 		pot.participants.includes(address),
 	);
@@ -49,23 +48,24 @@ export function YourPotCard({
 	const initialLoading: boolean = false;
 	const insufficientBalance: boolean =
 		tokenBalance !== undefined && tokenBalance < pot.entryAmount;
-	const deadlinePassed: boolean =
-		pot.deadline < BigInt(Math.floor(Date.now() / 1000));
 
 	const disabled: boolean =
+		pot.ended ||
 		isJoiningPot ||
 		hasJoinedRound ||
 		initialLoading ||
 		insufficientBalance ||
-		deadlinePassed;
+		pot.deadlinePassed;
 
 	const joinButtonText = initialLoading
 		? "Loading"
+		: pot.ended
+			? "Ended"
 		: hasJoinedRound
 			? "Joined"
 			: isJoiningPot
 				? "Joining"
-				: deadlinePassed
+				: pot.deadlinePassed
 					? "Expired ⌛"
 					: insufficientBalance
 						? "Insufficient Balance 💰"
@@ -81,77 +81,34 @@ export function YourPotCard({
 		handleJoinPot(pot);
 	};
 
-	const onClickViewDetails = (
-		e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
-	) => {
-		e.stopPropagation();
-		e.preventDefault();
-		router.push(`/pot/${pot.id}`);
-	};
-
 	return (
 		<GradientCard2
 			key={pot.id}
-			className={`min-w-[315px] max-w-full pt-[12px] px-[12px] pb-[12px] ${className}`}
+			className={`min-w-[315px] max-w-full p-[12px] ${className}`}
 		>
 			<div className={"flex justify-end"}>
-				<DurationPill
-					text={
-						deadlinePassed
-							? "Awaiting payout"
-							: `${timeFromNow(Number(pot.deadline))}`
-					}
-					className={"text-[15px]"}
-				/>
+				<DeadlinePill pot={pot} className={"text-[15px]"} />
 			</div>
-			<p className="text-[18px] font-bold leading-[1.2] line-clamp-1">
+			<p className="mt-1 text-[18px] font-bold leading-[1.2] break-all line-clamp-1">
 				{pot.name}
 			</p>
 
-			<div className="mt-2 grid grid-cols-5">
-				{/* Total Pool amount */}
-				<div className="col-span-5">
-					<p className="w-full text-end text-cyan-400 font-bold text-[38px] leading-none">
-						${pot.totalPool}
-					</p>
-				</div>
+			<PotInfo pot={pot} />
 
-				{/* Participants, Entry amount, Total pool text */}
-				<div className="col-span-3 grid grid-cols-2">
-					<div className="flex items-center justify-start gap-1">
-						<UsersRound strokeWidth="1.25px" size={18} color="#14b6d3" />
-						<span className="font-base text-[14px]">
-							{isRoundZero
-								? `${String(pot.participants.length)}/${String(
-										pot.maxParticipants,
-									)}`
-								: `${String(pot.participants.length)}/${String(
-										pot.totalParticipants,
-									)}`}
-						</span>
-					</div>
-					<p className="font-base text-[14px] whitespace-nowrap text-left">
-						${pot.entryAmountFormatted} {pot.periodString}
-					</p>
-				</div>
-				<p className="col-span-2 font-base text-[14px] text-right">
-					Total Pool
-				</p>
-			</div>
-
-			{/* User contribution progress bar */}
-			<UserContributionProgressBar pot={pot} hasJoinedRound={hasJoinedRound} />
+			{/* Pot progress bar */}
+			<PotProgressBar pot={pot} />
 
 			{/* Buttons */}
 			<div className={"w-full mt-[14px] grid grid-cols-2 gap-4"}>
 				{/* View Details Button */}
-				<BorderButton
-					type="button"
-					onClick={onClickViewDetails}
-					className="h-[30px] max-w-min min-w-[87px] whitespace-nowrap flex items-center justify-center"
-				>
-					View Details
-				</BorderButton>
+				<TransitionLink href={`/pot/${pot.id}`}>
+					<BorderButton
+						type="button"
+						className="h-[30px] max-w-min min-w-[87px] whitespace-nowrap flex items-center justify-center"
+					>
+						View Details
+					</BorderButton>
+				</TransitionLink>
 
 				{/* Join Round Button */}
 				<GradientButton4

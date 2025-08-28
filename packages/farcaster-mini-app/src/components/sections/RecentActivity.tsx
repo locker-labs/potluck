@@ -1,21 +1,24 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Loader2, MoveUpRight, ExternalLink } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { formatAddress } from "@/lib/address";
-import { formatDateFromTimestamp } from "@/lib/date";
 import { getTransactionLink } from "@/lib/helpers/blockExplorer";
-import type { TPotObject } from "@/lib/types";
 import type { LogEntry } from "@/lib/graphQueries";
+import type { Address } from "viem";
+import type { FUser } from "@/types/neynar";
+import { getProfileLink } from "@/lib/helpers/links";
 
 export function RecentActivity({
-  pot,
   logsState,
+  users,
+  fetchUsers,
 }: {
-  pot: TPotObject;
   logsState: { loading: boolean; error: string | null; logs: LogEntry[] };
+  users: Record<string, FUser | null>;
+  fetchUsers: (addresses: Address[]) => void;
 }) {
   // 1️⃣ Loading / Error states
   if (logsState.loading) {
@@ -38,62 +41,145 @@ export function RecentActivity({
     (log) => log.type === "joined" || log.type === "payout"
   );
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: adding fetchUsers in deps might trigger unnecessary re-renders
+  useEffect(() => {
+    const addressSet = new Set<Address>();
+
+    for (const act of activities) {
+      if (act.type === "joined") {
+        addressSet.add(act.data.user.toLowerCase() as Address);
+      } else {
+        addressSet.add(act.data.winner.toLowerCase() as Address);
+      }
+    }
+
+    fetchUsers(Array.from(addressSet));
+  }, [activities]);
+
+  // 3️⃣ Group by date
+		const { dateGroups, sortedDates } = useMemo(() => {
+			const dateGroups: Record<string, LogEntry[]> = {};
+
+			for (const log of activities) {
+				const date = new Date(Number(log.timestamp) * 1000)
+					.toISOString()
+					.split("T")[0];
+				if (!dateGroups[date]) {
+					dateGroups[date] = [];
+				}
+				dateGroups[date].push(log);
+			}
+
+			const sortedDates = Object.keys(dateGroups).sort(
+				(a, b) => new Date(b).getTime() - new Date(a).getTime(),
+			);
+
+			return { dateGroups, sortedDates };
+		}, [activities]);
+
   return (
-    <div className="py-4 max-h-[300px] overflow-y-auto">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {activities.map((log, idx) => {
-          const isWinner = log.type === "payout";
-          const action = isWinner ? "Winner Payout" : "Deposited";
-          const amount = log.data.amount;
-          const txHash = log.data.txHash as string;
+			<div className="max-h-[300px] overflow-y-auto">
+				<Accordion type="multiple" defaultValue={sortedDates}>
+					{sortedDates.map((date, dateIndex) => (
+						<AccordionItem key={date} value={date} className="border-0">
+							<AccordionTrigger
+								className={`px-4 ${dateIndex === 0 ? "" : "border-t"} border-gray-500 h-[48px]`}
+							>
+								{new Date(date).toLocaleDateString("en-US", {
+									day: "2-digit",
+									month: "short",
+									year: "numeric",
+								})}
+							</AccordionTrigger>
+							<AccordionContent className={"py-4 border-t border-gray-500"}>
+								<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+									{dateGroups[date]
+										.filter(
+											(log) => log.type === "joined" || log.type === "payout",
+										)
+										.sort(
+											(a, b) =>
+												new Date(Number(b.timestamp)).getTime() -
+												new Date(Number(a.timestamp)).getTime(),
+										)
+										.map((log, idx) => {
+											const isWinner = log.type === "payout";
+											const userAddr = isWinner
+												? (log.data.winner.toLowerCase() as Address)
+												: (log.data.user.toLowerCase() as Address);
+											const username = users[userAddr]
+												? users[userAddr].username
+												: formatAddress(userAddr);
+											const action = isWinner ? "Winner" : "Deposited";
 
-          return (
-            <div key={idx} className="px-4 flex items-start justify-between">
-              {/* Icon + Label */}
-              <div className="flex items-start gap-2">
-                {isWinner ? (
-                  "🎉"
-                ) : (
-                  <MoveUpRight
-                    className="mt-0.5"
-                    strokeWidth="2px"
-                    size={20}
-                    color="#14b6d3"
-                  />
-                )}
-                <div>
-                  <p
-                    className={`text-base ${
-                      isWinner ? "text-green-500" : "text-app-cyan"
-                    }`}
-                  >
-                    {action}
-                  </p>
-                  <div className="text-xs">
-                    {formatDateFromTimestamp(Number(log.timestamp))}
-                  </div>
-                </div>
-              </div>
+											return (
+												<div
+                        // biome-ignore lint/suspicious/noArrayIndexKey: not a dynamic list so works
+													key={idx}
+													className="px-4 flex items-center justify-between"
+												>
+													{/* Icon + Label */}
+													<div className="flex items-start gap-2">
+														{isWinner ? (
+															"🎉"
+														) : (
+															<MoveUpRight
+																strokeWidth="2px"
+																size={18}
+																className="text-app-cyan"
+															/>
+														)}
+														<div className="flex flex-col gap-1.5">
+															<p
+																className={`leading-none text-base ${
+																	isWinner ? "text-green-500" : "text-app-cyan"
+																}`}
+															>
+																{action}
+															</p>
+															<Link
+																href={getProfileLink(userAddr)}
+															>
+																<p className="leading-none text-xs font-normal text-gray-200">
+																	{username}
+																</p>
+															</Link>
+														</div>
+													</div>
 
-              {/* Amount + Link */}
-              <div>
-                <div className="mb-1.5 flex items-center">
-                  <Image src="/usdc.png" alt="usdc" width={16} height={16} />
-                  <span className="ml-1 leading-none">{amount}</span>
-                </div>
-                <Link href={getTransactionLink(txHash)} target="_blank">
-                  <div className="flex items-center gap-1">
-                    <p className="text-xs leading-none">
-                      {formatAddress(txHash as `0x${string}`)}
-                    </p>
-                    <ExternalLink size={12} />
-                  </div>
-                </Link>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
+													{/* Amount + Link */}
+													<div className="flex flex-col items-end gap-1.5">
+														<div className="flex items-center">
+															<span className="font-medium leading-none">
+																${log.data.amount}
+															</span>
+														</div>
+														<Link
+															href={getTransactionLink(log.data.txHash)}
+															target="_blank"
+														>
+															<div className="flex items-center gap-1">
+																<p className="text-xs leading-none">
+																	{new Date(
+																		1000 * Number(log.timestamp),
+																	).toLocaleTimeString("en-US", {
+																		hour: "numeric",
+																		minute: "numeric",
+																		hour12: true,
+																	})}
+																</p>
+																<ExternalLink size={12} />
+															</div>
+														</Link>
+													</div>
+												</div>
+											);
+										})}
+								</div>
+							</AccordionContent>
+						</AccordionItem>
+					))}
+				</Accordion>
+			</div>
+		);
 }

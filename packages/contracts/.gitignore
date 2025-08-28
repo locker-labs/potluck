@@ -2,6 +2,7 @@
 cache/
 out/
 !out/Potluck.sol
+!out/PotluckBatcher.sol
 
 # Ignores development broadcast logs
 !/broadcast

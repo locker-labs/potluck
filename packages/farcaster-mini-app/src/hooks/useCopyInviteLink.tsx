@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { getInviteLink } from '@/lib/helpers/inviteLink';
+import { getInviteLink } from '@/lib/helpers/links';
 
 export function useCopyInviteLink({
   potId,

@@ -1,51 +1,40 @@
-import type { Metadata } from 'next';
-import PotPage from '@/components/pages/PotPage';
-import { APP_NAME, APP_DESCRIPTION, APP_OG_IMAGE_URL } from '@/lib/constants';
-import { getFrameEmbedMetadata } from '@/lib/utils';
-import { fetchPot, potMapper } from '@/lib/helpers/contract';
-import type { TPot, TPotObject } from '@/lib/types';
+import type { Metadata } from "next";
+import { getMetadata } from "@/app/metadata";
+import PotPage from "@/components/pages/PotPage";
+import type { TPotObjectMini } from "@/lib/types";
+import { fetchPotMiniInfo } from "@/lib/graphQueries";
 
 type Props = {
-  params: Promise<{ id: string }>;
+	params: Promise<{ id: string }>;
 };
 
 export const revalidate = 300;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params;
-  const pot: TPot = await fetchPot(BigInt(id));
-  const potObject: TPotObject = potMapper(pot, []);
+	const { id } = await params;
 
-  return {
-    title: `Save with me for a chance to win ${potObject.totalPool} USDC`,
-    openGraph: {
-      title: APP_NAME,
-      description: APP_DESCRIPTION,
-      images: [APP_OG_IMAGE_URL],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: `Save with me for a chance to win ${potObject.totalPool} USDC`,
-      description: APP_DESCRIPTION,
-      creator: '@locker_money',
-      images: [
-        {
-          url: APP_OG_IMAGE_URL,
-          width: 800,
-          height: 600,
-          alt: 'twitterimage',
-        },
-      ],
-    },
-    other: {
-      'fc:frame': JSON.stringify(getFrameEmbedMetadata({ pathname: `/pot/${id}` })),
-    },
-  };
+	if (!id || Number.isNaN(Number(id))) return getMetadata();
+
+	try {
+		const pot: TPotObjectMini =
+			await fetchPotMiniInfo(BigInt(id));
+		const socialTitle = `Save with me for a chance to win ${pot.totalPool} USDC`;
+
+		return getMetadata({
+			path: `/pot/${Number(id)}`,
+			twitter: { title: socialTitle },
+			openGraph: { title: socialTitle },
+		});
+	} catch (e) {
+		console.error("Error fetching pot metadata:", e);
+	}
+
+	return getMetadata();
 }
 
 export default async function Page({ params }: Props) {
-  const { id } = await params;
-  if (!id) return null;
+	const { id } = await params;
+	if (!id) return null;
 
-  return <PotPage id={id} />;
+	return <div id={'pot-page'} className={'page-transition'}><PotPage id={id} /></div>;
 }

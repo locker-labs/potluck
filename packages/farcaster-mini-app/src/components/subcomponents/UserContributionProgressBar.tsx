@@ -11,6 +11,8 @@ export function UserContributionProgressBar({
 		? 1 + pot.round
 		: pot.round;
 
+    const progressMax = Math.min(completedContributions, pot.totalParticipants);
+
 	return (
 		<div>
 			<p className={"mt-4 text-xs text-white/80 leading-none"}>
@@ -21,7 +23,7 @@ export function UserContributionProgressBar({
 				<div
 					style={{
 						width: `${Math.trunc(
-							(100 * completedContributions) / pot.totalParticipants,
+							(100 * progressMax) / pot.totalParticipants,
 						)}%`,
 					}}
 					className={"rounded-full h-2 bg-green-500"}
